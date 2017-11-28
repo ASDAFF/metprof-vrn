@@ -397,7 +397,7 @@ class CBitrixPlayer extends CBitrixComponent
 
 	public function onPrepareComponentParams($arParams)
 	{
-		if ($arParams['PLAYER_TYPE'] != 'videojs' && $arParams['PLAYER_TYPE'] != 'auto')
+		if ($arParams['PLAYER_TYPE'] != 'videojs' && $arParams['PLAYER_TYPE'] != 'auto' && $arParams['PLAYER_TYPE'] != 'adjust')
 			$arParams['SIZE_TYPE'] = 'absolute';
 
 		if ($arParams['SIZE_TYPE'] == 'fluid')
@@ -457,6 +457,11 @@ class CBitrixPlayer extends CBitrixComponent
 
 		if ($arParams["PLAYBACK_RATE"] > 3)
 			$arParams["PLAYBACK_RATE"] = 3;
+
+		if($arParams['AUTOSTART'] === 'Y')
+		{
+			$arParams['AUTOSTART_ON_SCROLL'] = 'N';
+		}
 
 		return $arParams;
 	}
@@ -575,6 +580,8 @@ class CBitrixPlayer extends CBitrixComponent
 			$this->arResult['JS_FILES'][] = $this->__path.'/videojs/videojs-playlist-dev.js';
 			$APPLICATION->setAdditionalCss($this->__path.'/videojs/videojs-playlist.css');
 			$this->arResult['CSS_FILES'][] = $this->__path.'/videojs/videojs-playlist.css';
+			\Bitrix\Main\Page\Asset::getInstance()->addJs($this->__path.'/js/fileman_player.js');
+			$this->arResult['JS_FILES'][] = $this->__path.'/js/fileman_player.js';
 			$this->processSkin();
 			if ($this->arResult['VIMEO'])
 			{
@@ -633,6 +640,17 @@ class CBitrixPlayer extends CBitrixComponent
 				$this->arParams['START_TIME'] = 0;
 				$this->arResult['VIDEOJS_PARAMS']['flash']['swf'] = $this->__path.'/videojs/video-js.swf';
 			}
+			if($this->arParams['AUTOSTART_ON_SCROLL'] === 'Y')
+			{
+				$this->arResult['AUTOSTART_ON_SCROLL'] = 'Y';
+				$this->arResult['VIDEOJS_PARAMS']['autostart'] = true;
+				$this->arParams['MUTE'] = 'Y';
+				$this->arParams['START_TIME'] = 0;
+			}
+			if($this->arParams['SIZE_TYPE'] == 'adjust')
+			{
+				$this->arResult['VIDEOJS_PARAMS']['isAdjust'] = true;
+			}
 			$this->arResult['VOLUME'] = $this->arParams['VOLUME'] / 100;
 			if ($this->arParams['MUTE'] === "Y")
 				$this->arResult['VIDEOJS_PARAMS']['muted'] = true;
@@ -645,8 +663,19 @@ class CBitrixPlayer extends CBitrixComponent
 				// a strange bug - vimeo doesn't play without a poster
 				$this->arResult['VIDEOJS_PARAMS']['poster'] = $this->__path.'/images/black.png';
 			}
-			if ($this->arParams['AUTOSTART'] === "Y")
+			if($this->arParams['AUTOSTART'] === "Y")
 				$this->arParams['START_TIME'] = 0;
+
+			if($this->arParams['START_TIME'] > 0)
+			{
+				$this->arResult['VIDEOJS_PARAMS']['startTime'] = $this->arParams['START_TIME'];
+			}
+
+			if($this->arParams['LAZYLOAD'] === 'Y')
+			{
+				$this->arResult['LAZYLOAD'] = true;
+				$this->arResult['VIDEOJS_PARAMS']['lazyload'] = true;
+			}
 		}
 
 		$this->arResult['PLAYER_TYPE'] = $this->playerType;
@@ -654,6 +683,10 @@ class CBitrixPlayer extends CBitrixComponent
 		if($this->arParams['USE_PLAYLIST'] == 'Y')
 		{
 			$this->processPlaylist();
+			if(!empty($this->arResult['VIDEOJS_PLAYLIST_PARAMS']))
+			{
+				$this->arResult['VIDEOJS_PARAMS']['playlistParams'] = $this->arResult['VIDEOJS_PLAYLIST_PARAMS'];
+			}
 		}
 
 		if (!empty($this->warning) && $USER->IsAdmin() && !(defined ('ADMIN_SECTION') && ADMIN_SECTION === true))

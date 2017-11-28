@@ -155,7 +155,6 @@ if (check_bitrix_sessid())
 		if (
 			isset($_POST['SEARCH_SONET_GROUPS'])
 			&& $_POST['SEARCH_SONET_GROUPS'] == 'Y'
-			&& method_exists('CSocNetLogDestination', 'searchSonetGroups')
 		)
 		{
 			$searchResults['SONET_GROUPS'] = CSocNetLogDestination::searchSonetGroups(array(

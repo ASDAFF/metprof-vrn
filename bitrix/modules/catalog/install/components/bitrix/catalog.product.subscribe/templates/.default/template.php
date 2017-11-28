@@ -39,6 +39,8 @@ foreach($saleNotifyOption as $siteId => $data)
 	if($siteId == SITE_ID && $data['use'] != 'Y')
 		$showSubscribe = false;
 }
+
+$subscribeBtnName = !empty($arParams['MESS_BTN_SUBSCRIBE']) ? $arParams['MESS_BTN_SUBSCRIBE'] : Loc::getMessage('CPST_SUBSCRIBE_BUTTON_NAME');
 ?>
 
 <?if($showSubscribe):?>
@@ -47,7 +49,7 @@ foreach($saleNotifyOption as $siteId => $data)
 			data-item="<?=htmlspecialcharsbx($arResult['PRODUCT_ID'])?>"
 			style="<?=($arResult['DEFAULT_DISPLAY']?'':'display: none;')?>">
 		<span>
-			<?=Loc::getMessage('CPST_SUBSCRIBE_BUTTON_NAME')?>
+			<?=$subscribeBtnName?>
 		</span>
 	</span>
 	<input type="hidden" id="<?=htmlspecialcharsbx($arResult['BUTTON_ID'])?>_hidden">
@@ -55,7 +57,7 @@ foreach($saleNotifyOption as $siteId => $data)
 	<script type="text/javascript">
 		BX.message({
 			CPST_SUBSCRIBE_POPUP_TITLE: '<?=GetMessageJS('CPST_SUBSCRIBE_POPUP_TITLE');?>',
-			CPST_SUBSCRIBE_BUTTON_NAME: '<?=GetMessageJS('CPST_SUBSCRIBE_BUTTON_NAME');?>',
+			CPST_SUBSCRIBE_BUTTON_NAME: '<?=$subscribeBtnName?>',
 			CPST_SUBSCRIBE_BUTTON_CLOSE: '<?=GetMessageJS('CPST_SUBSCRIBE_BUTTON_CLOSE');?>',
 			CPST_SUBSCRIBE_MANY_CONTACT_NOTIFY: '<?=GetMessageJS('CPST_SUBSCRIBE_MANY_CONTACT_NOTIFY');?>',
 			CPST_SUBSCRIBE_LABLE_CONTACT_INPUT: '<?=GetMessageJS('CPST_SUBSCRIBE_LABLE_CONTACT_INPUT');?>',

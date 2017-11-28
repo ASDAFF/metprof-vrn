@@ -168,8 +168,7 @@ class CCatalogProduct extends CAllCatalogProduct
 
 	public static function GetQueryBuildArrays($arOrder, $arFilter, $arSelect)
 	{
-		/** @var CStackCacheManager $stackCacheManager */
-		global $DB, $USER, $stackCacheManager;
+		global $DB, $USER;
 
 		$strDefQuantityTrace = ((string)Option::get('catalog', 'default_quantity_trace') == 'Y' ? 'Y' : 'N');
 		$strDefCanBuyZero = ((string)Option::get('catalog', 'default_can_buy_zero') == 'Y' ? 'Y' : 'N');
@@ -420,96 +419,79 @@ class CCatalogProduct extends CAllCatalogProduct
 		if (!empty($arJoinGroup))
 		{
 			$strSubWhere = implode(',', array_keys($arJoinGroup));
-
 			$strUserGroups = (CCatalog::IsUserExists() ? $USER->GetGroups() : '2');
-			$strCacheKey = "P_".$strUserGroups;
-			$strCacheKey .= "_".$strSubWhere;
-			$strCacheKey .= "_".LANGUAGE_ID;
-
-			$cacheTime = CATALOG_CACHE_DEFAULT_TIME;
-			if (defined("CATALOG_CACHE_TIME"))
-				$cacheTime = (int)CATALOG_CACHE_TIME;
-
-			$stackCacheManager->SetLength("catalog_GetQueryBuildArrays", 50);
-			$stackCacheManager->SetTTL("catalog_GetQueryBuildArrays", $cacheTime);
-			if ($stackCacheManager->Exist("catalog_GetQueryBuildArrays", $strCacheKey))
+			$arResult = array();
+			$fullPriceTypeList = CCatalogGroup::GetListArray();
+			if (!empty($fullPriceTypeList))
 			{
-				$arResult = $stackCacheManager->Get("catalog_GetQueryBuildArrays", $strCacheKey);
-			}
-			else
-			{
-				$arResult = array();
-				$fullPriceTypeList = CCatalogGroup::GetListArray();
-				if (!empty($fullPriceTypeList))
+				$priceTypeList = array();
+				foreach (array_keys($fullPriceTypeList) as $priceId)
 				{
-					$priceTypeList = array();
-					$idList = array_keys($fullPriceTypeList);
-					foreach ($idList as $priceId)
-					{
-						if (!isset($arJoinGroup[$priceId]))
-							continue;
-						$priceTypeList[$priceId] = array(
-							'ID' => $fullPriceTypeList[$priceId]['ID'],
-							'CATALOG_GROUP_NAME' => $fullPriceTypeList[$priceId]['NAME_LANG'],
-							'CATALOG_CAN_ACCESS' => 'N',
-							'CATALOG_CAN_BUY' => 'N'
-						);
-					}
-					unset($priceId, $idList);
-					$query = 'select CATALOG_GROUP_ID, BUY from b_catalog_group2group where GROUP_ID in ('.$strUserGroups.') and CATALOG_GROUP_ID in ('.$strSubWhere.')';
-					$rightsIterator = $DB->Query($query, false, "File: ".__FILE__."<br>Line: ".__LINE__);
-					while ($rights = $rightsIterator->Fetch())
-					{
-						$priceId = (int)$rights['CATALOG_GROUP_ID'];
-						if (isset($priceTypeList[$priceId]))
-						{
-							if ($rights['BUY'] == 'Y')
-								$priceTypeList[$priceId]['CATALOG_CAN_BUY'] = 'Y';
-							else
-								$priceTypeList[$priceId]['CATALOG_CAN_ACCESS'] = 'Y';
-						}
-						unset($priceId);
-					}
-					unset($rights, $rightsIterator);
-					$arResult = array_values($priceTypeList);
-					unset($priceTypeList);
+					if (!isset($arJoinGroup[$priceId]))
+						continue;
+					$priceTypeList[$priceId] = array(
+						'ID' => $fullPriceTypeList[$priceId]['ID'],
+						'CATALOG_GROUP_NAME' => $fullPriceTypeList[$priceId]['NAME_LANG'],
+						'CATALOG_CAN_ACCESS' => 'N',
+						'CATALOG_CAN_BUY' => 'N'
+					);
 				}
-				unset($fullPriceTypeList);
-				$stackCacheManager->Set("catalog_GetQueryBuildArrays", $strCacheKey, $arResult);
-			}
-
-			foreach ($arResult as &$row)
-			{
-				$i = (int)$row["ID"];
-
-				if (!empty($arWhereTmp[$i]) && is_array($arWhereTmp[$i]))
-					$sResWhere .= ' AND '.implode(' AND ', $arWhereTmp[$i]);
-
-				if (!empty($arOrderTmp[$i]) && is_array($arOrderTmp[$i]))
+				unset($priceId);
+				$query = 'select CATALOG_GROUP_ID, BUY from b_catalog_group2group where GROUP_ID in ('.$strUserGroups.') and CATALOG_GROUP_ID in ('.$strSubWhere.')';
+				$rightsIterator = $DB->Query($query, false, "File: ".__FILE__."<br>Line: ".__LINE__);
+				while ($rights = $rightsIterator->Fetch())
 				{
-					foreach($arOrderTmp[$i] as $k=>$v)
-						$arResOrder[$k] = $v;
-					unset($k, $v);
+					$priceId = (int)$rights['CATALOG_GROUP_ID'];
+					if (isset($priceTypeList[$priceId]))
+					{
+						if ($rights['BUY'] == 'Y')
+							$priceTypeList[$priceId]['CATALOG_CAN_BUY'] = 'Y';
+						else
+							$priceTypeList[$priceId]['CATALOG_CAN_ACCESS'] = 'Y';
+					}
+					unset($priceId);
 				}
-
-				$sResSelect .= ", CAT_P".$i.".ID as CATALOG_PRICE_ID_".$i.", ".
-					" CAT_P".$i.".CATALOG_GROUP_ID as CATALOG_GROUP_ID_".$i.", ".
-					" CAT_P".$i.".PRICE as CATALOG_PRICE_".$i.", ".
-					" CAT_P".$i.".CURRENCY as CATALOG_CURRENCY_".$i.", ".
-					" CAT_P".$i.".QUANTITY_FROM as CATALOG_QUANTITY_FROM_".$i.", ".
-					" CAT_P".$i.".QUANTITY_TO as CATALOG_QUANTITY_TO_".$i.", ".
-					" '".$DB->ForSql($row["CATALOG_GROUP_NAME"])."' as CATALOG_GROUP_NAME_".$i.", ".
-					" '".$DB->ForSql($row["CATALOG_CAN_ACCESS"])."' as CATALOG_CAN_ACCESS_".$i.", ".
-					" '".$DB->ForSql($row["CATALOG_CAN_BUY"])."' as CATALOG_CAN_BUY_".$i.", ".
-					" CAT_P".$i.".EXTRA_ID as CATALOG_EXTRA_ID_".$i;
-
-				$sResFrom .= ' left join b_catalog_price CAT_P'.$i.' on (CAT_P'.$i.'.PRODUCT_ID = BE.ID AND CAT_P'.$i.'.CATALOG_GROUP_ID = '.$row['ID'].') ';
-
-				if (isset($arAddJoinOn[$i]))
-					$sResFrom .= ' and '.$arAddJoinOn[$i];
+				unset($rights, $rightsIterator);
+				$arResult = array_values($priceTypeList);
+				unset($priceTypeList);
 			}
-			if (isset($row))
+			unset($fullPriceTypeList);
+
+			if (!empty($arResult))
+			{
+				foreach ($arResult as $row)
+				{
+					$i = (int)$row["ID"];
+
+					if (!empty($arWhereTmp[$i]) && is_array($arWhereTmp[$i]))
+						$sResWhere .= ' AND '.implode(' AND ', $arWhereTmp[$i]);
+
+					if (!empty($arOrderTmp[$i]) && is_array($arOrderTmp[$i]))
+					{
+						foreach ($arOrderTmp[$i] as $k => $v)
+							$arResOrder[$k] = $v;
+						unset($k, $v);
+					}
+
+					$sResSelect .= ", CAT_P".$i.".ID as CATALOG_PRICE_ID_".$i.", ".
+						" CAT_P".$i.".CATALOG_GROUP_ID as CATALOG_GROUP_ID_".$i.", ".
+						" CAT_P".$i.".PRICE as CATALOG_PRICE_".$i.", ".
+						" CAT_P".$i.".CURRENCY as CATALOG_CURRENCY_".$i.", ".
+						" CAT_P".$i.".QUANTITY_FROM as CATALOG_QUANTITY_FROM_".$i.", ".
+						" CAT_P".$i.".QUANTITY_TO as CATALOG_QUANTITY_TO_".$i.", ".
+						" '".$DB->ForSql($row["CATALOG_GROUP_NAME"])."' as CATALOG_GROUP_NAME_".$i.", ".
+						" '".$DB->ForSql($row["CATALOG_CAN_ACCESS"])."' as CATALOG_CAN_ACCESS_".$i.", ".
+						" '".$DB->ForSql($row["CATALOG_CAN_BUY"])."' as CATALOG_CAN_BUY_".$i.", ".
+						" CAT_P".$i.".EXTRA_ID as CATALOG_EXTRA_ID_".$i;
+
+					$sResFrom .= ' left join b_catalog_price CAT_P'.$i.' on (CAT_P'.$i.'.PRODUCT_ID = BE.ID AND CAT_P'.$i.'.CATALOG_GROUP_ID = '.$row['ID'].') ';
+
+					if (isset($arAddJoinOn[$i]))
+						$sResFrom .= ' and '.$arAddJoinOn[$i];
+				}
 				unset($row);
+			}
+			unset($arResult);
 		}
 
 		$sResSelect .= ", CAT_PR.QUANTITY as CATALOG_QUANTITY, CAT_PR.QUANTITY_RESERVED as CATALOG_QUANTITY_RESERVED, ".

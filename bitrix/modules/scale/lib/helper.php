@@ -10,7 +10,7 @@ Loc::loadMessages(__FILE__);
 */
 class Helper
 {
-	const BX_ENV_MIN_VERSION = "5.0-44";
+	const BX_ENV_MIN_VERSION = "7.2.0";
 
 	public static function checkBxEnvVersion($version = false)
 	{

@@ -318,6 +318,12 @@ $headers = array(
 		"content" => GetMessage("STORE_CODE"),
 		"sort" => "CODE",
 		"default" => false
+	),
+	array(
+		"id" => "XML_ID",
+		"content" => GetMessage("STORE_XML_ID"),
+		"sort" => "XML_ID",
+		"default" => false
 	)
 );
 
@@ -342,7 +348,8 @@ $arSelectFieldsMap = array(
 	"ISSUING_CENTER" => false,
 	"SHIPPING_CENTER" => false,
 	"SITE_ID" => false,
-	"CODE" => false
+	"CODE" => false,
+	"XML_ID" => false
 );
 
 $lAdmin->AddHeaders($headers);
@@ -407,6 +414,8 @@ while ($arRes = $dbResultList->Fetch())
 			$row->AddInputField('GPS_N', false);
 		if($arSelectFieldsMap['GPS_S'])
 			$row->AddInputField('GPS_S', false);
+		if($arSelectFieldsMap['XML_ID'])
+			$row->AddInputField("XML_ID", false);
 	}
 	else
 	{
@@ -437,6 +446,8 @@ while ($arRes = $dbResultList->Fetch())
 			$row->AddInputField('GPS_N', array('size' => 35));
 		if($arSelectFieldsMap['GPS_S'])
 			$row->AddInputField('GPS_S', array('size' => 35));
+		if($arSelectFieldsMap['XML_ID'])
+			$row->AddInputField("XML_ID");
 	}
 
 	if($arSelectFieldsMap['SITE_ID'])

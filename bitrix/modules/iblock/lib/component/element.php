@@ -1306,7 +1306,7 @@ abstract class Element extends Base
 				$foundOffer = $offer['CAN_BUY'];
 			}
 
-			if ($foundOffer)
+			if ($foundOffer && $intSelected == -1)
 			{
 				$intSelected = $keyOffer;
 			}

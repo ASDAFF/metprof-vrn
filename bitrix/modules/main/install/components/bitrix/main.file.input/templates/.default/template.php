@@ -118,6 +118,7 @@ HTML;
 				"allowUpload" => $arParams["ALLOW_UPLOAD"],
 				"allowUploadExt" => $arParams["ALLOW_UPLOAD_EXT"],
 				"uploadMaxFilesize" => $arParams['MAX_FILE_SIZE'],
+				"enableCamera" => $arParams['ENABLE_CAMERA'] !== "N",
 
 				"urlUpload" => $arParams["URL_TO_UPLOAD"]
 			))?>);

@@ -34,13 +34,20 @@ if (defined("CATALOG_EXPORT_NO_STEP") && CATALOG_EXPORT_NO_STEP == true)
 }
 if ($MAX_EXECUTION_TIME == 0)
 	set_time_limit(0);
+
+$CHECK_PERMISSIONS = (isset($CHECK_PERMISSIONS) && $CHECK_PERMISSIONS == 'Y' ? 'Y' : 'N');
+if ($CHECK_PERMISSIONS == 'Y')
+	$permissionFilter = array('CHECK_PERMISSIONS' => 'Y', 'MIN_PERMISSION' => 'R', 'PERMISSIONS_BY' => 0);
+else
+	$permissionFilter = array('CHECK_PERMISSIONS' => 'N');
+
 if (!isset($firstStep))
 	$firstStep = true;
 
 $pageSize = 100;
 $navParams = array('nTopCount' => $pageSize);
 
-$SETUP_VARS_LIST = 'IBLOCK_ID,V,XML_DATA,SETUP_SERVER_NAME,SETUP_FILE_NAME,USE_HTTPS,FILTER_AVAILABLE,DISABLE_REFERERS,MAX_EXECUTION_TIME';
+$SETUP_VARS_LIST = 'IBLOCK_ID,V,XML_DATA,SETUP_SERVER_NAME,SETUP_FILE_NAME,USE_HTTPS,FILTER_AVAILABLE,DISABLE_REFERERS,MAX_EXECUTION_TIME,CHECK_PERMISSIONS';
 $INTERNAL_VARS_LIST = 'intMaxSectionID,boolNeedRootSection,arSectionIDs,arAvailGroups';
 
 global $USER, $APPLICATION;
@@ -736,6 +743,24 @@ if (empty($arRunErrors))
 			}
 		}
 	}
+	if (!$bAllSections && !empty($arSections) && $CHECK_PERMISSIONS == 'Y')
+	{
+		$clearedValues = array();
+		$filter = array(
+			'IBLOCK_ID' => $IBLOCK_ID,
+			'ID' => $arSections
+		);
+		$iterator = CIBlockSection::GetList(
+			array(),
+			array_merge($filter, $permissionFilter),
+			false,
+			array('ID')
+		);
+		while ($row = $iterator->Fetch())
+			$clearedValues[] = (int)$row['ID'];
+		unset($row, $iterator);
+		$arSections = $clearedValues;
+	}
 
 	if (!$bAllSections && empty($arSections))
 	{
@@ -974,8 +999,18 @@ if ($firstStep)
 				}
 				unset($section, $sectionIterator);
 
-				$filter = array("IBLOCK_ID" => $IBLOCK_ID, ">LEFT_MARGIN" => $curLEFT_MARGIN, "<RIGHT_MARGIN" => $curRIGHT_MARGIN, "ACTIVE" => "Y", "IBLOCK_ACTIVE" => "Y", "GLOBAL_ACTIVE" => "Y");
-				$sectionIterator = CIBlockSection::GetList(array("LEFT_MARGIN" => "ASC"), $filter, false, array('ID', 'IBLOCK_SECTION_ID', 'NAME'));
+				$filter = array(
+					'IBLOCK_ID' => $IBLOCK_ID,
+					'>LEFT_MARGIN' => $curLEFT_MARGIN,
+					'<RIGHT_MARGIN' => $curRIGHT_MARGIN,
+					'GLOBAL_ACTIVE' => 'Y'
+				);
+				$sectionIterator = CIBlockSection::GetList(
+					array('LEFT_MARGIN' => 'ASC'),
+					array_merge($filter, $permissionFilter),
+					false,
+					array('ID', 'IBLOCK_SECTION_ID', 'NAME')
+				);
 				while ($section = $sectionIterator->Fetch())
 				{
 					$section['ID'] = (int)$section['ID'];
@@ -989,8 +1024,16 @@ if ($firstStep)
 		}
 		else
 		{
-			$filter = array("IBLOCK_ID" => $IBLOCK_ID, "ACTIVE" => "Y", "IBLOCK_ACTIVE" => "Y", "GLOBAL_ACTIVE" => "Y");
-			$sectionIterator = CIBlockSection::GetList(array("LEFT_MARGIN" => "ASC"), $filter, false, array('ID', 'IBLOCK_SECTION_ID', 'NAME'));
+			$filter = array(
+				'IBLOCK_ID' => $IBLOCK_ID,
+				'GLOBAL_ACTIVE' => 'Y'
+			);
+			$sectionIterator = CIBlockSection::GetList(
+				array('LEFT_MARGIN' => 'ASC'),
+				array_merge($filter, $permissionFilter),
+				false,
+				array('ID', 'IBLOCK_SECTION_ID', 'NAME')
+			);
 			while ($section = $sectionIterator->Fetch())
 			{
 				$section['ID'] = (int)$section['ID'];
@@ -1008,19 +1051,19 @@ if ($firstStep)
 		unset($value);
 
 		$intMaxSectionID += 100000000;
-	}
 
-	fwrite($fp, "<categories>\n");
-	fwrite($fp, $strTmpCat);
-	fclose($fp);
-	unset($strTmpCat);
+		fwrite($fp, "<categories>\n");
+		fwrite($fp, $strTmpCat);
+		fclose($fp);
+		unset($strTmpCat);
 
-	$boolNeedRootSection = false;
+		$boolNeedRootSection = false;
 
-	$itemsFile = @fopen($_SERVER["DOCUMENT_ROOT"].$itemFileName, 'wb');
-	if (!$itemsFile)
-	{
-		$arRunErrors[] = str_replace('#FILE#', $_SERVER['DOCUMENT_ROOT'].$itemFileName, GetMessage('YANDEX_ERR_FILE_OPEN_WRITING'));
+		$itemsFile = @fopen($_SERVER["DOCUMENT_ROOT"].$itemFileName, 'wb');
+		if (!$itemsFile)
+		{
+			$arRunErrors[] = str_replace('#FILE#', $_SERVER['DOCUMENT_ROOT'].$itemFileName, GetMessage('YANDEX_ERR_FILE_OPEN_WRITING'));
+		}
 	}
 }
 else
@@ -1036,7 +1079,9 @@ if (empty($arRunErrors))
 {
 	//*****************************************//
 	\CCatalogProduct::setPriceVatIncludeMode(true);
-	\CCatalogProduct::setUsedCurrency($BASE_CURRENCY);
+	Catalog\Product\Price\Calculation::setConfig(array(
+		'CURRENCY' => $BASE_CURRENCY
+	));
 	\CCatalogProduct::setUseDiscount(true);
 
 	if ($selectedPriceType > 0)
@@ -1110,10 +1155,13 @@ if (empty($arRunErrors))
 	$filter['ACTIVE_DATE'] = 'Y';
 	if ($filterAvailable)
 		$filter['CATALOG_AVAILABLE'] = 'Y';
+	$filter = array_merge($filter, $permissionFilter);
 
 	$offersFilter = array('ACTIVE' => 'Y', 'ACTIVE_DATE' => 'Y');
 	if ($filterAvailable)
 		$offersFilter['CATALOG_AVAILABLE'] = 'Y';
+	$offersFilter = array_merge($offersFilter, $permissionFilter);
+
 	if (isset($allowedTypes[Catalog\ProductTable::TYPE_SKU]))
 	{
 		if ($arSKUExport['SKU_EXPORT_COND'] == YANDEX_SKU_EXPORT_PROP)

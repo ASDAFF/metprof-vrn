@@ -101,7 +101,6 @@ class CCatalogGroup extends CAllCatalogGroup
 			$CACHE_MANAGER->Clean("catalog_group_perms");
 		}
 
-		$stackCacheManager->Clear("catalog_GetQueryBuildArrays");
 		$stackCacheManager->Clear("catalog_discount");
 
 		foreach(GetModuleEvents("catalog", "OnGroupAdd", true) as $arEvent)
@@ -200,7 +199,6 @@ class CCatalogGroup extends CAllCatalogGroup
 			$CACHE_MANAGER->Clean("catalog_group_perms");
 		}
 
-		$stackCacheManager->Clear("catalog_GetQueryBuildArrays");
 		$stackCacheManager->Clear("catalog_discount");
 
 		foreach(GetModuleEvents("catalog", "OnGroupUpdate", true) as $arEvent)
@@ -240,7 +238,6 @@ class CCatalogGroup extends CAllCatalogGroup
 					$CACHE_MANAGER->Clean("catalog_group_perms");
 				}
 
-				$stackCacheManager->Clear("catalog_GetQueryBuildArrays");
 				$stackCacheManager->Clear("catalog_discount");
 
 				$DB->Query("DELETE FROM b_catalog_price WHERE CATALOG_GROUP_ID = ".$ID);

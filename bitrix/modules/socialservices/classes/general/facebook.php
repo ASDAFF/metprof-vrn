@@ -427,7 +427,7 @@ class CFacebookInterface extends CSocServOAuthTransport
 			if(isset($arResultLongLive["access_token"]) && $arResultLongLive["access_token"] <> '')
 			{
 				$arResult["access_token"] = $arResultLongLive["access_token"];
-				$arResult["expires"] = $arResultLongLive["expires"];
+				$arResult["expires"] = $arResultLongLive["expires_in"];
 				$_SESSION["OAUTH_DATA"] = array(
 					"OATOKEN" => $arResultLongLive["access_token"],
 					"OATOKEN_EXPIRES" => time() + $arResultLongLive['expires'],

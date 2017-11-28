@@ -786,6 +786,16 @@ $arParams["AUTOSTART"] = Array(
 	"DEFAULT" => "N"
 );
 
+if ($arCurrentValues['AUTOSTART'] != 'Y')
+{
+	$arParams["AUTOSTART_ON_SCROLL"] = Array(
+		"PARENT" => $playback_parent,
+		"NAME" => GetMessage("PC_PAR_AUTOSTART_ON_SCROLL"),
+		"TYPE" => "CHECKBOX",
+		"DEFAULT" => "N"
+	);
+}
+
 $arParams["REPEAT"] = Array(
 	"PARENT" => $playback_parent,
 	"NAME" => GetMessage("PC_PAR_REPEAT"),

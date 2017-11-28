@@ -65,7 +65,16 @@ class CatalogProductsViewedComponent extends ElementList
 			return array();
 		}
 
-		$basketUserId = (int)CSaleBasket::GetBasketUserID(false);
+		$skipUserInit = false;
+		if (
+			Main\Loader::includeModule('statistic')
+			&& isset($_SESSION['SESS_SEARCHER_ID'])
+			&& (int)$_SESSION["SESS_SEARCHER_ID"] > 0
+		)
+		{
+			$skipUserInit = true;
+		}
+		$basketUserId = (int)CSaleBasket::GetBasketUserID($skipUserInit);
 		if ($basketUserId <= 0)
 		{
 			return array();

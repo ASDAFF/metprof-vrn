@@ -6,6 +6,7 @@ use Bitrix\Main,
 	Bitrix\Sale\DiscountCouponsManager,
 	Bitrix\Currency,
 	Bitrix\Catalog,
+	Bitrix\Catalog\Product\Price,
 	Bitrix\Iblock;
 
 if (!Loader::includeModule('sale'))
@@ -99,102 +100,6 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 
 			if (empty($userGroups))
 				return $emptyResult;
-
-			if (!$arProduct = static::getHitCache(self::CACHE_ITEM_WITHOUT_RIGHTS, $productID))
-			{
-				$dbIBlockElement = CIBlockElement::GetList(
-					array(),
-					array(
-						'ID' => $productID,
-						'ACTIVE' => 'Y',
-						'ACTIVE_DATE' => 'Y',
-						'CHECK_PERMISSIONS' => 'N'
-					),
-					false,
-					false,
-					array('ID', 'IBLOCK_ID', 'NAME', 'DETAIL_PAGE_URL')
-				);
-				if ($arProduct = $dbIBlockElement->GetNext())
-					static::setHitCache(self::CACHE_ITEM_WITHOUT_RIGHTS, $productID, $arProduct);
-				unset($dbIBlockElement);
-			}
-
-			if(empty($arProduct) || !is_array($arProduct))
-				return $emptyResult;
-
-			if (!$iblockRights = static::getHitCache(self::CACHE_IBLOCK_RIGHTS_MODE, $arProduct['IBLOCK_ID']))
-			{
-				if ($iblockRights = CIBlock::GetArrayByID($arProduct['IBLOCK_ID'], 'RIGHTS_MODE'))
-					static::setHitCache(self::CACHE_IBLOCK_RIGHTS_MODE, $arProduct['IBLOCK_ID'], $iblockRights);
-			}
-
-			$extRights = ($iblockRights == 'E');
-			if ($intUserID == 0)
-			{
-				if ($extRights)
-				{
-					$elementRights = new CIBlockElementRights($arProduct['IBLOCK_ID'], $arProduct['ID']);
-					$readList = $elementRights->GetRights(array('operations' => array('element_read')));
-					$disable = true;
-					if (!empty($readList) && is_array($readList))
-					{
-						foreach ($readList as &$row)
-						{
-							if ($row['GROUP_CODE'] == 'G2')
-							{
-								$disable = false;
-								break;
-							}
-						}
-						unset($row);
-					}
-					unset($readList, $elementRights);
-					if ($disable)
-						return $emptyResult;
-					unset($disable);
-				}
-				else
-				{
-
-					static $groupRightsList = array();
-
-					if(!isset($groupRightsList[$arProduct['IBLOCK_ID']]))
-						$groupRightsList[$arProduct['IBLOCK_ID']] = CIBlock::GetGroupPermissions($arProduct['IBLOCK_ID']);
-
-					$groupRights = $groupRightsList[$arProduct['IBLOCK_ID']];
-
-					if (empty($groupRights) || !isset($groupRights[2]) || $groupRights[2] < 'R')
-						return $emptyResult;
-
-					unset($groupRights);
-				}
-			}
-			else
-			{
-				if ($extRights)
-				{
-					$proxyUserPermissionKey = $productID."|".$intUserID;
-					if (!$arUserRights = static::getHitCache(self::CACHE_USER_RIGHTS, $proxyUserPermissionKey))
-					{
-						if ($arUserRights = CIBlockElementRights::GetUserOperations($productID, $intUserID))
-							static::setHitCache(self::CACHE_USER_RIGHTS, $proxyUserPermissionKey, $arUserRights);
-					}
-					if (empty($arUserRights) || !isset($arUserRights['element_read']))
-						return $emptyResult;
-					unset($arUserRights);
-				}
-				else
-				{
-					static $permissions = array();
-
-					if(empty($permissions[$arProduct['IBLOCK_ID']."_".$intUserID]))
-						$permissions[$arProduct['IBLOCK_ID']."_".$intUserID] = CIBlock::GetPermission($arProduct['IBLOCK_ID'], $intUserID);
-
-					if ($permissions < 'R')
-						return $emptyResult;
-				}
-			}
-			unset($extRights);
 		}
 		else
 		{
@@ -202,30 +107,34 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 			$userGroups = array(2);
 			if (isset($USER) && $USER instanceof CUser)
 				$userGroups = $USER->GetUserGroupArray();
-
-			if (!$arProduct = static::getHitCache(self::CACHE_ITEM_WITH_RIGHTS, $productID))
-			{
-				$dbIBlockElement = CIBlockElement::GetList(
-					array(),
-					array(
-						'ID' => $productID,
-						'ACTIVE' => 'Y',
-						'ACTIVE_DATE' => 'Y',
-						'CHECK_PERMISSIONS' => 'Y',
-						'MIN_PERMISSION' => 'R'
-					),
-					false,
-					false,
-					array('ID', 'IBLOCK_ID', 'NAME', 'DETAIL_PAGE_URL')
-				);
-				if ($arProduct = $dbIBlockElement->GetNext())
-					static::setHitCache(self::CACHE_ITEM_WITH_RIGHTS, $productID, $arProduct);
-				unset($dbIBlockElement);
-			}
-
-			if(empty($arProduct) || !is_array($arProduct))
-				return $emptyResult;
 		}
+
+		if (!$arProduct = static::getHitCache(self::CACHE_ITEM_WITH_RIGHTS, $productID))
+		{
+			$elementFilter = array(
+				'ID' => $productID,
+				'ACTIVE' => 'Y',
+				'ACTIVE_DATE' => 'Y',
+				'CHECK_PERMISSIONS' => 'Y',
+				'MIN_PERMISSION' => 'R'
+			);
+			if ($adminSection)
+				$elementFilter['PERMISSIONS_BY'] = $intUserID;
+
+			$iterator = CIBlockElement::GetList(
+				array(),
+				$elementFilter,
+				false,
+				false,
+				array('ID', 'IBLOCK_ID', 'NAME', 'DETAIL_PAGE_URL')
+			);
+			if ($arProduct = $iterator->GetNext())
+				static::setHitCache(self::CACHE_ITEM_WITH_RIGHTS, $productID, $arProduct);
+			unset($dbIBlockElement, $elementFilter);
+		}
+
+		if(empty($arProduct) || !is_array($arProduct))
+			return $emptyResult;
 
 		if (!isset(self::$catalogList[$arProduct['IBLOCK_ID']]))
 		{
@@ -405,21 +314,46 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 			$currentUseDiscount = CCatalogProduct::getUseDiscount();
 			CCatalogProduct::setUseDiscount($arParams['CHECK_DISCOUNT'] == 'Y');
 			CCatalogProduct::setPriceVatIncludeMode(true);
-			CCatalogProduct::setUsedCurrency($arParams['CURRENCY']);
-			$arPrice = CCatalogProduct::GetOptimalPrice($productID, $quantity, $userGroups, $arParams['RENEWAL'], array(), ($adminSection ? $strSiteID : false), $arCoupons);
+
+			Price\Calculation::pushConfig();
+			Price\Calculation::setConfig(array(
+				'CURRENCY' => $arParams['CURRENCY'],
+				'PRECISION' => (int)Main\Config\Option::get('sale', 'value_precision')
+			));
+
+			$arPrice = CCatalogProduct::GetOptimalPrice(
+				$productID,
+				$quantity,
+				$userGroups,
+				$arParams['RENEWAL'],
+				array(),
+				($adminSection ? $strSiteID : false),
+				$arCoupons
+			);
 
 			if (empty($arPrice))
 			{
 				if ($nearestQuantity = CCatalogProduct::GetNearestQuantityPrice($productID, $quantity, $userGroups))
 				{
 					$quantity = $nearestQuantity;
-					$arPrice = CCatalogProduct::GetOptimalPrice($productID, $quantity, $userGroups, $arParams['RENEWAL'], array(), ($adminSection ? $strSiteID : false), $arCoupons);
+					$arPrice = CCatalogProduct::GetOptimalPrice(
+						$productID,
+						$quantity,
+						$userGroups,
+						$arParams['RENEWAL'],
+						array(),
+						($adminSection ? $strSiteID : false),
+						$arCoupons
+					);
 				}
 			}
-			CCatalogProduct::clearUsedCurrency();
+
+			Price\Calculation::popConfig();
+
 			CCatalogProduct::setPriceVatIncludeMode($currentVatMode);
 			CCatalogProduct::setUseDiscount($currentUseDiscount);
 			unset($userGroups, $currentUseDiscount, $currentVatMode);
+
 			if ($adminSection)
 			{
 				if ($intUserID > 0)
@@ -524,10 +458,8 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 	{
 		$adminSection = (defined('ADMIN_SECTION') && ADMIN_SECTION === true);
 
-		if(CCatalogDiscount::isUsedSaleDiscountOnly())
-		{
+		if (CCatalogDiscount::isUsedSaleDiscountOnly())
 			$arParams['CHECK_DISCOUNT'] = 'N';
-		}
 
 		$arParams['RENEWAL'] = (isset($arParams['RENEWAL']) && $arParams['RENEWAL'] == 'Y' ? 'Y' : 'N');
 		$arParams['CHECK_QUANTITY'] = (isset($arParams['CHECK_QUANTITY']) && $arParams['CHECK_QUANTITY'] == 'N' ? 'N' : 'Y');
@@ -564,96 +496,40 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 
 			if (empty($userGroups))
 				return $arResult;
-
-			if (!$arProduct = static::getHitCache(self::CACHE_ITEM_WITHOUT_RIGHTS, $productID))
-			{
-				$dbIBlockElement = CIBlockElement::GetList(
-					array(),
-					array(
-						'ID' => $productID,
-						'ACTIVE' => 'Y',
-						'ACTIVE_DATE' => 'Y',
-						'CHECK_PERMISSION' => 'N'
-					),
-					false,
-					false,
-					array('ID', 'IBLOCK_ID', 'NAME', 'DETAIL_PAGE_URL')
-				);
-				if ($arProduct = $dbIBlockElement->GetNext())
-					static::setHitCache(self::CACHE_ITEM_WITHOUT_RIGHTS, $productID, $arProduct);
-				unset($dbIBlockElement);
-			}
-
-			if (empty($arProduct) || !is_array($arProduct))
-				return $arResult;
-
-			$iblockRightByID = null;
-
-			if (!$iblockRightByID = static::getHitCache(self::CACHE_IBLOCK_RIGHTS_MODE, $arProduct['IBLOCK_ID']))
-			{
-				if ($iblockRightByID = CIBlock::GetArrayByID($arProduct['IBLOCK_ID'], 'RIGHTS_MODE'))
-					static::setHitCache(self::CACHE_IBLOCK_RIGHTS_MODE, $arProduct['IBLOCK_ID'], $iblockRightByID);
-			}
-
-			if ($iblockRightByID == 'E')
-			{
-				$proxyUserPermissionKey = $productID."|".$intUserID;
-
-				if (!$arUserRights = static::getHitCache(self::CACHE_USER_RIGHTS, $proxyUserPermissionKey))
-				{
-					if ($arUserRights = CIBlockElementRights::GetUserOperations($productID, $intUserID))
-						static::setHitCache(self::CACHE_USER_RIGHTS, $proxyUserPermissionKey, $arUserRights);
-				}
-
-				if (empty($arUserRights) || !isset($arUserRights['element_read']))
-					return $arResult;
-
-				unset($arUserRights);
-			}
-			else
-			{
-
-				$proxyIblockPermissionKey = $arProduct['IBLOCK_ID']."|".$intUserID;
-
-				if (!$iblockPermissions = static::getHitCache(self::CACHE_IBLOCK_RIGHTS, $proxyIblockPermissionKey))
-				{
-					if ($iblockPermissions = CIBlock::GetPermission($arProduct['IBLOCK_ID'], $intUserID))
-						static::setHitCache(self::CACHE_IBLOCK_RIGHTS, $proxyIblockPermissionKey, $iblockPermissions);
-				}
-
-				if ($iblockPermissions < 'R')
-					return $arResult;
-			}
 		}
 		else
 		{
 			$userGroups = array(2);
 			if (isset($USER) && $USER instanceof CUser)
 				$userGroups = $USER->GetUserGroupArray();
-
-			if (!$arProduct = static::getHitCache(self::CACHE_ITEM_WITH_RIGHTS, $productID))
-			{
-				$dbIBlockElement = CIBlockElement::GetList(
-					array(),
-					array(
-						'ID' => $productID,
-						'ACTIVE' => 'Y',
-						'ACTIVE_DATE' => 'Y',
-						'CHECK_PERMISSIONS' => 'Y',
-						'MIN_PERMISSION' => 'R'
-					),
-					false,
-					false,
-					array('ID', 'IBLOCK_ID', 'NAME', 'DETAIL_PAGE_URL')
-				);
-				if ($arProduct = $dbIBlockElement->GetNext())
-					static::setHitCache(self::CACHE_ITEM_WITH_RIGHTS, $productID, $arProduct);
-				unset($dbIBlockElement);
-			}
-
-			if (empty($arProduct) || !is_array($arProduct))
-				return $arResult;
 		}
+
+		if (!$arProduct = static::getHitCache(self::CACHE_ITEM_WITH_RIGHTS, $productID))
+		{
+			$elementFilter = array(
+				'ID' => $productID,
+				'ACTIVE' => 'Y',
+				'ACTIVE_DATE' => 'Y',
+				'CHECK_PERMISSIONS' => 'Y',
+				'MIN_PERMISSION' => 'R'
+			);
+			if ($adminSection)
+				$elementFilter['PERMISSIONS_BY'] = $intUserID;
+
+			$iterator = CIBlockElement::GetList(
+				array(),
+				$elementFilter,
+				false,
+				false,
+				array('ID', 'IBLOCK_ID', 'NAME', 'DETAIL_PAGE_URL')
+			);
+			if ($arProduct = $iterator->GetNext())
+				static::setHitCache(self::CACHE_ITEM_WITH_RIGHTS, $productID, $arProduct);
+			unset($dbIBlockElement, $elementFilter);
+		}
+
+		if (empty($arProduct) || !is_array($arProduct))
+			return $arResult;
 
 		if (!static::checkParentActivity($arProduct['ID'], $arProduct['IBLOCK_ID']))
 			return $arResult;
@@ -718,18 +594,42 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 		$currentUseDiscount = CCatalogProduct::getUseDiscount();
 		CCatalogProduct::setUseDiscount($arParams['CHECK_DISCOUNT'] == 'Y');
 		CCatalogProduct::setPriceVatIncludeMode(true);
-		CCatalogProduct::setUsedCurrency($arParams['CURRENCY']);
-		$arPrice = CCatalogProduct::GetOptimalPrice($productID, $quantity, $userGroups, $arParams['RENEWAL'], array(), ($adminSection ? $strSiteID : false), $arCoupons);
+
+		Price\Calculation::pushConfig();
+		Price\Calculation::setConfig(array(
+			'CURRENCY' => $arParams['CURRENCY'],
+			'PRECISION' => (int)Main\Config\Option::get('sale', 'value_precision')
+		));
+
+		$arPrice = CCatalogProduct::GetOptimalPrice(
+			$productID,
+			$quantity,
+			$userGroups,
+			$arParams['RENEWAL'],
+			array(),
+			($adminSection ? $strSiteID : false),
+			$arCoupons
+		);
 
 		if (empty($arPrice))
 		{
 			if ($nearestQuantity = CCatalogProduct::GetNearestQuantityPrice($productID, $quantity, $userGroups))
 			{
 				$quantity = $nearestQuantity;
-				$arPrice = CCatalogProduct::GetOptimalPrice($productID, $quantity, $userGroups, $arParams['RENEWAL'], array(), ($adminSection ? $strSiteID : false), $arCoupons);
+				$arPrice = CCatalogProduct::GetOptimalPrice(
+					$productID,
+					$quantity,
+					$userGroups,
+					$arParams['RENEWAL'],
+					array(),
+					($adminSection ? $strSiteID : false),
+					$arCoupons
+				);
 			}
 		}
-		CCatalogProduct::clearUsedCurrency();
+
+		Price\Calculation::popConfig();
+
 		CCatalogProduct::setPriceVatIncludeMode($currentVatMode);
 		CCatalogProduct::setUseDiscount($currentUseDiscount);
 		unset($userGroups, $currentUseDiscount, $currentVatMode);

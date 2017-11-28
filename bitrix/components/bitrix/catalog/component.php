@@ -135,6 +135,7 @@ else
 		"ADD_TO_COMPARE_RESULT",
 		"COMPARE_BUY",
 		"COMPARE_ADD2BASKET",
+		"ADD_TO_COMPARE_LIST"
 	);
 
 	if(isset($arVariables["action"]) && in_array($arVariables["action"], $arCompareCommands))

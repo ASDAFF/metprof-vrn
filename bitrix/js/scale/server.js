@@ -200,12 +200,16 @@
 			this.domObj.appendChild(this.getRolesObj());
 
 			if(this.infoTable)
+			{
 				this.domObj.appendChild(this.infoTable.getDomObj());
-			else if(!BX.Scale.monitoringEnabled)
-				this.domObj.appendChild(BX.create("DIV", {props: {className:'adm-scale-block-bottom'}, html: BX.message("SCALE_PANEL_MONITORING_DISABLED")}));
-			else if(!BX.Scale.isMonitoringDbCreated[this.hostname])
-				this.domObj.appendChild(BX.create("DIV", {props: {className:'adm-scale-block-bottom'}, html: BX.message("SCALE_PANEL_JS_MONITORING_DATABASE_CREATING")}));
-
+			}
+			else if(BX.Scale.bitrixEnvType != 'crm')
+			{
+				if(!BX.Scale.monitoringEnabled)
+					this.domObj.appendChild(BX.create("DIV", {props: {className:'adm-scale-block-bottom'}, html: BX.message("SCALE_PANEL_MONITORING_DISABLED")}));
+				else if(!BX.Scale.isMonitoringDbCreated[this.hostname])
+					this.domObj.appendChild(BX.create("DIV", {props: {className:'adm-scale-block-bottom'}, html: BX.message("SCALE_PANEL_JS_MONITORING_DATABASE_CREATING")}));
+			}
 		}
 
 		return this.domObj;

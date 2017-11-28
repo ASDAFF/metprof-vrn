@@ -96,7 +96,6 @@ $actionsDefinitions = array(
 		"PAGE_REFRESH" => "Y"
 	),
 
-
 	"DEL_SERVER" => array(
 		"START_COMMAND_TEMPLATE" => "sudo -u root /opt/webdir/bin/wrapper_ansible_conf -a del -H ##SERVER_PARAMS:hostname## -i ##SERVER_PARAMS:ip## -o json",
 		"NAME" =>Loc::getMessage("SCALE_ADEF_DEL_SERVER"),
@@ -222,13 +221,18 @@ $actionsDefinitions = array(
 		"START_COMMAND_TEMPLATE" => "sudo -u root /opt/webdir/bin/bx-sites -o json -a email".
 			" --smtphost=##USER_PARAMS:SMTP_HOST##".
 			" --smtpport=##USER_PARAMS:SMTP_PORT##".
-			" --smtpuser='##USER_PARAMS:SMTP_USER##'".
 			" --email='##USER_PARAMS:EMAIL##'".
 			" --site='##USER_PARAMS:SITE_NAME_CONF##'".
 			" ##USER_PARAMS:SMTPTLS##".
-			" --password=##USER_PARAMS:USER_PASSWORD## ",
+			"--8<--AUTH_BEGIN----".  //--- cut in modifier if don't need authentication (USE_AUTH != 'Y')---
+			" --password=##USER_PARAMS:USER_PASSWORD## ".
+			" --smtpuser='##USER_PARAMS:SMTP_USER##'".
+			"----AUTH_END--8<--", //----8<-------------------------------------
 		"NAME" => Loc::getMessage("SCALE_ADEF_SET_EMAIL"),
 		"PAGE_REFRESH" => "Y",
+		"MODIFYERS" => array(
+			"\\Bitrix\\Scale\\ActionModifyer::emailSettingsModifier",
+		),
 		"USER_PARAMS" => array(
 			"SITE_NAME" => array(
 				"NAME" => Loc::getMessage("SCALE_ADEF_SET_EMAIL_SITE"),
@@ -246,15 +250,6 @@ $actionsDefinitions = array(
 				"NAME" => Loc::getMessage("SCALE_ADEF_SET_EMAIL_SMTP_PORT"),
 				"TYPE" => "STRING"
 			),
-			"SMTP_USER" => array(
-				"NAME" => Loc::getMessage("SCALE_ADEF_SET_EMAIL_SMTP_USER"),
-				"TYPE" => "STRING",
-			),
-			"USER_PASSWORD" => array(
-				"NAME" => Loc::getMessage("SCALE_ADEF_SET_EMAIL_USER_PASSWORD"),
-				"TYPE" => "PASSWORD",
-				"VERIFY_TWICE" => "Y"
-			),
 			"EMAIL" => array(
 				"NAME" => Loc::getMessage("SCALE_ADEF_SET_EMAIL_EMAIL"),
 				"TYPE" => "STRING",
@@ -264,6 +259,21 @@ $actionsDefinitions = array(
 				"TYPE" => "CHECKBOX",
 				"CHECKED" => "N",
 				"STRING" => "--smtptls"
+			),
+			"USE_AUTH" => array(
+				"NAME" => Loc::getMessage("SCALE_ADEF_SET_EMAIL_USE_AUTH"),
+				"TYPE" => "CHECKBOX",
+				"CHECKED" => "N",
+				"STRING" => "Y"
+			),
+			"SMTP_USER" => array(
+				"NAME" => Loc::getMessage("SCALE_ADEF_SET_EMAIL_SMTP_USER"),
+				"TYPE" => "STRING",
+			),
+			"USER_PASSWORD" => array(
+				"NAME" => Loc::getMessage("SCALE_ADEF_SET_EMAIL_USER_PASSWORD"),
+				"TYPE" => "PASSWORD",
+				"VERIFY_TWICE" => "Y"
 			)
 		)
 	),

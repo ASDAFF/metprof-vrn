@@ -349,7 +349,7 @@ class SubscribeTable extends Entity\DataManager
 			$t = DateTime::createFromTimestamp(time() + static::AGENT_TIME_OUT);
 			static::$agentNoticeCreated = true;
 			\CAgent::addAgent(
-				'Bitrix\Catalog\SubscribeTable::sendNotice();',
+				'\Bitrix\Catalog\SubscribeTable::sendNotice();',
 				'catalog',
 				'N',
 				static::AGENT_INTERVAL,
@@ -449,7 +449,7 @@ class SubscribeTable extends Entity\DataManager
 	public static function sendNotice()
 	{
 		if(static::checkLastUpdate())
-			return 'Bitrix\Catalog\SubscribeTable::sendNotice();';
+			return '\Bitrix\Catalog\SubscribeTable::sendNotice();';
 
 		list($listSubscribe, $totalCount) = static::getSubscriptionsData();
 
@@ -471,7 +471,7 @@ class SubscribeTable extends Entity\DataManager
 
 		if($anotherStep)
 		{
-			return 'Bitrix\Catalog\SubscribeTable::sendNotice();';
+			return '\Bitrix\Catalog\SubscribeTable::sendNotice();';
 		}
 		else
 		{

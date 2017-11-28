@@ -68,7 +68,7 @@ class SitesData
 		{
 			$resSite = array();
 			$shellAdapter = new ShellAdapter();
-			$execRes = $shellAdapter->syncExec("sudo -u root /opt/webdir/bin/bx-sites -o json -a list -d ".$dbName);
+			$execRes = $shellAdapter->syncExec("sudo -u root /opt/webdir/bin/bx-sites -o json -a list --hiden -d ".$dbName);
 			$sitesData = $shellAdapter->getLastOutput();
 
 			if($execRes)
@@ -95,6 +95,8 @@ class SitesData
 						{
 							$resSite[$siteId]["NAME"] = $siteId;
 						}
+
+						$resSite[$siteId]["SMTP_USE_AUTH"] = ($siteInfo['SMTPPassword'] !== null && $siteInfo['SMTPUser'] !== null) ? 'Y' : 'N';
 					}
 				}
 			}

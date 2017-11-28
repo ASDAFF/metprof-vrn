@@ -174,6 +174,10 @@ BX.MSLEFT = 1;
 BX.MSMIDDLE = 2;
 BX.MSRIGHT = 4;
 
+BX.AM_PM_UPPER = 1;
+BX.AM_PM_LOWER = 2;
+BX.AM_PM_NONE = false;
+	
 BX.ext = function(ob)
 {
 	for (var i in ob)
@@ -221,6 +225,31 @@ BX.namespace = function(namespace)
 	}
 
 	return parent;
+};
+
+BX.getClass = function(fullClassName)
+{
+	if (!BX.type.isNotEmptyString(fullClassName))
+	{
+		return null;
+	}
+
+	var classFn = null;
+	var currentNamespace = window;
+	var namespaces = fullClassName.split(".");
+	for (var i = 0; i < namespaces.length; i++)
+	{
+		var namespace = namespaces[i];
+		if (!currentNamespace[namespace])
+		{
+			return null;
+		}
+
+		currentNamespace = currentNamespace[namespace];
+		classFn = currentNamespace;
+	}
+
+	return classFn;
 };
 
 BX.debug = function()
@@ -1698,6 +1727,7 @@ BX.eventCancelBubble = function(e)
 	BX.addCustomEvent(eventObject, eventName, eventHandler) - set custom event handler for particular object
 	BX.addCustomEvent(eventName, eventHandler) - set custom event handler for all objects
 */
+
 BX.addCustomEvent = function(eventObject, eventName, eventHandler)
 {
 	/* shift parameters for short version */
@@ -2065,6 +2095,15 @@ BX.browser = {
 		}
 
 		return rv;
+	},
+
+	DetectAndroidVersion: function ()
+	{
+		var re = new RegExp("Android ([0-9]+[\.0-9]*)");
+		if (re.exec(navigator.userAgent) != null)
+			return parseFloat( RegExp.$1 );
+		else
+			return 0;
 	},
 
 	IsDoctype: function(pDoc)
@@ -2811,10 +2850,13 @@ BX.util = {
 			var name = prefix !== "" ? (prefix + "[" + key + "]") : key;
 			if(BX.type.isArray(value))
 			{
+				var obj = {};
 				for(var i = 0; i < value.length; i++)
 				{
-					BX.util.addObjectToForm(value[i], form, (name + "[" + i.toString() + "]"));
+					obj[i] = value[i];
 				}
+
+				BX.util.addObjectToForm(obj, form, name);
 			}
 			else if(BX.type.isPlainObject(value))
 			{
@@ -3013,7 +3055,7 @@ BX.prop =
 		}
 
 		var value = object[key];
-		return BX.type.isString(value) ? value : value.toString();
+		return BX.type.isString(value) ? value : (value ? value.toString() : '');
 	},
 	extractDate: function(datetime)
 	{
@@ -4078,9 +4120,13 @@ BX.template = function(tpl, callback, bKillTpl)
 	});
 };
 
-BX.isAmPmMode = function()
+BX.isAmPmMode = function(returnConst)
 {
-	return (BX.message('FORMAT_DATETIME').match('T') != null);
+	if (returnConst === true)
+	{
+		return BX.message.AMPM_MODE;
+	}
+	return BX.message.AMPM_MODE !== false;
 };
 
 BX.formatDate = function(date, format)

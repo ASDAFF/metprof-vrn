@@ -295,6 +295,16 @@ if (is_array($arResult["ActiveFeatures"]) && count($arResult["ActiveFeatures"]) 
 					$res = $val->GetEventInfo($row, $arParams, $arUserInfo, $arResult["ActiveFeatures"]);
 					$eventName = preg_replace("/^\\[.*?\\]\\s+/", "", $arObjectTypes[$row['AUDIT_TYPE_ID']]);
 
+					if (in_array($row['AUDIT_TYPE_ID'], array("PAGE_EDIT", "PAGE_ADD", "PAGE_DELETE")))
+					{
+						$path = unserialize($row["DESCRIPTION"]);
+						$path = $path["path"];
+						if ($path)
+						{
+							$eventName.= ": ".$path;
+						}
+					}
+
 					//for grid template
 					if ($currentTemplateName == "grid")
 					{

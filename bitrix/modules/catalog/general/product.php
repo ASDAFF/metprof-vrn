@@ -28,6 +28,7 @@ class CAllCatalogProduct
 
 	protected static $arProductCache = array();
 
+	/** @deprecated */
 	protected static $usedCurrency = null;
 	protected static $optimalPriceWithVat = true;
 	protected static $useDiscount = true;
@@ -35,38 +36,37 @@ class CAllCatalogProduct
 	protected static $saleIncluded = null;
 	protected static $useSaleDiscount = null;
 
+	/**
+	 * @deprecated deprecated since catalog 17.0.11
+	 * @see \Bitrix\Catalog\Product\Price\Calculation::setConfig()
+	 *
+	 * @param $currency
+	 * @return void
+	 */
 	public static function setUsedCurrency($currency)
 	{
-		/** @var $oldCurrency string */
-		static $oldCurrency = null;
-		if ($oldCurrency !== null && $oldCurrency === $currency)
-		{
-			self::$usedCurrency = $currency;
-			return;
-		}
-		$currency = CCurrency::checkCurrencyID($currency);
-		if ($currency === false)
-			return;
-		$currencyIterator = Currency\CurrencyTable::getList(array(
-			'select' => array('CURRENCY'),
-			'filter' => array('=CURRENCY' => $currency)
-		));
-		if ($result = $currencyIterator->fetch())
-		{
-			self::$usedCurrency = $currency;
-			$oldCurrency = $currency;
-		}
-		unset($result, $currencyIterator);
+		Catalog\Product\Price\Calculation::setConfig(array('CURRENCY' => $currency));
 	}
 
+	/**
+	 * @deprecated deprecated since catalog 17.0.11
+	 * @see \Bitrix\Catalog\Product\Price\Calculation::getConfig()
+	 * @return null|string
+	 */
 	public static function getUsedCurrency()
 	{
-		return self::$usedCurrency;
+		$config = Catalog\Product\Price\Calculation::getConfig();
+		return $config['CURRENCY'];
 	}
 
+	/**
+	 * @deprecated deprecated since catalog 17.0.11
+	 * @see \Bitrix\Catalog\Product\Price\Calculation::setConfig()
+	 * @return void
+	 */
 	public static function clearUsedCurrency()
 	{
-		self::$usedCurrency = null;
+		Catalog\Product\Price\Calculation::setConfig(array('CURRENCY' => null));
 	}
 
 	public static function setPriceVatIncludeMode($mode)
@@ -333,7 +333,14 @@ class CAllCatalogProduct
 					|| $arFields['TYPE'] == Catalog\ProductTable::TYPE_FREE_OFFER
 				)
 				{
-					if ($ACTION == 'ADD' && $arFields['TYPE'] == Catalog\ProductTable::TYPE_PRODUCT && !isset($arFields['AVAILABLE']))
+					if (
+						$ACTION == 'ADD'
+						&& (
+							$arFields['TYPE'] == Catalog\ProductTable::TYPE_PRODUCT
+							|| $arFields['TYPE'] == Catalog\ProductTable::TYPE_OFFER
+						)
+						&& !isset($arFields['AVAILABLE'])
+					)
 					{
 						$needCalculateAvailable = true;
 					}
@@ -828,14 +835,12 @@ class CAllCatalogProduct
 		if ($siteID === false)
 			$siteID = SITE_ID;
 
-		$resultCurrency = Currency\CurrencyManager::getBaseCurrency();
+		$resultCurrency = Catalog\Product\Price\Calculation::getCurrency();
 		if (empty($resultCurrency))
 		{
-			$APPLICATION->ThrowException(Loc::getMessage("BT_MOD_CATALOG_PROD_ERR_NO_BASE_CURRENCY"), "NO_BASE_CURRENCY");
+			$APPLICATION->ThrowException(Loc::getMessage("BT_MOD_CATALOG_PROD_ERR_NO_RESULT_CURRENCY"));
 			return false;
 		}
-		if (self::$usedCurrency !== null)
-			$resultCurrency = self::$usedCurrency;
 
 		$intIBlockID = (int)CIBlockElement::GetIBlockByID($intProductID);
 		if ($intIBlockID <= 0)
@@ -922,7 +927,7 @@ class CAllCatalogProduct
 			$priceData['VAT_RATE'] = $vat['RATE'];
 			$priceData['VAT_INCLUDED'] = $vat['VAT_INCLUDED'];
 
-			$currentPrice = $priceData['PRICE'];
+			$currentPrice = (float)$priceData['PRICE'];
 			if ($boolDiscountVat)
 			{
 				if ($priceData['VAT_INCLUDED'] == 'N')
@@ -933,10 +938,9 @@ class CAllCatalogProduct
 				if ($priceData['VAT_INCLUDED'] == 'Y')
 					$currentPrice /= (1 + $priceData['VAT_RATE']);
 			}
-
 			if ($priceData['CURRENCY'] != $resultCurrency)
 				$currentPrice = CCurrencyRates::ConvertCurrency($currentPrice, $priceData['CURRENCY'], $resultCurrency);
-			$currentPrice = roundEx($currentPrice, CATALOG_VALUE_PRECISION);
+			$currentPrice = Catalog\Product\Price\Calculation::roundPrecision($currentPrice);
 
 			$result = array(
 				'BASE_PRICE' => $currentPrice,
@@ -1298,16 +1302,14 @@ class CAllCatalogProduct
 		}
 		if (empty($userResult['RESULT_PRICE']) || !is_array($userResult['RESULT_PRICE']))
 		{
-			$resultCurrency = Currency\CurrencyManager::getBaseCurrency();
+			$resultCurrency = Catalog\Product\Price\Calculation::getCurrency();
 			if (empty($resultCurrency))
 			{
-				$APPLICATION->ThrowException(Loc::getMessage('BT_MOD_CATALOG_PROD_ERR_NO_BASE_CURRENCY'), 'NO_BASE_CURRENCY');
+				$APPLICATION->ThrowException(Loc::getMessage("BT_MOD_CATALOG_PROD_ERR_NO_RESULT_CURRENCY"));
 				$userResult = false;
 
 				return;
 			}
-			if (self::$usedCurrency !== null)
-				$resultCurrency = self::$usedCurrency;
 
 			$oldDiscountExist = !empty($userResult['DISCOUNT']) && is_array($userResult['DISCOUNT']);
 			if ($oldDiscountExist)

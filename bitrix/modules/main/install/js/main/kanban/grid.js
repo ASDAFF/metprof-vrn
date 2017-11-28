@@ -141,7 +141,7 @@ BX.Kanban.Grid.prototype =
 
 		var columnType = this.getColumnType(options.type);
 		var column = new columnType(options);
-		if (! column instanceof BX.Kanban.Column)
+		if (!(column instanceof BX.Kanban.Column))
 		{
 			throw new Error("Column type must be an instance of BX.Kanban.Column");
 		}
@@ -261,7 +261,7 @@ BX.Kanban.Grid.prototype =
 
 		var itemType = this.getItemType(options.type);
 		var item = new itemType(options);
-		if (! item instanceof BX.Kanban.Item)
+		if (!(item instanceof BX.Kanban.Item))
 		{
 			throw new Error("Item type must be an instance of BX.Kanban.Item");
 		}

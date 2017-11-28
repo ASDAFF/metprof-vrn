@@ -1,4 +1,5 @@
 <?
+/** @global \CMain $APPLICATION */
 use Bitrix\Main\Loader,
 	Bitrix\Main\Localization\Loc,
 	Bitrix\Main,
@@ -169,6 +170,7 @@ Loader::registerAutoLoadClasses(
 		'\Bitrix\Catalog\Helpers\Admin\RoundEdit' => 'lib/helpers/admin/roundedit.php',
 		'\Bitrix\Catalog\Helpers\Admin\Tools' => 'lib/helpers/admin/tools.php',
 		'\Bitrix\Catalog\Helpers\Tools' => 'lib/helpers/tools.php',
+		'\Bitrix\Catalog\Product\Price\Calculation' => 'lib/product/price/calculation.php',
 		'\Bitrix\Catalog\Product\Price' => 'lib/product/price.php',
 		'\Bitrix\Catalog\Product\Search' => 'lib/product/search.php',
 		'\Bitrix\Catalog\Product\Sku' => 'lib/product/sku.php',

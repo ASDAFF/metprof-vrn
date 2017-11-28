@@ -76,10 +76,14 @@
 
 	BX.SpotLight.prototype =
 	{
-
-		getDomElement: function ()
+		getRenderTo: function()
 		{
-			return BX.pos(this.renderTo);
+			return this.renderTo;
+		},
+
+		getDomElementPosition: function ()
+		{
+			return BX.pos(this.getRenderTo());
 		},
 
 		getPopup: function ()
@@ -89,31 +93,30 @@
 				return this.popup;
 			}
 
-			this.popup = new BX.PopupWindow(' ', this.container, {
+			this.popup = new BX.PopupWindow("spotlight-" + BX.util.getRandomString(), this.container, {
 				className: 'main-spot-light-popup',
 				angle: {
-					position: top,
+					position: "top",
 					offset: 41
 				},
 				autoHide: true,
 				overlay: true,
 				content: this.content ? this.content : null,
 				events: {
-					onPopupClose: function ()
-					{
-						this.popup.destroy();
-						this.container.parentNode.removeChild(this.container);
+					onPopupClose: function() {
+						this.close();
+						BX.onCustomEvent(this, "BX.SpotLight:onClose", [this]);
 					}.bind(this)
 				},
 				buttons: [
-					new BX.PopupWindowCustomButton( {
+					new BX.PopupWindowCustomButton({
 						text: BX.message('MAIN_SPOTLIGHT_UNDERSTAND'),
 						className: 'webform-small-button webform-small-button-blue',
 						events: {
-							click: function(){
-								this.popup.destroy();
-								this.container.parentNode.removeChild(this.container);
-								BX.onCustomEvent(this, "spotLightOk", [this.renderTo, this]);
+							click: function() {
+								this.close();
+								BX.onCustomEvent(this, "spotLightOk", [this.getRenderTo(), this]);
+								BX.onCustomEvent(this, "BX.SpotLight:onAccept", [this]);
 							}.bind(this)
 						}
 					}),
@@ -123,9 +126,9 @@
 						className : "main-spot-light-remind-later",
 						events: {
 							click: function(){
-								this.popup.destroy();
-								this.container.parentNode.removeChild(this.container);
-								BX.onCustomEvent(this, "spotLightLater", [this.renderTo, this]);
+								this.close();
+								BX.onCustomEvent(this, "spotLightLater", [this.getRenderTo(), this]);
+								BX.onCustomEvent(this, "BX.SpotLight:onRemind", [this]);
 							}.bind(this)
 						}
 					}) : null
@@ -147,8 +150,8 @@
 					className: this.lightMode ? 'main-spot-light main-spot-light-white' : 'main-spot-light'
 				},
 				style: {
-					top: this.top ? (this.getDomElement().top + this.top) + 'px' : this.getDomElement().top + 'px',
-					left: this.left ? (this.getDomElement().left + this.left) + 'px' : this.getDomElement().left + 'px'
+					top: this.top ? (this.getDomElementPosition().top + this.top) + 'px' : this.getDomElementPosition().top + 'px',
+					left: this.left ? (this.getDomElementPosition().left + this.left) + 'px' : this.getDomElementPosition().left + 'px'
 				},
 				events: this.content ? {
 					mouseenter: function ()
@@ -161,9 +164,31 @@
 			return this.container;
 		},
 
+		adjustPosition: function ()
+		{
+			var containerPosition = BX.pos(this.getRenderTo());
+
+			this.container.style.left = containerPosition.left + this.left + 'px';
+			this.container.style.top = containerPosition.top + this.top + 'px';
+		},
+
 		show: function()
 		{
+			var adjustPosition = this.adjustPosition.bind(this);
+			BX.bind(window, 'resize', adjustPosition);
+			BX.bind(window, 'load', adjustPosition);
+			BX.addCustomEvent('onFrameDataProcessed', adjustPosition);
+
 			document.body.appendChild(this.createContainer());
+		},
+
+		close: function()
+		{
+			this.popup ? this.popup.destroy() : null;
+			BX.remove(this.container);
+
+			this.container = null;
+			this.popup = null;
 		}
 	}
 })();

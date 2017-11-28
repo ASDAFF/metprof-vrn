@@ -537,8 +537,15 @@ class UrlPreview
 			return false;
 
 		$htmlContentType = strtolower($httpClient->getHeaders()->getContentType());
+		$peerIpAddress = $httpClient->getPeerAddress();
 		if($htmlContentType !== 'text/html')
-			return static::getFileMetadata($httpClient->getEffectiveUrl(), $httpClient->getHeaders());
+		{
+
+			$metadata = static::getFileMetadata($httpClient->getEffectiveUrl(), $httpClient->getHeaders());
+			$metadata['EXTRA']['PEER_IP_ADDRESS'] = $peerIpAddress;
+			$metadata['EXTRA']['PEER_IP_PRIVATE'] = static::isIpAddressPrivate($peerIpAddress);
+			return $metadata;
+		}
 
 		$html = $httpClient->getResult();
 		$htmlDocument = new HtmlDocument($html, $uri);
@@ -562,6 +569,11 @@ class UrlPreview
 						static::MAX_DESCRIPTION
 				);
 			}
+
+			$metadata['EXTRA'] = array(
+				'PEER_IP_ADDRESS' => $peerIpAddress,
+				'PEER_IP_PRIVATE' => static::isIpAddressPrivate($peerIpAddress)
+			);
 
 			return $metadata;
 		}
@@ -711,5 +723,15 @@ class UrlPreview
 			);
 		}
 		return $result;
+	}
+
+	/**
+	 * @param string $ipAddress
+	 * @return bool
+	 */
+	public static function isIpAddressPrivate($ipAddress)
+	{
+		return filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
+
 	}
 }

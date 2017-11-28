@@ -46,6 +46,8 @@ if (($ACTION == 'EXPORT_EDIT' || $ACTION == 'EXPORT_COPY') && $STEP == 1)
 		$disableReferers = $arOldSetupVars['DISABLE_REFERERS'];
 	if (isset($arOldSetupVars['MAX_EXECUTION_TIME']))
 		$maxExecutionTime = $arOldSetupVars['MAX_EXECUTION_TIME'];
+	if (isset($arOldSetupVars['CHECK_PERMISSIONS']))
+		$checkPermissions = $arOldSetupVars['CHECK_PERMISSIONS'];
 }
 
 if ($STEP > 1)
@@ -203,6 +205,8 @@ if ($STEP == 1)
 		$SETUP_SERVER_NAME = '';
 	if (!isset($SETUP_FILE_NAME))
 		$SETUP_FILE_NAME = 'yandex_'.mt_rand(0, 999999).'.php';
+	if (!isset($checkPermissions) || $checkPermissions != 'Y')
+		$checkPermissions = 'N';
 ?><tr>
 	<td width="40%"><? echo GetMessage('CET_SELECT_IBLOCK_EXT'); ?></td>
 	<td width="60%"><?
@@ -439,6 +443,13 @@ if ($STEP == 1)
 	</td>
 </tr>
 <tr>
+	<td width="40%"><? echo GetMessage('CAT_YANDEX_CHECK_PERMISSIONS'); ?></td>
+	<td width="60%">
+		<input type="hidden" name="CHECK_PERMISSIONS" value="N">
+		<input type="checkbox" name="CHECK_PERMISSIONS" value="Y"<?=($checkPermissions == 'Y' ? ' checked' : ''); ?>
+	</td>
+</tr>
+<tr>
 	<td width="40%"><? echo GetMessage('CAT_YANDEX_FILTER_AVAILABLE'); ?></td>
 	<td width="60%">
 		<input type="hidden" name="FILTER_AVAILABLE" value="N">
@@ -527,7 +538,7 @@ if (2 > $STEP)
 	<input type="hidden" name="ACT_FILE" value="<?echo htmlspecialcharsbx($_REQUEST["ACT_FILE"]) ?>">
 	<input type="hidden" name="ACTION" value="<?echo htmlspecialcharsbx($ACTION) ?>">
 	<input type="hidden" name="STEP" value="<?echo intval($STEP) + 1 ?>">
-	<input type="hidden" name="SETUP_FIELDS_LIST" value="V,IBLOCK_ID,SETUP_SERVER_NAME,SETUP_FILE_NAME,XML_DATA,USE_HTTPS,FILTER_AVAILABLE,DISABLE_REFERERS,MAX_EXECUTION_TIME">
+	<input type="hidden" name="SETUP_FIELDS_LIST" value="V,IBLOCK_ID,SETUP_SERVER_NAME,SETUP_FILE_NAME,XML_DATA,USE_HTTPS,FILTER_AVAILABLE,DISABLE_REFERERS,MAX_EXECUTION_TIME,CHECK_PERMISSIONS">
 	<input type="submit" value="<?echo ($ACTION=="EXPORT")?GetMessage("CET_EXPORT"):GetMessage("CET_SAVE")?>"><?
 }
 

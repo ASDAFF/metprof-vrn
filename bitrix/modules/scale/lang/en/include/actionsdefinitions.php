@@ -50,4 +50,5 @@ $MESS["SCALE_ADEF_CHPASS_UP_HOSTNAME"] = "Host name";
 $MESS["SCALE_ADEF_SPHINX_ADD_ROLE_INDEX"] = "Re-index website after new role is added";
 $MESS["SCALE_ADEF_CREATE_PULL_NET_IFACE"] = "Pool network interface";
 $MESS["SCALE_ADEF_SET_EMAIL_SITE_NAME_CONF"] = "Site configuration name";
+$MESS["SCALE_ADEF_SET_EMAIL_USE_AUTH"] = "Use authentication";
 ?>

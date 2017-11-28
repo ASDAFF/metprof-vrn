@@ -2557,7 +2557,7 @@
 				// only for compatible catalog.store.amount custom templates
 				BX.onCustomEvent('onCatalogStoreProductChange', [this.offers[this.offerNum].ID]);
 				// new event
-				BX.onCustomEvent('onCatalogElementChangeOffer', eventData);
+				BX.onCustomEvent('onCatalogElementChangeOffer', [eventData]);
 				eventData = null;
 			}
 		},

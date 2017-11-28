@@ -47,7 +47,8 @@
 
 		return this.query(this.mode, {
 			FIELDS: param.FIELDS,
-			FORM: param.FORM || ''
+			FORM: param.FORM || '',
+			CONTEXT: param.CONTEXT || ''
 		}, callback);
 	};
 

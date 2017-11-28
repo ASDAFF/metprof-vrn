@@ -822,7 +822,11 @@ class Mail
 				$parsedHref[0] .= (strpos($parsedHref[0], '?') === false ? '?' : '&') . substr($hrefAddParam, 1);
 				$href = implode("#", $parsedHref);
 			}
-			$href = $this->trackLinkProtocol . '://' . $this->settingServerName . $this->trackClickLink . '&url=' . urlencode($href);
+
+			$href = $this->trackLinkProtocol . '://'
+				. $this->settingServerName . $this->trackClickLink
+				. '&url=' . urlencode($href)
+				. '&sign=' . urlencode(Tracking::getSign($href));
 		}
 
 		return $matches[1].$matches[2].$href.$matches[4].$matches[5];

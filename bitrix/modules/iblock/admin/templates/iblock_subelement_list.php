@@ -521,6 +521,8 @@ if (defined('B_ADMIN_SUBELEMENTS_LIST') && true === B_ADMIN_SUBELEMENTS_LIST)
 										"QUANTITY_FROM" => $CATALOG_QUANTITY_FROM[$elID][$arCatalogGroup["ID"]],
 										"QUANTITY_TO" => $CATALOG_QUANTITY_TO[$elID][$arCatalogGroup["ID"]],
 									);
+									if (is_string($arFields['PRICE']))
+										$arFields['PRICE'] = str_replace(',', '.', $arFields['PRICE']);
 									if ($arFields["PRICE"] < 0 || trim($arFields["PRICE"]) === '')
 										CPrice::Delete($CATALOG_PRICE_ID[$elID][$arCatalogGroup["ID"]]);
 									elseif ((int)$CATALOG_PRICE_ID[$elID][$arCatalogGroup["ID"]] > 0)
@@ -569,6 +571,8 @@ if (defined('B_ADMIN_SUBELEMENTS_LIST') && true === B_ADMIN_SUBELEMENTS_LIST)
 										"QUANTITY_FROM" => $CATALOG_QUANTITY_FROM[$elID][$arCatalogGroup["ID"]],
 										"QUANTITY_TO" => $CATALOG_QUANTITY_TO[$elID][$arCatalogGroup["ID"]]
 									);
+									if (is_string($arFields['PRICE']))
+										$arFields['PRICE'] = str_replace(',', '.', $arFields['PRICE']);
 									if ($arFields["PRICE"] < 0 || trim($arFields["PRICE"]) === '')
 										CPrice::Delete($CATALOG_PRICE_ID[$elID][$arCatalogGroup["ID"]]);
 									elseif ((int)$CATALOG_PRICE_ID[$elID][$arCatalogGroup["ID"]] > 0)

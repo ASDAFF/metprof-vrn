@@ -14,6 +14,8 @@ class Action
 	protected $userParams = array();
 	protected $freeParams = array();
 	protected $actionParams = array();
+	protected $serverHostname = "";
+
 	protected $shellAdapter = null;
 	protected $result = array();
 	protected $logLevel = Logger::LOG_LEVEL_INFO;
@@ -133,7 +135,7 @@ class Action
 				{
 					try
 					{
-						$this->actionParams = call_user_func($modifyerFunction, $this->id, $this->actionParams, $this->serverHostname);
+						$this->actionParams = call_user_func($modifyerFunction, $this->id, $this->actionParams, $this->serverHostname, $this->userParams);
 					}
 					catch(NeedMoreUserInfoException $e)
 					{

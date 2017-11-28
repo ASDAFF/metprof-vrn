@@ -126,7 +126,8 @@
 						block: 'main-ui-control-string',
 						name: fieldData.NAME,
 						placeholder: fieldData.PLACEHOLDER || '',
-						value: fieldData.VALUE,
+						value: (BX.type.isNotEmptyString(fieldData.VALUE) ||
+								BX.type.isNumber(fieldData.VALUE) ? fieldData.VALUE : ''),
 						tabindex: fieldData.TABINDEX
 					}
 				]

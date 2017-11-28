@@ -6,6 +6,7 @@ use Bitrix\Main,
 	Bitrix\Main\Localization\Loc,
 	Bitrix\Iblock,
 	Bitrix\Catalog,
+	Bitrix\Catalog\Product\Price,
 	Bitrix\Sale\DiscountCouponsManager,
 	Bitrix\Sale\Discount\Context,
 	Bitrix\Sale\Order,
@@ -43,9 +44,8 @@ class CAllCatalogDiscount
 		switch ($oneDiscount['VALUE_TYPE'])
 		{
 			case self::TYPE_PERCENT:
-				$discountValue = roundEx(
-					-(self::$getPercentFromBasePrice ? $basePrice : $currentPrice) * $oneDiscount['VALUE'] / 100,
-					CATALOG_VALUE_PRECISION
+				$discountValue = Price\Calculation::roundPrecision(
+					-(self::$getPercentFromBasePrice ? $basePrice : $currentPrice) * $oneDiscount['VALUE'] / 100
 				);
 				if (isset($oneDiscount['DISCOUNT_CONVERT']) && $oneDiscount['DISCOUNT_CONVERT'] > 0)
 				{
@@ -1985,7 +1985,7 @@ class CAllCatalogDiscount
 				$priceData['VAT_INCLUDED'] = 'N';
 			}
 		}
-		$currentPrice = roundEx($currentPrice, CATALOG_VALUE_PRECISION);
+		$currentPrice = Price\Calculation::roundPrecision($currentPrice);
 		$calculatePrice = $currentPrice;
 		foreach ($discountList as $discount)
 		{
@@ -1996,7 +1996,7 @@ class CAllCatalogDiscount
 						$currentDiscount = $discount['VALUE'];
 					else
 						$currentDiscount = CCurrencyRates::ConvertCurrency($discount['VALUE'], $discount['CURRENCY'], $currency);
-					$currentDiscount = roundEx($currentDiscount, CATALOG_VALUE_PRECISION);
+					$currentDiscount = Price\Calculation::roundPrecision($currentDiscount);
 					$currentPrice = $currentPrice - $currentDiscount;
 					break;
 				case self::TYPE_PERCENT:
@@ -2010,7 +2010,7 @@ class CAllCatalogDiscount
 						if ($currentDiscount > $maxDiscount)
 							$currentDiscount = $maxDiscount;
 					}
-					$currentDiscount = roundEx($currentDiscount, CATALOG_VALUE_PRECISION);
+					$currentDiscount = Price\Calculation::roundPrecision($currentDiscount);
 					$currentPrice = $currentPrice - $currentDiscount;
 					break;
 				case self::TYPE_SALE:
@@ -2018,7 +2018,7 @@ class CAllCatalogDiscount
 						$currentPrice = $discount['VALUE'];
 					else
 						$currentPrice = CCurrencyRates::ConvertCurrency($discount['VALUE'], $discount['CURRENCY'], $currency);
-					$currentPrice = roundEx($currentPrice, CATALOG_VALUE_PRECISION);
+					$currentPrice = Price\Calculation::roundPrecision($currentPrice);
 					break;
 			}
 		}
@@ -3895,9 +3895,8 @@ class CAllCatalogDiscount
 					$discountValue = (
 						!$changeData
 						? $oneDiscount['VALUE']
-						: roundEx(
-							CCurrencyRates::ConvertCurrency($oneDiscount['VALUE'], $oneDiscount['CURRENCY'], $currency),
-							CATALOG_VALUE_PRECISION
+						: Price\Calculation::roundPrecision(
+							CCurrencyRates::ConvertCurrency($oneDiscount['VALUE'], $oneDiscount['CURRENCY'], $currency)
 						)
 					);
 					$validDiscount = ($price >= $discountValue);
@@ -3912,9 +3911,8 @@ class CAllCatalogDiscount
 					$discountValue = (
 						!$changeData
 						? $oneDiscount['VALUE']
-						: roundEx(
-							CCurrencyRates::ConvertCurrency($oneDiscount['VALUE'], $oneDiscount['CURRENCY'], $currency),
-							CATALOG_VALUE_PRECISION
+						: Price\Calculation::roundPrecision(
+							CCurrencyRates::ConvertCurrency($oneDiscount['VALUE'], $oneDiscount['CURRENCY'], $currency)
 						)
 					);
 					$validDiscount = ($price > $discountValue);
@@ -3935,9 +3933,8 @@ class CAllCatalogDiscount
 							$oneDiscount['DISCOUNT_CONVERT'] = (
 								!$changeData
 								? $oneDiscount['MAX_DISCOUNT']
-								: roundEx(
-									CCurrencyRates::ConvertCurrency($oneDiscount['MAX_DISCOUNT'], $oneDiscount['CURRENCY'], $currency),
-									CATALOG_VALUE_PRECISION
+								: Price\Calculation::roundPrecision(
+									CCurrencyRates::ConvertCurrency($oneDiscount['MAX_DISCOUNT'], $oneDiscount['CURRENCY'], $currency)
 								)
 							);
 							if ($changeData)
@@ -4042,12 +4039,11 @@ class CAllCatalogDiscount
 			switch($oneDiscount['VALUE_TYPE'])
 			{
 				case CCatalogDiscountSave::TYPE_PERCENT:
-					$discountValue = roundEx((
+					$discountValue = Price\Calculation::roundPrecision((
 						self::$getPercentFromBasePrice
 							? $basePrice
 							: $currentPrice
-						)*$oneDiscount['VALUE']/100,
-						CATALOG_VALUE_PRECISION
+						)*$oneDiscount['VALUE']/100
 					);
 					$needErase = ($currentPrice < $discountValue);
 					if (!$needErase)

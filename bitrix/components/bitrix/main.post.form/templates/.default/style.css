@@ -1107,7 +1107,7 @@
 	content: '';
 	height: 7px;
 	position: absolute;
-	top: 18px;
+	top: 23px;
 	left: 50%;
 	width: 1px;
 	-webkit-transform-origin: 0 100%;
@@ -1118,7 +1118,7 @@
 }
 
 .feed-add-com-button.feed-add-button-load:after {
-	top: 14px;
+	top: 19px;
 }
 
 .feed-add-button-transparent.feed-add-button-load {

@@ -677,34 +677,35 @@ var focusWithoutScrolling = function(element)
 			editor.On("OnIframeMouseUp", [e, target]);
 		});
 
-		// resizestart
-		// resizeend
-		if (BX.browser.IsIOS())
-		{
-			// When on iPad/iPhone/IPod after clicking outside of editor, the editor loses focus
-			// but the UI still acts as if the editor has focus (blinking caret and onscreen keyboard visible)
-			// We prevent _this by focusing a temporary input element which immediately loses focus
-			BX.bind(iframeWindow, "blur", function()
-			{
-				var
-					input = BX.create('INPUT', {props: {type: 'text', value: ''}}, element.ownerDocument),
-					orScrollTop = document.documentElement.scrollTop || document.body.scrollTop,
-					orScrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft;
-
-				try
-				{
-					editor.selection.InsertNode(input);
-				}
-				catch(e)
-				{
-					element.appendChild(input);
-				}
-
-				BX.focus(input);
-				BX.remove(input);
-				window.scrollTo(orScrollLeft, orScrollTop);
-			});
-		}
+		// Mantis: 90137
+		//if (BX.browser.IsIOS())
+		//{
+		//	// When on iPad/iPhone/IPod after clicking outside of editor, the editor loses focus
+		//	// but the UI still acts as if the editor has focus (blinking caret and onscreen keyboard visible)
+		//	// We prevent _this by focusing a temporary input element which immediately loses focus
+		//	BX.bind(iframeWindow, "blur", function()
+		//	{
+		//		var
+		//			orScrollTop = document.documentElement.scrollTop || document.body.scrollTop,
+		//			orScrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft,
+		//			input = BX.create('INPUT', {
+		//				props:{type: 'text', value: ''}
+		//			}, iframeWindow.ownerDocument);
+		//
+		//		try
+		//		{
+		//			editor.selection.InsertNode(input);
+		//		}
+		//		catch(e)
+		//		{
+		//			iframeWindow.appendChild(input);
+		//		}
+		//
+		//		BX.focus(input);
+		//		BX.remove(input);
+		//		window.scrollTo(orScrollLeft, orScrollTop);
+		//	});
+		//}
 
 		// --------- Drag & Drop events  ---------
 		BX.bind(element, "dragover", function(){editor.On("OnIframeDragOver", arguments);});
@@ -791,6 +792,25 @@ var focusWithoutScrolling = function(element)
 		});
 
 		BX.bind(element, "keydown", BX.proxy(this.KeyDown, this));
+
+		// Workaround for chrome bug with bugus scrollint to the top of the page (mantis:91555)
+		if (BX.browser.IsChrome())
+		{
+			BX.bind(window, "scroll", BX.proxy(function(e)
+			{
+				if (_this.stopBugusScroll)
+				{
+					_this.stopBugusScroll = false;
+					if (!_this.savedScroll.scrollTop && _this.lastSavedScroll)
+						_this.savedScroll = _this.lastSavedScroll;
+
+					if (_this.savedScroll && !_this.lastSavedScroll)
+						_this.lastSavedScroll = _this.savedScroll;
+					_this._RestoreScrollTop();
+				}
+			}, this));
+		}
+
 		// Show urls and srcs in tooltip when hovering links or images
 		var nodeTitles = {
 			IMG: BX.message.SrcTitle + ": ",
@@ -822,6 +842,13 @@ var focusWithoutScrolling = function(element)
 	{
 		this.SetFocusedFlag(true);
 		this.editor.iframeKeyDownPreventDefault = false;
+
+		// Workaround for chrome bug with bugus scrollint to the top of the page (mantis:91555)
+		if (BX.browser.IsChrome())
+		{
+			this.stopBugusScroll = true;
+			this.savedScroll = BX.GetWindowScrollPos(document);
+		}
 
 		var
 			_this = this,

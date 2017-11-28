@@ -50,3 +50,4 @@ $MESS ['SCALE_ADEF_CHPASS_UP_NET_ADDRESS'] = "Сетевой адрес";
 $MESS ['SCALE_ADEF_CHPASS_UP_HOSTNAME'] = "Имя хоста";
 $MESS ['SCALE_ADEF_SPHINX_ADD_ROLE_INDEX'] = "Проиндексировать сайт после добавления роли";
 $MESS ['SCALE_ADEF_CREATE_PULL_NET_IFACE'] = "Сетевой интерфейс для пула";
+$MESS ['SCALE_ADEF_SET_EMAIL_USE_AUTH'] = "Использовать аутентификацию";

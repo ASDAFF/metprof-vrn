@@ -38,50 +38,24 @@ if(strlen($_POST['Update'].$_GET['RestoreDefaults'])>0 && check_bitrix_sessid() 
 		{
 			CPullOptions::SetPublishUrl($_POST['path_to_publish']);
 		}
-		if ($_POST['path_to_listener'] != "" && CPullOptions::GetListenUrl() != $_POST['path_to_listener'])
-		{
-			CPullOptions::SetListenUrl($_POST['path_to_listener']);
-			$send = true;
-		}
 		if ($_POST['nginx_command_per_hit'] != "" && CPullOptions::GetCommandPerHit() != $_POST['nginx_command_per_hit'])
 		{
 			CPullOptions::SetCommandPerHit($_POST['nginx_command_per_hit']);
 		}
-		if ($_POST['path_to_listener_secure'] != "" && CPullOptions::GetListenSecureUrl() != $_POST['path_to_listener_secure'])
+		if ($_POST['path_to_modern_listener'] != "" && CPullOptions::GetListenUrl("") != $_POST['path_to_modern_listener'])
 		{
-			CPullOptions::SetListenSecureUrl($_POST['path_to_listener_secure']);
+			CPullOptions::SetListenUrl($_POST['path_to_modern_listener']);
 			$send = true;
 		}
-		if ($_POST['path_to_modern_listener'] != "" && CPullOptions::GetListenUrl("", false, true) != $_POST['path_to_modern_listener'])
+		if ($_POST['path_to_modern_listener_secure'] != "" && CPullOptions::GetListenSecureUrl("") != $_POST['path_to_modern_listener_secure'])
 		{
-			CPullOptions::SetListenUrl($_POST['path_to_modern_listener'], false, true);
-			$send = true;
-		}
-		if ($_POST['path_to_modern_listener_secure'] != "" && CPullOptions::GetListenSecureUrl("", false, true) != $_POST['path_to_modern_listener_secure'])
-		{
-			CPullOptions::SetListenSecureUrl($_POST['path_to_modern_listener_secure'], false, true);
-			$send = true;
-		}
-		if ($_POST['path_to_mobile_listener'] != "" && CPullOptions::GetListenUrl("", true) != $_POST['path_to_mobile_listener'])
-		{
-			CPullOptions::SetListenUrl($_POST['path_to_mobile_listener'], true);
-			$send = true;
-		}
-		if ($_POST['path_to_mobile_listener_secure'] != "" && CPullOptions::GetListenSecureUrl("", true) != $_POST['path_to_mobile_listener_secure'])
-		{
-			CPullOptions::SetListenSecureUrl($_POST['path_to_mobile_listener_secure'], true);
+			CPullOptions::SetListenSecureUrl($_POST['path_to_modern_listener_secure']);
 			$send = true;
 		}
 		if ($_POST['push_message_per_hit'] != "")
 		{
 			CPullOptions::SetPushMessagePerHit($_POST['push_message_per_hit']);
 			$send = true;
-		}
-		if ($_POST['path_to_websocket'] != "" && CPullOptions::GetWebSocketUrl() != $_POST['path_to_websocket'])
-		{
-			CPullOptions::SetWebSocketUrl($_POST['path_to_websocket']);
-			if (isset($_POST['websocket']))
-				$send = true;
 		}
 		if ($_POST['nginx_version'] != "" && CPullOptions::GetQueueServerVersion() != $_POST['nginx_version'])
 		{
@@ -102,7 +76,12 @@ if(strlen($_POST['Update'].$_GET['RestoreDefaults'])>0 && check_bitrix_sessid() 
 			if ($websocketEnabled)
 				$send = true;
 		}
-
+		if ($_POST['path_to_websocket'] != "" && CPullOptions::GetWebSocketUrl() != $_POST['path_to_websocket'])
+		{
+			CPullOptions::SetWebSocketUrl($_POST['path_to_websocket']);
+			if (isset($_POST['websocket']))
+				$send = true;
+		}
 		if ($_POST['path_to_websocket_secure'] != "" && CPullOptions::GetWebSocketSecureUrl() != $_POST['path_to_websocket_secure'])
 		{
 			CPullOptions::SetWebSocketSecureUrl($_POST['path_to_websocket_secure']);
@@ -277,50 +256,16 @@ $arExcludeSites = CPullOptions::GetExcludeSites();
 	</tr>
 	<tr>
 		<td ><?=GetMessage("PULL_OPTIONS_PATH_TO_LISTENER")?>:</td>
-		<td><input id="config_path_to_modern_listener" type="text" size="40" value="<?=htmlspecialcharsbx(CPullOptions::GetListenUrl("", false, true))?>" name="path_to_modern_listener" <?=(CPullOptions::GetQueueServerStatus()? '':'disabled="true"')?>></td>
+		<td><input id="config_path_to_modern_listener" type="text" size="40" value="<?=htmlspecialcharsbx(CPullOptions::GetListenUrl())?>" name="path_to_modern_listener" <?=(CPullOptions::GetQueueServerStatus()? '':'disabled="true"')?>></td>
 	</tr>
 	<tr>
 		<td ><?=GetMessage("PULL_OPTIONS_PATH_TO_LISTENER_SECURE")?>:</td>
-		<td><input id="config_path_to_modern_listener_secure" type="text" size="40" value="<?=htmlspecialcharsbx(CPullOptions::GetListenSecureUrl("", false, true))?>" name="path_to_modern_listener_secure" <?=(CPullOptions::GetQueueServerStatus()? '':'disabled="true"')?>></td>
+		<td><input id="config_path_to_modern_listener_secure" type="text" size="40" value="<?=htmlspecialcharsbx(CPullOptions::GetListenSecureUrl())?>" name="path_to_modern_listener_secure" <?=(CPullOptions::GetQueueServerStatus()? '':'disabled="true"')?>></td>
 	</tr>
 	<tr>
 		<td width="40%"></td>
 		<td width="60%">
 			<?=GetMessage("PULL_OPTIONS_PATH_TO_LISTENER_MODERN_DESC")?>
-		</td>
-	</tr>
-	<tr class="heading">
-		<td colspan="2"><b><?=GetMessage('PULL_OPTIONS_HEAD_SUB')?></b></td>
-	</tr>
-	<tr>
-		<td ><?=GetMessage("PULL_OPTIONS_PATH_TO_LISTENER")?>:</td>
-		<td><input id="config_path_to_listener" type="text" size="40" value="<?=htmlspecialcharsbx(CPullOptions::GetListenUrl())?>" name="path_to_listener" <?=(CPullOptions::GetQueueServerStatus()? '':'disabled="true"')?>></td>
-	</tr>
-	<tr>
-		<td ><?=GetMessage("PULL_OPTIONS_PATH_TO_LISTENER_SECURE")?>:</td>
-		<td><input id="config_path_to_listener_secure" type="text" size="40" value="<?=htmlspecialcharsbx(CPullOptions::GetListenSecureUrl())?>" name="path_to_listener_secure" <?=(CPullOptions::GetQueueServerStatus()? '':'disabled="true"')?>></td>
-	</tr>
-	<tr>
-		<td width="40%"></td>
-		<td width="60%">
-			<?=GetMessage("PULL_OPTIONS_PATH_TO_LISTENER_DESC")?>
-		</td>
-	</tr>
-	<tr class="heading">
-		<td colspan="2"><b><?=GetMessage('PULL_OPTIONS_HEAD_SUB_MOB')?></b></td>
-	</tr>
-	<tr>
-		<td ><?=GetMessage("PULL_OPTIONS_PATH_TO_LISTENER")?>:</td>
-		<td><input id="config_path_to_mobile_listener" type="text" size="40" value="<?=htmlspecialcharsbx(CPullOptions::GetListenUrl("", true))?>" name="path_to_mobile_listener" <?=(CPullOptions::GetQueueServerStatus()? '':'disabled="true"')?>></td>
-	</tr>
-	<tr>
-		<td ><?=GetMessage("PULL_OPTIONS_PATH_TO_LISTENER_SECURE")?>:</td>
-		<td><input id="config_path_to_mobile_listener_secure" type="text" size="40" value="<?=htmlspecialcharsbx(CPullOptions::GetListenSecureUrl("", true))?>" name="path_to_mobile_listener_secure" <?=(CPullOptions::GetQueueServerStatus()? '':'disabled="true"')?>></td>
-	</tr>
-	<tr>
-		<td width="40%"></td>
-		<td width="60%">
-			<?=GetMessage("PULL_OPTIONS_PATH_TO_MOBILE_LISTENER_DESC")?>
 		</td>
 	</tr>
 	<tr class="heading">
@@ -375,12 +320,8 @@ BX.bind(BX('config_nginx'), 'change', function(){
 			BX('config_nginx_version_2').disabled = false;
 			BX('config_nginx_version_3').disabled = false;
 			BX('config_path_to_publish').disabled = false;
-			BX('config_path_to_listener').disabled = false;
-			BX('config_path_to_listener_secure').disabled = false;
 			BX('config_path_to_modern_listener').disabled = false;
 			BX('config_path_to_modern_listener_secure').disabled = false;
-			BX('config_path_to_mobile_listener').disabled = false;
-			BX('config_path_to_mobile_listener_secure').disabled = false;
 			BX('config_signature_key').disabled = false;
 
 			if (BX('config_nginx_version_2').checked || BX('config_nginx_version_3').checked)
@@ -389,10 +330,14 @@ BX.bind(BX('config_nginx'), 'change', function(){
 				BX('config_websocket').disabled = false;
 				BX('config_signature_key').disabled = false;
 				
-				if (BX('config_websocket').checked)
+				if (BX('config_websocket').checked || BX('config_nginx_version_3').checked)
 				{
 					BX('config_path_to_websocket').disabled = false;
 					BX('config_path_to_websocket_secure').disabled = false;
+				}
+				if (BX('config_nginx_version_3').checked)
+				{
+					BX('config_websocket').disabled = true;
 				}
 			}
 			else 
@@ -416,13 +361,8 @@ BX.bind(BX('config_nginx'), 'change', function(){
 		BX('config_nginx_version_3').disabled = true;
 		BX('config_signature_key').disabled = true;
 		BX('config_path_to_publish').disabled = true;
-		BX('config_path_to_listener').disabled = true;
-		BX('config_path_to_listener_secure').disabled = true;
 		BX('config_path_to_modern_listener').disabled = true;
 		BX('config_path_to_modern_listener_secure').disabled = true;
-		BX('config_path_to_mobile_listener').disabled = true;
-		BX('config_path_to_mobile_listener_secure').disabled = true;
-
 
 		BX('config_nginx_command_per_hit').disabled = true;
 		BX('config_websocket').disabled = true;
@@ -480,6 +420,10 @@ BX.bind(BX('config_nginx_version_3'), 'change', function(){
 		{
 			BX('config_path_to_websocket').disabled = false;
 			BX('config_path_to_websocket_secure').disabled = false;
+		}
+		if (BX('config_nginx_version_3').checked)
+		{
+			BX('config_websocket').disabled = true;
 		}
 	}
 	else

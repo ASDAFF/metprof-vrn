@@ -1346,6 +1346,7 @@ if (typeof(BX.Main.interfaceButtons) === 'undefined')
 						result.push({
 							text: this.getSubmenuItemText(current),
 							href: this.dataValue(current, 'url'),
+							onclick: this.dataValue(current, 'onclick'),
 							title: current.getAttribute('title'),
 							className: [
 								this.classSubmenuItem,
@@ -1384,6 +1385,7 @@ if (typeof(BX.Main.interfaceButtons) === 'undefined')
 					result.push({
 						text: this.getSubmenuItemText(current),
 						href: this.dataValue(current, 'url'),
+						onclick: this.dataValue(current, 'onclick'),
 						title: current.getAttribute('title'),
 						className: className.join(' ')
 					});
@@ -1438,6 +1440,7 @@ if (typeof(BX.Main.interfaceButtons) === 'undefined')
 						result.push({
 							text: this.getSubmenuItemText(current),
 							href: this.dataValue(current, 'url'),
+							onclick: this.dataValue(current, 'onclick'),
 							title: current.getAttribute('title'),
 							className: className.join(' ')
 						});

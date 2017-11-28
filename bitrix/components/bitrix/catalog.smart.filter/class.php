@@ -552,6 +552,9 @@ class CBitrixCatalogSmartFilter extends CBitrixComponent
 				$cache[$PROPERTY_TYPE][$key] = $rsLink->Fetch();
 			}
 
+			if (!$cache[$PROPERTY_TYPE][$key])
+				return null;
+
 			$value = $cache[$PROPERTY_TYPE][$key]["NAME"];
 			$sort = $cache[$PROPERTY_TYPE][$key]["SORT"];
 			if ($cache[$PROPERTY_TYPE][$key]["CODE"])
@@ -571,6 +574,9 @@ class CBitrixCatalogSmartFilter extends CBitrixComponent
 				$cache[$PROPERTY_TYPE][$key] = $rsLink->Fetch();
 				$cache[$PROPERTY_TYPE][$key]['DEPTH_NAME'] = str_repeat(".", $cache[$PROPERTY_TYPE][$key]["DEPTH_LEVEL"]).$cache[$PROPERTY_TYPE][$key]["NAME"];
 			}
+
+			if (!$cache[$PROPERTY_TYPE][$key])
+				return null;
 
 			$value = $cache[$PROPERTY_TYPE][$key]['DEPTH_NAME'];
 			$sort = $cache[$PROPERTY_TYPE][$key]["LEFT_MARGIN"];

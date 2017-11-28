@@ -83,6 +83,7 @@
 		{
 			this.popupItems = null;
 			this.allColumns = null;
+			this.items = null;
 		},
 
 
@@ -258,9 +259,24 @@
 			});
 		},
 
+		getShowedColumns: function()
+		{
+			var result = [];
+			var cells = this.parent.getRows().getHeadFirstChild().getCells();
+
+			[].slice.call(cells).forEach(function(column) {
+				if ("name" in column.dataset)
+				{
+					result.push(column.dataset.name);
+				}
+			});
+
+			return result;
+		},
+
 		sortItems: function()
 		{
-			var showedColumns = this.getSelectedColumns();
+			var showedColumns = this.getShowedColumns();
 			var allColumns = {};
 
 			this.getAllColumns().forEach(function(name) {
@@ -289,7 +305,10 @@
 		{
 			var names = {};
 			this.getItems().map(function(column) {
-				names[column.getId()] = column.getTitle();
+				if (column.isEdited())
+				{
+					names[column.getId()] = column.getTitle();
+				}
 			});
 
 			return names;
@@ -496,21 +515,27 @@
 					contentNoPaddings: true,
 					content: this.getSourceContent(),
 					events: {
-						onPopupClose: BX.delegate(this._onPopupClose, this)
+						onPopupClose: BX.delegate(this.onPopupClose, this)
 					}
 				}
 			);
 
-			this.getItems();
+			this.getItems().forEach(function(item) {
+				BX.bind(item.getNode(), 'click', BX.delegate(this.onItemClick, this));
+			}, this);
 
 			BX.bind(this.getResetButton(), 'click', BX.proxy(this.onResetButtonClick, this));
 			BX.bind(this.getApplyButton(), 'click', BX.proxy(this.onApplyButtonClick, this));
 			BX.bind(this.getCancelButton(), 'click', BX.proxy(this.popup.close, this.popup));
-
-			BX.bind(this.getSelectAllButton(), 'click', BX.delegate(this.selectAll, this));
-			BX.bind(this.getUnselectAllButton(), 'click', BX.delegate(this.unselectAll, this));
+			BX.bind(this.getSelectAllButton(), 'click', BX.delegate(this.onSelectAll, this));
+			BX.bind(this.getUnselectAllButton(), 'click', BX.delegate(this.onUnselectAll, this));
 
 			return this.popup;
+		},
+
+		onItemClick: function()
+		{
+			this.adjustActionButtonsState();
 		},
 
 
@@ -530,10 +555,11 @@
 			return this.items;
 		},
 
-		_onPopupClose: function()
+		onPopupClose: function()
 		{
 			this.restoreLastColumns();
 			this.disableAllColumnslabelEdit();
+			this.adjustActionButtonsState();
 		},
 
 
@@ -546,6 +572,17 @@
 			return !!this.popup ? this.popup : this.popup = this.createPopup();
 		},
 
+		onSelectAll: function()
+		{
+			this.selectAll();
+			this.enableActions();
+		},
+
+		onUnselectAll: function()
+		{
+			this.unselectAll();
+			this.disableActions();
+		},
 
 		/**
 		 * Select all columns
@@ -594,6 +631,38 @@
 			}
 
 			return this.resetButton;
+		},
+
+		disableActions: function()
+		{
+			var applyButton = this.getApplyButton();
+
+			if (!!applyButton)
+			{
+				BX.addClass(applyButton, this.parent.settings.get('classDisable'));
+			}
+		},
+
+		enableActions: function()
+		{
+			var applyButton = this.getApplyButton();
+
+			if (!!applyButton)
+			{
+				BX.removeClass(applyButton, this.parent.settings.get('classDisable'));
+			}
+		},
+
+		adjustActionButtonsState: function()
+		{
+			if (this.getSelectedColumns().length)
+			{
+				this.enableActions();
+			}
+			else
+			{
+				this.disableActions();
+			}
 		}
 	};
 

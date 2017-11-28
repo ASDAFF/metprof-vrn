@@ -148,6 +148,7 @@ if(\Bitrix\Scale\Helper::checkBxEnvVersion())
 			BX.Scale.rolesList = <?=CUtil::PhpToJSObject( \Bitrix\Scale\RolesData::getList())?>;
 			BX.Scale.sitesList = <?=CUtil::PhpToJSObject( \Bitrix\Scale\SitesData::getList())?>;
 			BX.Scale.monitoringEnabled = <?=Bitrix\Scale\Monitoring::isEnabled() ? "true" : "false"?>;
+			BX.Scale.bitrixEnvType = "<?=getenv('BITRIX_ENV_TYPE')?>";
 			BX.Scale.monitoringCategories = {};
 			BX.Scale.isMonitoringDbCreated = {};
 
@@ -183,7 +184,7 @@ else
 	?>
 	<div class="adm-scale-page-wrap" id="adm-scale-page-wrap">
 		<div class="adm-scale-blocks-wrapper" id="adm-scale-blocks-wrapper">
-			<?=Loc::getMessage("SCALE_PANEL_BVM_TOO_OLD")?>
+			<?=Loc::getMessage("SCALE_PANEL_BVM_TOO_OLD").". ".Loc::getMessage("SCALE_PANEL_BVM_TOO_OLD_DOC")?>
 		</div>
 	</div>
 <?

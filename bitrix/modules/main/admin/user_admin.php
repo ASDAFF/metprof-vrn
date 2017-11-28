@@ -24,23 +24,6 @@ $entity_id = "USER";
 if(!($USER->CanDoOperation('view_subordinate_users') || $USER->CanDoOperation('view_all_users') || $USER->CanDoOperation('edit_all_users') || $USER->CanDoOperation('edit_subordinate_users')))
 	$APPLICATION->AuthForm(GetMessage("ACCESS_DENIED"));
 
-$arUserSubordinateGroups = array();
-$uid = $USER->GetID();
-$handle_subord = (
-	($USER->CanDoOperation('edit_subordinate_users') && !$USER->CanDoOperation('edit_all_users'))
-	|| ($USER->CanDoOperation('view_subordinate_users') && !$USER->CanDoOperation('view_all_users'))
-);
-if($handle_subord)
-{
-	$arUserGroups = CUser::GetUserGroup($uid);
-	for ($j = 0, $len = count($arUserGroups); $j < $len; $j++)
-	{
-		$arSubordinateGroups = CGroup::GetSubordinateGroups($arUserGroups[$j]);
-		$arUserSubordinateGroups = array_merge ($arUserSubordinateGroups, $arSubordinateGroups);
-	}
-	$arUserSubordinateGroups = array_unique($arUserSubordinateGroups);
-}
-
 IncludeModuleLangFile(__FILE__);
 
 //authorize as user
@@ -156,7 +139,8 @@ $filterFields = array(
 	array(
 		"id" => "ID",
 		"name" => GetMessage("MAIN_USER_ADMIN_FIELD_ID"),
-		"filterable" => ""
+		"filterable" => "",
+		"default" => true
 	),
 	array(
 		"id" => "TIMESTAMP_1",
@@ -181,18 +165,21 @@ $filterFields = array(
 	array(
 		"id" => "LOGIN",
 		"name" => GetMessage("F_LOGIN"),
-		"filterable" => ""
+		"filterable" => "",
+		"default" => true
 	),
 	array(
 		"id" => "EMAIL",
 		"name" => GetMessage("MAIN_F_EMAIL"),
-		"filterable" => ""
+		"filterable" => "",
+		"default" => true
 	),
 	array(
 		"id" => "NAME",
 		"name" => GetMessage("F_NAME"),
 		"filterable" => "",
-		"quickSearch" => ""
+		"quickSearch" => "",
+		"default" => true
 	),
 	array(
 		"id" => "KEYWORDS",
@@ -208,17 +195,40 @@ $filterFields = array(
 		"filterable" => ""
 	),
 );
+if ($bIntranetEdition)
+{
+	$filterFields[] = array(
+		"id" => "INTRANET_USERS",
+		"name" => GetMessage("F_FIND_INTRANET_USERS"),
+		"type" => "list",
+		"items" => array(
+			"" => GetMessage("MAIN_ALL"),
+			"Y" => GetMessage("MAIN_YES")
+		),
+		"filterable" => ""
+	);
+}
 $USER_FIELD_MANAGER->AdminListAddFilterFieldsV2($entity_id, $filterFields);
 $arFilter = array();
 $lAdmin->AddFilter($filterFields, $arFilter);
 
 $USER_FIELD_MANAGER->AdminListAddFilterV2($entity_id, $arFilter, $sTableID, $filterFields);
 
-if($handle_subord)
+$arUserSubordinateGroups = array();
+if(!$USER->CanDoOperation('edit_all_users') && !$USER->CanDoOperation('view_all_users'))
 {
+	$arUserGroups = CUser::GetUserGroup($USER->GetID());
+	for ($j = 0, $len = count($arUserGroups); $j < $len; $j++)
+	{
+		$arSubordinateGroups = CGroup::GetSubordinateGroups($arUserGroups[$j]);
+		$arUserSubordinateGroups = array_merge ($arUserSubordinateGroups, $arSubordinateGroups);
+	}
+	$arUserSubordinateGroups = array_unique($arUserSubordinateGroups);
+
 	$arFilter["CHECK_SUBORDINATE"] = $arUserSubordinateGroups;
+
 	if($USER->CanDoOperation('edit_own_profile'))
-		$arFilter["CHECK_SUBORDINATE_AND_OWN"] = $uid;
+		$arFilter["CHECK_SUBORDINATE_AND_OWN"] = $USER->GetID();
 }
 
 if (!$USER->CanDoOperation('edit_php'))
@@ -290,10 +300,10 @@ if($lAdmin->EditAction())
 
 if(($arID = $lAdmin->GroupAction()) && ($USER->CanDoOperation('edit_all_users') || $USER->CanDoOperation('edit_subordinate_users')))
 {
-	if($_REQUEST['action_target']=='selected')
+	if (!empty($_REQUEST["action_all_rows_".$sTableID]) && $_REQUEST["action_all_rows_".$sTableID] === "Y")
 	{
-		$arID = Array();
-		$rsData = CUser::GetList($by, $order, $arFilter);
+		$arID = array();
+		$rsData = CUser::GetList($by, $order, $arFilter, array("FIELDS" => array("ID")));
 		while($arRes = $rsData->Fetch())
 			$arID[] = $arRes['ID'];
 	}
@@ -507,11 +517,12 @@ if ($USER->CanDoOperation('edit_subordinate_users') || $USER->CanDoOperation('ed
 		$sGr[] = array("NAME" => $reference, "VALUE" => $referenceId);
 
 	$ar = Array(
-		"edit"=>true,
-		"delete"=>true,
-		"activate"=>GetMessage("MAIN_ADMIN_LIST_ACTIVATE"),
-		"deactivate"=>GetMessage("MAIN_ADMIN_LIST_DEACTIVATE"),
-		"add_group"=>array(
+		"edit" => true,
+		"delete" => true,
+		"for_all" => true,
+		"activate" => GetMessage("MAIN_ADMIN_LIST_ACTIVATE"),
+		"deactivate" => GetMessage("MAIN_ADMIN_LIST_DEACTIVATE"),
+		"add_group" => array(
 			"lable" => GetMessage("MAIN_ADMIN_LIST_ADD_GROUP"),
 			"type" => "select",
 			"name" => "groups",

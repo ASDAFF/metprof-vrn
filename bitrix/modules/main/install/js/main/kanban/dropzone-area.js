@@ -52,7 +52,7 @@ BX.Kanban.DropZoneArea.prototype =
 
 		var dropZoneType = this.getDropZoneType(options.type);
 		var dropZone = new dropZoneType(options);
-		if (! dropZone instanceof BX.Kanban.DropZone)
+		if (!(dropZone instanceof BX.Kanban.DropZone))
 		{
 			throw new Error("DropZone type must be an instance of BX.Kanban.DropZone");
 		}

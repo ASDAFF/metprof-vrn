@@ -1,0 +1,221 @@
+2017-Nov-28 18:43:36 Наличие необходимых модулей php (check_php_modules): Ok
+Все необходимые модули установлены
+2017-Nov-28 18:43:36 Обязательные параметры PHP (check_php_settings): Ok
+Настройки правильные
+2017-Nov-28 18:43:36 Модули веб-сервера (check_security): Ok
+Конфликтов не выявлено
+2017-Nov-28 18:43:36 Значения переменных сервера (check_server_vars): Ok
+Корректные
+2017-Nov-28 18:43:36 Сохранение сессии (check_session): Ok
+50% done
+2017-Nov-28 18:43:36 Структура базы данных (check_mysql_table_structure): Ok
+51% done
+2017-Nov-28 18:43:36 Сохранение сессии (check_session): Ok
+Успешно
+2017-Nov-28 18:43:36 Параметры настройки UTF (mbstring и константа BX_UTF) (check_mbstring): Ok
+Правильные. Сайт работает в UTF кодировке
+2017-Nov-28 18:43:36 Служебные скрипты в корне сайта (check_install_scripts): Ok
+Отсутствуют
+2017-Nov-28 18:43:37 Работа с сокетами (check_socket): Ok
+Connection to metprof-vrn.ru:80	Success
+
+Успешно
+2017-Nov-28 18:43:37 Выполнение агентов на cron (check_bx_crontab): Warning
+Замечание. Агенты выполняются на хитах, рекомендуется перевести выполнение агентов на cron
+2017-Nov-28 18:43:37 Параметры подключения к базе данных (check_dbconn_settings): Ok
+Успешно
+2017-Nov-28 18:43:37 Лишний вывод в файлах конфигурации (check_dbconn): Ok
+Connection to metprof-vrn.ru:80	Success
+
+Успешно
+2017-Nov-28 18:43:37 Сохранение сессии без UserAgent (check_session_ua): Ok
+50% done
+Connection to metprof-vrn.ru:80	Success
+
+2017-Nov-28 18:43:37 Сохранение сессии без UserAgent (check_session_ua): Ok
+Connection to metprof-vrn.ru:80	Success
+
+Успешно
+2017-Nov-28 18:43:37 Настройки сайтов (check_sites): Fail
+Ошибка! Путь к корню сайта должен быть пустой, установлено: /home/metprof-vrn/web/metprof-vrn.ru/public_html
+2017-Nov-28 18:43:37 Передача объектов по ссылке (check_clone): Ok
+Успешно
+2017-Nov-28 18:43:38 Размер стека и pcre.recursion_limit (check_pcre_recursion): Ok
+Connection to metprof-vrn.ru:80	Success
+
+Успешно
+2017-Nov-28 18:43:38 Загрузка файла (check_upload): Ok
+Connection to metprof-vrn.ru:80	Success
+
+Успешно
+2017-Nov-28 18:43:38 Загрузка файла больше 4Мб (check_upload_big): Ok
+Connection to metprof-vrn.ru:80	Success
+
+Успешно
+2017-Nov-28 18:43:38 Загрузка файла через php://input (check_upload_raw): Ok
+Connection to metprof-vrn.ru:80	Success
+
+Успешно
+2017-Nov-28 18:43:38 Передача POST запроса с большим числом параметров (check_post): Ok
+Connection to metprof-vrn.ru:80	Success
+
+Успешно
+2017-Nov-28 18:43:39 Отправка почты (check_mail): Ok
+Успешно
+2017-Nov-28 18:43:39 Отправка почтового сообщения больше 64Кб (check_mail_big): Ok
+Успешно
+2017-Nov-28 18:43:39 Проверка на наличие неотправленных сообщений (check_mail_b_event): Ok
+Успешно
+2017-Nov-28 18:43:40 Внутреннее перенаправление (функция LocalRedirect) (check_localredirect): Ok
+50% done
+Connection to metprof-vrn.ru:80	Success
+
+2017-Nov-28 18:43:40 Внутреннее перенаправление (функция LocalRedirect) (check_localredirect): Ok
+Connection to metprof-vrn.ru:80	Success
+
+Успешно
+2017-Nov-28 18:43:40 Фактическое ограничение памяти (check_memory_limit): Ok
+20% done
+Connection to metprof-vrn.ru:80	Success
+
+2017-Nov-28 18:43:40 Фактическое ограничение памяти (check_memory_limit): Ok
+40% done
+Connection to metprof-vrn.ru:80	Success
+
+2017-Nov-28 18:43:40 Фактическое ограничение памяти (check_memory_limit): Ok
+60% done
+Connection to metprof-vrn.ru:80	Success
+
+2017-Nov-28 18:43:41 Фактическое ограничение памяти (check_memory_limit): Ok
+80% done
+Connection to metprof-vrn.ru:80	Success
+
+2017-Nov-28 18:43:41 Фактическое ограничение памяти (check_memory_limit): Ok
+Connection to metprof-vrn.ru:80	Success
+
+Не менее 256 М
+2017-Nov-28 18:43:42 Работа с файлами кеша (check_cache): Ok
+Успешно
+2017-Nov-28 18:43:42 Доступ к серверу обновлений (check_update): Ok
+Успешно
+2017-Nov-28 18:43:42 HTTP авторизация (check_http_auth): Ok
+Connection to metprof-vrn.ru:80	Success
+
+Успешно
+2017-Nov-28 18:43:42 Создание и запуск файла (check_exec): Ok
+Connection to metprof-vrn.ru:80	Success
+
+Успешно
+2017-Nov-28 18:43:43 Функция getimagesize для swf (check_getimagesize): Ok
+Успешно
+2017-Nov-28 18:43:43 Версия MySQL-сервера (check_mysql_bug_version): Ok
+Успешно
+2017-Nov-28 18:43:44 Время на БД и веб-сервере (check_mysql_time): Ok
+Успешно
+2017-Nov-28 18:43:44 Режим работы MySQL (check_mysql_mode): Ok
+Успешно
+2017-Nov-28 18:43:44 Кодировка соединения (check_mysql_connection_charset): Ok
+character_set_connection=utf8, collation_connection=utf8_unicode_ci, character_set_results=utf8
+Успешно
+2017-Nov-28 18:43:44 Кодировка базы данных (check_mysql_db_charset): Ok
+CHARSET=utf8, COLLATION=utf8_unicode_ci
+Успешно
+2017-Nov-28 18:43:45 Кодировки таблиц в БД (check_mysql_table_charset): Ok
+Успешно
+2017-Nov-28 18:43:45 Структура базы данных (check_mysql_table_structure): Ok
+0% done
+2017-Nov-28 18:43:46 Структура базы данных (check_mysql_table_structure): Ok
+53% done
+В таблице b_short_uri поле URI "varchar(2000) NOT NULL " не соответствует описанию на диске "varchar(250) NOT NULL "
+
+2017-Nov-28 18:43:47 Структура базы данных (check_mysql_table_structure): Ok
+2% done
+2017-Nov-28 18:43:48 Структура базы данных (check_mysql_table_structure): Ok
+4% done
+2017-Nov-28 18:43:48 Структура базы данных (check_mysql_table_structure): Ok
+55% done
+2017-Nov-28 18:43:48 Структура базы данных (check_mysql_table_structure): Ok
+6% done
+2017-Nov-28 18:43:50 Структура базы данных (check_mysql_table_structure): Ok
+8% done
+2017-Nov-28 18:43:50 Структура базы данных (check_mysql_table_structure): Ok
+10% done
+2017-Nov-28 18:43:50 Структура базы данных (check_mysql_table_structure): Ok
+57% done
+2017-Nov-28 18:43:50 Структура базы данных (check_mysql_table_structure): Ok
+59% done
+2017-Nov-28 18:43:52 Структура базы данных (check_mysql_table_structure): Ok
+61% done
+2017-Nov-28 18:43:53 Структура базы данных (check_mysql_table_structure): Ok
+63% done
+2017-Nov-28 18:43:53 Структура базы данных (check_mysql_table_structure): Ok
+12% done
+2017-Nov-28 18:43:55 Структура базы данных (check_mysql_table_structure): Ok
+14% done
+2017-Nov-28 18:44:05 Структура базы данных (check_mysql_table_structure): Ok
+16% done
+2017-Nov-28 18:44:06 Структура базы данных (check_mysql_table_structure): Ok
+18% done
+2017-Nov-28 18:44:07 Структура базы данных (check_mysql_table_structure): Ok
+20% done
+2017-Nov-28 18:44:08 Структура базы данных (check_mysql_table_structure): Ok
+22% done
+2017-Nov-28 18:44:08 Структура базы данных (check_mysql_table_structure): Ok
+24% done
+2017-Nov-28 18:44:09 Структура базы данных (check_mysql_table_structure): Ok
+26% done
+2017-Nov-28 18:44:09 Структура базы данных (check_mysql_table_structure): Ok
+28% done
+2017-Nov-28 18:44:11 Структура базы данных (check_mysql_table_structure): Ok
+30% done
+2017-Nov-28 18:44:15 Структура базы данных (check_mysql_table_structure): Ok
+32% done
+2017-Nov-28 18:44:20 Структура базы данных (check_mysql_table_structure): Ok
+65% done
+2017-Nov-28 18:44:20 Структура базы данных (check_mysql_table_structure): Ok
+67% done
+2017-Nov-28 18:44:20 Структура базы данных (check_mysql_table_structure): Ok
+34% done
+2017-Nov-28 18:44:21 Структура базы данных (check_mysql_table_structure): Ok
+36% done
+2017-Nov-28 18:44:24 Структура базы данных (check_mysql_table_structure): Ok
+69% done
+2017-Nov-28 18:44:26 Структура базы данных (check_mysql_table_structure): Ok
+71% done
+2017-Nov-28 18:44:26 Структура базы данных (check_mysql_table_structure): Ok
+38% done
+2017-Nov-28 18:44:26 Структура базы данных (check_mysql_table_structure): Ok
+40% done
+2017-Nov-28 18:44:31 Структура базы данных (check_mysql_table_structure): Ok
+73% done
+2017-Nov-28 18:44:31 Структура базы данных (check_mysql_table_structure): Ok
+42% done
+2017-Nov-28 18:44:32 Структура базы данных (check_mysql_table_structure): Ok
+44% done
+2017-Nov-28 18:44:33 Структура базы данных (check_mysql_table_structure): Ok
+75% done
+2017-Nov-28 18:44:38 Структура базы данных (check_mysql_table_structure): Ok
+77% done
+2017-Nov-28 18:44:39 Структура базы данных (check_mysql_table_structure): Ok
+79% done
+2017-Nov-28 18:44:45 Структура базы данных (check_mysql_table_structure): Ok
+81% done
+2017-Nov-28 18:44:45 Структура базы данных (check_mysql_table_structure): Ok
+83% done
+2017-Nov-28 18:44:46 Структура базы данных (check_mysql_table_structure): Ok
+85% done
+2017-Nov-28 18:44:48 Структура базы данных (check_mysql_table_structure): Ok
+87% done
+2017-Nov-28 18:44:48 Структура базы данных (check_mysql_table_structure): Ok
+89% done
+2017-Nov-28 18:44:49 Структура базы данных (check_mysql_table_structure): Ok
+91% done
+2017-Nov-28 18:44:50 Структура базы данных (check_mysql_table_structure): Ok
+93% done
+2017-Nov-28 18:44:50 Структура базы данных (check_mysql_table_structure): Ok
+95% done
+2017-Nov-28 18:44:51 Структура базы данных (check_mysql_table_structure): Ok
+97% done
+2017-Nov-28 18:44:51 Структура базы данных (check_mysql_table_structure): Fail
+ALTER TABLE `b_short_uri` MODIFY `URI` varchar(250) NOT NULL ;
+Ошибка! Структура базы данных имеет ошибки (нет таблиц: 0, нет полей: 0, поля отличаются: 1, нет индексов: 0). Всего 1, автоматически могут быть исправлены: 0.

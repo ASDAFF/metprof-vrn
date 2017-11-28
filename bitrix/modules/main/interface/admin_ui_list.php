@@ -7,6 +7,8 @@ class CAdminUiList extends CAdminList
 	public $enableNextPage = false;
 	public $totalRowCount = 0;
 
+	protected $filterPresets = array();
+
 	private $isShownContext = false;
 
 	public function AddHeaders($aParams)
@@ -90,7 +92,8 @@ class CAdminUiList extends CAdminList
 			$_REQUEST["action"] = $_REQUEST["action_button_".$this->table_id];
 		}
 
-		if (isset($_REQUEST["ID"]))
+		if ((empty($_REQUEST["action_all_rows_".$this->table_id]) ||
+				$_REQUEST["action_all_rows_".$this->table_id] === "N") && isset($_REQUEST["ID"]))
 		{
 			if(!is_array($_REQUEST["ID"]))
 				$arID = array($_REQUEST["ID"]);
@@ -101,7 +104,7 @@ class CAdminUiList extends CAdminList
 		}
 		else
 		{
-			return false;
+			return array("");
 		}
 	}
 
@@ -226,9 +229,10 @@ class CAdminUiList extends CAdminList
 		$snippet = new Bitrix\Main\Grid\Panel\Snippet();
 
 		$actionList = array(array("NAME" => GetMessage("admin_lib_list_actions"), "VALUE" => ""));
+		$skipKey = array("edit", "delete", "for_all");
 		foreach ($this->arActions as $actionKey => $action)
 		{
-			if ($actionKey == "edit" || $actionKey == "delete")
+			if (in_array($actionKey, $skipKey))
 				continue;
 
 			if (is_array($action))
@@ -299,6 +303,9 @@ class CAdminUiList extends CAdminList
 			)
 		);
 
+		if ($this->arActions["for_all"])
+			$items[] = $snippet->getForAllCheckbox();
+
 		$actionPanel["GROUPS"][] = array("ITEMS" => $items);
 
 		return $actionPanel;
@@ -317,6 +324,32 @@ class CAdminUiList extends CAdminList
 		return $row;
 	}
 
+	/**
+	 * The method set the default fields for the filter.
+	 *
+	 * @param array $fields array("fieldId1", "fieldId2", "fieldId3")
+	 */
+	public function setDefaultFilterFields(array $fields)
+	{
+		$filterOptions = new Bitrix\Main\UI\Filter\Options($this->table_id);
+		$filterOptions->setFilterSettings(
+			"default_filter",
+			array("rows" => $fields),
+			false
+		);
+		$filterOptions->save();
+	}
+
+	/**
+	 * The method set filter presets.
+	 *
+	 * @param array $filterPresets array("presetId" => array("name" => "presetName", "fields" => array(...)))
+	 */
+	public function setFilterPresets(array $filterPresets)
+	{
+		$this->filterPresets = $filterPresets;
+	}
+
 	public function DisplayFilter($filterFields)
 	{
 		global $APPLICATION;
@@ -332,6 +365,7 @@ class CAdminUiList extends CAdminList
 					"FILTER_ID" => $this->table_id,
 					"GRID_ID" => $this->table_id,
 					"FILTER" => $filterFields,
+					"FILTER_PRESETS" => $this->filterPresets,
 					"ENABLE_LABEL" => true,
 					"ENABLE_LIVE_SEARCH" => true
 				),
@@ -453,7 +487,7 @@ class CAdminUiList extends CAdminList
 							$value = "";
 						break;
 					case "html":
-						$value = trim(strip_tags($field["view"]["value"], "<br>"));
+						$value = $field["view"]["value"];
 						break;
 					default:
 						$value = htmlspecialcharsex($value);

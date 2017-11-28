@@ -120,6 +120,15 @@
 
 
 		/**
+		 * @return {boolean}
+		 */
+		isEdited: function()
+		{
+			return this.getTitle() !== this.getDefaultTitle();
+		},
+
+
+		/**
 		 * Gets column settings
 		 * @return {?object}
 		 */

@@ -1179,6 +1179,7 @@ window.'.$this->name.' = new PopupMenu("'.$this->id.'"'.
 						(isset($action["AUTOHIDE"]) && $action["AUTOHIDE"] == false? "'AUTOHIDE':false,":"").
 						(isset($action["DEFAULT"]) && $action["DEFAULT"] == true? "'DEFAULT':true,":"").
 						($action["TEXT"]<>""? "'TEXT':'".CUtil::JSEscape($action["TEXT"])."',":"").
+						($action["HTML"]<>""? "'HTML':'".CUtil::JSEscape($action["HTML"])."',":"").
 						(isset($action["TITLE"]) && $action["TITLE"]<>""? "'TITLE':'".CUtil::JSEscape($action["TITLE"])."',":"").
 						(isset($action["SHOW_TITLE"]) && $action["SHOW_TITLE"] == true ? "'SHOW_TITLE':true,":"").
 						($action["ACTION"]<>""? "'ONCLICK':'".CUtil::JSEscape(htmlspecialcharsback($action["ACTION"]))."',":"").

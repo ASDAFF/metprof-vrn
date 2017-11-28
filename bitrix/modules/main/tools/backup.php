@@ -557,7 +557,7 @@ if ($NS['step'] == 6)
 					{
 						$backup = CBitrixCloudBackup::getInstance();
 						$q = $backup->getQuota();
-						if ($NS['arc_size'] > $q)
+						if ($q && $NS['arc_size'] > $q)
 							RaiseErrorAndDie(GetMessage('DUMP_ERR_BIG_BACKUP', array('#ARC_SIZE#' => $NS['arc_size'], '#QUOTA#' => $q)), 620);
 
 						$obBucket = $backup->getBucketToWriteFile(CTar::getCheckword($NS['dump_encrypt_key']), basename($NS['arc_name']));
