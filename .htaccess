@@ -1,0 +1,96 @@
+Options -Indexes 
+ErrorDocument 404 /404.php
+
+<IfModule mod_php5.c>
+  php_flag session.use_trans_sid off
+  #php_value display_errors 1
+  #php_value mbstring.internal_encoding UTF-8
+</IfModule>
+
+  Redirect 301 /articles/plastic-pipes/ /articles/plastikovye-truby/
+  Redirect 301 /articles/polyethylene-pipes/ /articles/polijetilenovye-truby/
+  Redirect 301 /articles/pipes-for-heating/ /articles/truby-dlja-otoplenija/
+  Redirect 301 /articles/centrifugal-pump/ /articles/centrobezhnyj-nasos/
+  Redirect 301 /articles/pump-for-heating/ /articles/nasos-dlja-otoplenija/
+  Redirect 301 /articles/klej_plitochnyj/ /articles/plitochnyy-kley/
+  Redirect 301 /articles/gidroizolyaciya/ /catalog/gidro_paroizolyatsiya/
+  Redirect 301 /articles/gvl/ /catalog/gipsokarton/
+  Redirect 301 /articles/list_osb/ /catalog/osp/
+  Redirect 301 /articles/list_sml/ /catalog/sml/
+  Redirect 301 /articles/list_dvp/ /catalog/dvp/
+  Redirect 301 /articles/list_dsp/ /catalog/dsp/
+  Redirect 301 /articles/polypropylene-fittings/ /catalog/truby_i_fitingi/
+  Redirect 301 /articles/polypropylene-pipes/ /catalog/truby_i_fitingi/
+  Redirect 301 /articles/disk-shutter/ /catalog/zatvor_povorotnyy_diskovyy_tecofi_frantsiya/
+
+# от 31.08.2017
+  Redirect 301 /catalog/inzhenernaya_santekhnika_otoplenie_vodoprovod_kanalizatsiya/ /catalog/inzhenernaya_santekhnika/
+  Redirect 301 /catalog/stroitelnye_materialy/ /catalog/stroitelno_otdelochnye_materialy/
+  Redirect 301 /catalog/polipropilenovye_truby_i_fitingi_/ /catalog/polipropelenovye_truby_i_fitingi_fusitek/
+  Redirect 301 /catalog/peletkotly/ /catalog/tverdotoplivnye_kotly/
+  Redirect 301 /articles/tverdotoplivnyj-kotel/ /catalog/tverdotoplivnye_kotly/
+  Redirect 301 /articles/centrobezhnyj-nasos/ /articles/tsentrobezhnye-nasosy-dlya-vody/
+  Redirect 301 /catalog/vikhrevye_nasosy/ /catalog/tsentrobezhnye_nasosy/   
+  Redirect 301 /catalog/kotly_nastennye/ /catalog/dvukhkonturnye_nastennye_gazovye_kotly/                                 
+
+<IfModule mod_rewrite.c>
+  Options +FollowSymLinks
+  RewriteEngine On
+  
+RewriteCond %{HTTP_HOST} ^www.polimer-vrn\.ru$ [NC]
+RewriteRule ^(.*)$ http://polimer-vrn.ru/$1 [R=301,L]
+
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /index\.php\ HTTP/
+RewriteRule ^index\.php$ http://polimer-vrn.ru [R=301,L]
+
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /index\.(php|html|htm)\ HTTP/ 
+RewriteRule ^(.*)index\.(php|html|htm)$ $1 [R=301,L]
+
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /.*index\.html?\ HTTP/
+RewriteRule ^(.*)index\.html?$ http://polimer-vrn.ru/$1 [R=301,L]
+
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /.*index\.php?\ HTTP/
+RewriteRule ^(.*)index\.php?$ http://polimer-vrn.ru/$1 [R=301,L]
+
+RewriteCond %{QUERY_STRING} ^idc=4&marea=6$ [NC]
+RewriteRule ^index\.php$ /? [R=301,L]
+
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -l [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteCond %{REQUEST_FILENAME} [\xC2-\xDF][\x80-\xBF] [OR]
+RewriteCond %{REQUEST_FILENAME} \xE0[\xA0-\xBF][\x80-\xBF] [OR]
+RewriteCond %{REQUEST_FILENAME} [\xE1-\xEC\xEE\xEF][\x80-\xBF]{2} [OR]
+RewriteCond %{REQUEST_FILENAME} \xED[\x80-\x9F][\x80-\xBF] [OR]
+RewriteCond %{REQUEST_FILENAME} \xF0[\x90-\xBF][\x80-\xBF]{2} [OR]
+RewriteCond %{REQUEST_FILENAME} [\xF1-\xF3][\x80-\xBF]{3} [OR]
+RewriteCond %{REQUEST_FILENAME} \xF4[\x80-\x8F][\x80-\xBF]{2}
+RewriteCond %{REQUEST_FILENAME} !/bitrix/virtual_file_system.php$
+RewriteRule ^(.*)$ /bitrix/virtual_file_system.php [L]
+
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_URI} ^(.*/[^/\.]+)$
+  RewriteRule ^(.*)$ http://%{HTTP_HOST}/$1/ [R=301,L]
+
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !/bitrix/urlrewrite.php$
+  RewriteRule ^(.*)$ /bitrix/urlrewrite.php [L]
+  RewriteRule .* - [E=REMOTE_USER:%{HTTP:Authorization}]
+</IfModule>
+
+<IfModule mod_dir.c>
+  DirectoryIndex index.php index.html
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive on
+  ExpiresByType image/jpeg "access plus 3 day"
+  ExpiresByType image/gif "access plus 3 day"
+  ExpiresByType image/png "access plus 3 day"
+  ExpiresByType text/css "access plus 3 day"
+  ExpiresByType application/javascript "access plus 3 day"  
+</IfModule>
