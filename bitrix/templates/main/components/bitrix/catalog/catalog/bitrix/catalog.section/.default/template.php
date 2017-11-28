@@ -224,7 +224,7 @@ if (!empty($arResult['ITEMS']))
 		"ENLARGE_PRODUCT" => "STRICT",
 		"HIDE_NOT_AVAILABLE" => "N",
 		"HIDE_NOT_AVAILABLE_OFFERS" => "N",
-		"IBLOCK_ID" => "21",
+		"IBLOCK_ID" => $arParams['IBLOCK_ID'],
 		"IBLOCK_MODE" => "single",
 		"IBLOCK_TYPE" => "1c_catalog",
 		"LABEL_PROP_10" => "",

@@ -25,7 +25,7 @@ $APPLICATION->SetTitle("«Полимер» — главная страница 
 	<ul class="tabslist cl">
 
 		<?
-		$arFilter = array('IBLOCK_ID' => 21,'DEPTH_LEVEL' => 1,"ACTIVE" => "Y");
+		$arFilter = array('IBLOCK_ID' => 24,'DEPTH_LEVEL' => 1,"ACTIVE" => "Y");
 		$rsSect = CIBlockSection::GetList(array('left_margin' => 'asc'),$arFilter);
 		$inc = 1;
 		$arrIdSection = array();
@@ -52,7 +52,7 @@ $APPLICATION->SetTitle("«Полимер» — главная страница 
 		<div class="tabitem">
 
 			<?
-			$arFilter = array('IBLOCK_ID' => 21,"SECTION_ID" => $sect,'DEPTH_LEVEL' => 2,"ACTIVE" => "Y");
+			$arFilter = array('IBLOCK_ID' => 24,"SECTION_ID" => $sect,'DEPTH_LEVEL' => 2,"ACTIVE" => "Y");
 			$rsSect = CIBlockSection::GetList(array('left_margin' => 'asc'),$arFilter);
 			$inc = 1;
 			$arrIdSection = array();
@@ -174,17 +174,17 @@ $APPLICATION->SetTitle("«Полимер» — главная страница 
 		"TEMPLATE_THEME" => "blue",
 		"USE_PRODUCT_QUANTITY" => "N",
 		"COMPONENT_TEMPLATE" => "sale-bestsellers",
-		"SHOW_PRODUCTS_21" => "Y",
-		"PROPERTY_CODE_21" => array(
+		"SHOW_PRODUCTS_24" => "Y",
+		"PROPERTY_CODE_24" => array(
 			0 => "",
 			1 => "",
 		),
-		"CART_PROPERTIES_21" => array(
+		"CART_PROPERTIES_24" => array(
 			0 => "",
 			1 => "",
 		),
-		"ADDITIONAL_PICT_PROP_21" => "MORE_PHOTO",
-		"LABEL_PROP_21" => "-",
+		"ADDITIONAL_PICT_PROP_24" => "MORE_PHOTO",
+		"LABEL_PROP_24" => "-",
 		"PROPERTY_CODE_22" => array(
 			0 => "",
 			1 => "",
@@ -194,7 +194,32 @@ $APPLICATION->SetTitle("«Полимер» — главная страница 
 			1 => "",
 		),
 		"ADDITIONAL_PICT_PROP_22" => "MORE_PHOTO",
-		"OFFER_TREE_PROPS_22" => array(
+		"OFFER_TREE_PROPS_22" => "",
+		"SHOW_PRODUCTS_26" => "N",
+		"PROPERTY_CODE_26" => "",
+		"CART_PROPERTIES_26" => "",
+		"ADDITIONAL_PICT_PROP_26" => "MORE_PHOTO",
+		"LABEL_PROP_26" => "-",
+		"PROPERTY_CODE_27" => array(
+			0 => "",
+			1 => "",
+		),
+		"CART_PROPERTIES_27" => array(
+			0 => "",
+			1 => "",
+		),
+		"ADDITIONAL_PICT_PROP_27" => "MORE_PHOTO",
+		"OFFER_TREE_PROPS_27" => "",
+		"PROPERTY_CODE_25" => array(
+			0 => "",
+			1 => "",
+		),
+		"CART_PROPERTIES_25" => array(
+			0 => "",
+			1 => "",
+		),
+		"ADDITIONAL_PICT_PROP_25" => "MORE_PHOTO",
+		"OFFER_TREE_PROPS_25" => array(
 		)
 	),
 	false
@@ -205,7 +230,7 @@ $APPLICATION->SetTitle("«Полимер» — главная страница 
 			<div class="slider_product" id="mp__product__new">
 				<?
 				$arSelect = Array("ID","IBLOCK_ID", "NAME", "DETAIL_PAGE_URL","PREVIEW_PICTURE","PROPERTY_SALE","PROPERTY_CML2_BASE_UNIT");
-				$arFilter = array('IBLOCK_ID' => 21, 'ACTIVE' => 'Y','>=TIMESTAMP_X' => date($DB->DateFormatToPHP(CLang::GetDateFormat("SHORT")), strtotime('-30 day')));
+				$arFilter = array('IBLOCK_ID' => 24, 'ACTIVE' => 'Y','>=TIMESTAMP_X' => date($DB->DateFormatToPHP(CLang::GetDateFormat("SHORT")), strtotime('-30 day')));
 				$res = CIBlockElement::GetList(Array(), $arFilter, false, Array("nPageSize" => 20), $arSelect);
 				while($ob = $res->GetNextElement()):
 					$arFields = $ob->GetFields();
@@ -228,7 +253,7 @@ $APPLICATION->SetTitle("«Полимер» — главная страница 
 			<div class="slider_product" id="mp__product__action">
 				<?
 				$arSelect = Array("ID","IBLOCK_ID", "NAME", "DETAIL_PAGE_URL","PREVIEW_PICTURE","PROPERTY_SALE","PROPERTY_CML2_BASE_UNIT");
-				$arFilter = Array("IBLOCK_ID" => 21, "ACTIVE" => "Y", "PROPERTY_SALE_VALUE" => "Y");
+				$arFilter = Array("IBLOCK_ID" => 24, "ACTIVE" => "Y", "PROPERTY_SALE_VALUE" => "Y");
 				$res = CIBlockElement::GetList(Array(), $arFilter, false, false, $arSelect);
 				while($ob = $res->GetNextElement()):
 				$arFields = $ob->GetFields();

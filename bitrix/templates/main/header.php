@@ -270,7 +270,7 @@ $noh1    = $pages[1] == 'personal' || $pages[1] == 'price' || ($pages[1] == 'cat
 		"CACHE_TIME" => "36000000",
 		"CACHE_TYPE" => "A",
 		"COUNT_ELEMENTS" => "Y",
-		"IBLOCK_ID" => "21",
+		"IBLOCK_ID" => "24",
 		"IBLOCK_TYPE" => "1c_catalog",
 		"SECTION_CODE" => "",
 		"SECTION_FIELDS" => array(

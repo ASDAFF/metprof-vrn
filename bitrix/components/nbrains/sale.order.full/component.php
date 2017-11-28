@@ -7,6 +7,8 @@ if (!CModule::IncludeModule("sale"))
 	return;
 }
 
+
+
 $arParams["PATH_TO_BASKET"] = Trim($arParams["PATH_TO_BASKET"]);
 if (strlen($arParams["PATH_TO_BASKET"]) <= 0)
 	$arParams["PATH_TO_BASKET"] = "basket.php";
@@ -65,6 +67,8 @@ $GLOBALS['CATALOG_ONETIME_COUPONS_ORDER']=null;
 
 $allCurrency = CSaleLang::GetLangCurrency(SITE_ID);
 
+
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && ($arParams["DELIVERY_NO_SESSION"] == "N" || check_bitrix_sessid()))
 {
 
@@ -85,6 +89,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && ($arParams["DELIVERY_NO_SESSION"] ==
 		}
 	}
 }
+
+
 
 $arResult["SKIP_FIRST_STEP"] = (($arResult["POST"]["SKIP_FIRST_STEP"] == "Y") ? "Y" : "N");
 $arResult["SKIP_SECOND_STEP"] = (($arResult["POST"]["SKIP_SECOND_STEP"] == "Y") ? "Y" : "N");
@@ -123,6 +129,8 @@ if(strlen($arResult["POST"]["DELIVERY_ID"])>0)
 	else
 		$arResult["DELIVERY_ID"] = explode(":", $arResult["POST"]["DELIVERY_ID"]);
 }
+
+
 
 if(strlen($arResult["POST"]["PAY_SYSTEM_ID"])>0)
 	$arResult["PAY_SYSTEM_ID"] = IntVal($arResult["POST"]["PAY_SYSTEM_ID"]);
@@ -438,6 +446,8 @@ else
 				$arResult["DISCOUNT_PRICE"] += $curDiscount;
 			}
 		}
+
+
 
 		if (strlen($arResult["ERROR_MESSAGE"]) <= 0 && $arResult["CurrentStep"] > 1)
 		{

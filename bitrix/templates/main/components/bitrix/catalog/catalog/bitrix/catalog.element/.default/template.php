@@ -55,39 +55,41 @@ $this->setFrameMode(true);
             </div>
          </div>
 
-         <div class="pc__buy-block cl">
-            <div class="bb_compare">
-               <input type="checkbox" id="icompare" id-cat="<?=$arResult['IBLOCK_SECTION_ID']?>" value="<?=$arResult['ID']?>">
-               <label for="icompare">Сравнить</label>
-            </div>
 
-            <? if(empty($arResult['ITEM_PRICES'])): ?>
-                <h1>Цену уточняйте у менеджера</h1>
-            <? else: ?>
-            <div class="bb_col">
-               <div class="price">
-                  <? foreach($arResult['ITEM_PRICES'] as $name => $price):?>
-                  <div class="price-old"><span><?=$price['BASE_PRICE']?></span> &#8381;/<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['VALUE'];?></div>
-                  <div class="price-new"><span><?=$price['UNROUND_PRICE']?></span>  &#8381;/<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['VALUE'];?></div>
-                  <? endforeach; ?>
-               </div>
-<!--               <a href="#" class="cheaper">Нашли дешевле ?</a>-->
-            </div>
 
-            <div class="bb_col right">
-               <div class="sale">
-                  <? foreach($arResult['ITEM_PRICES'] as $name => $price):?>
-                  <span>СКИДКА <?=$price['PERCENT']?>%</span>
-                  <? endforeach; ?>
-                  <span>при заказе<br>с сайта</span>
-               </div>
-               <div class="quantity">
-                  <a class="minus na" href="#"></a>
-                  <input type="text" value="1" id="count_product"/>
-                  <a class="plus" href="#"></a>
-               </div>
-            </div>
-            <? endif; ?>
+          <div class="pc__buy-block cl">
+              <div class="bb_compare">
+                  <input type="checkbox" id="icompare" id-cat="<?=$arResult['IBLOCK_SECTION_ID']?>" value="<?=$arResult['ID']?>">
+                  <label for="icompare">Сравнить</label>
+              </div>
+
+              <? if(empty($arResult['ITEM_PRICES'])): ?>
+                  <h1>Цену уточняйте у менеджера</h1>
+              <? else: ?>
+                  <div class="bb_col">
+                      <div class="price">
+                          <? foreach($arResult['ITEM_PRICES'] as $name => $price):?>
+                              <div class="price-old"><span><?=$price['BASE_PRICE']?></span> &#8381;/<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['VALUE'];?></div>
+                              <div class="price-new"><span><?=$price['UNROUND_PRICE']?></span>  &#8381;/<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['VALUE'];?></div>
+                          <? endforeach; ?>
+                      </div>
+                      <!--               <a href="#" class="cheaper">Нашли дешевле ?</a>-->
+                  </div>
+
+                  <div class="bb_col right">
+                      <div class="sale">
+                          <? foreach($arResult['ITEM_PRICES'] as $name => $price):?>
+                              <span>СКИДКА <?=$price['PERCENT']?>%</span>
+                          <? endforeach; ?>
+                          <span>при заказе<br>с сайта</span>
+                      </div>
+                      <div class="quantity">
+                          <a class="minus na" href="#"></a>
+                          <input type="text" value="1" id="count_product"/>
+                          <a class="plus" href="#"></a>
+                      </div>
+                  </div>
+              <? endif; ?>
 
             <? if($arResult['CATALOG_QUANTITY'] > 0 and $arResult['ITEM_PRICES'][0]['BASE_PRICE']): ?>
             <a href="javascript:void(0)" class="add2cart" onclick="addToBasket2(<?=$arResult['ID']?>, $('#count_product').val(),this);">Добавить в корзину</a>
@@ -126,21 +128,12 @@ $this->setFrameMode(true);
                   if (!empty($arResult['PROPERTIES']))
                   {
                      foreach($arResult['PROPERTIES'] as $property){
-                        if(
-                            strlen($property['VALUE']) > 1 AND
-                            $property['MULTIPLE'] == "N" AND
-                            $property['CODE'] != "CML2_BASE_UNIT" AND
-                            ($property['PROPERTY_TYPE'] == "S" OR
-                            $property['PROPERTY_TYPE'] == "L")
-                        ){
                            ?>
                            <div class="line cl">
                               <div class="prop"><?=$property['NAME']?></div>
                               <div class="val"><?=$property['VALUE']?></div>
                            </div>
                            <?
-
-                        }
                      }
                   }
                   ?>
@@ -149,6 +142,7 @@ $this->setFrameMode(true);
             <div class="tab tab_fed">
                <a href="#" class="mtb" onclick="return false">Отзывы</a>
                <div class="content">
+
 
 
                   <?$APPLICATION->IncludeComponent("bitrix:forum.topic.reviews", "reviews", Array(
@@ -160,7 +154,7 @@ $this->setFrameMode(true);
                       "ELEMENT_ID" => $arResult['ID'],	// ID СЌР»РµРјРµРЅС‚Р°
                       "FILES_COUNT" => "2",	// РњР°РєСЃРёРјР°Р»СЊРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ С„Р°Р№Р»РѕРІ, РїСЂРёРєСЂРµРїР»РµРЅРЅС‹С… Рє РѕРґРЅРѕРјСѓ СЃРѕРѕР±С‰РµРЅРёСЋ
                       "FORUM_ID" => "1",	// ID С„РѕСЂСѓРјР° РґР»СЏ РѕС‚Р·С‹РІРѕРІ
-                      "IBLOCK_ID" => "21",	// РљРѕРґ РёРЅС„РѕСЂРјР°С†РёРѕРЅРЅРѕРіРѕ Р±Р»РѕРєР°
+                      "IBLOCK_ID" => $arParams['IBLOCK_ID'],	// РљРѕРґ РёРЅС„РѕСЂРјР°С†РёРѕРЅРЅРѕРіРѕ Р±Р»РѕРєР°
                       "IBLOCK_TYPE" => "1c_catalog",	// РўРёРї РёРЅС„РѕСЂРјР°С†РёРѕРЅРЅРѕРіРѕ Р±Р»РѕРєР° (РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ С‚РѕР»СЊРєРѕ РґР»СЏ РїСЂРѕРІРµСЂРєРё)
                       "MESSAGES_PER_PAGE" => "10",	// РљРѕР»РёС‡РµСЃС‚РІРѕ СЃРѕРѕР±С‰РµРЅРёР№ РЅР° РѕРґРЅРѕР№ СЃС‚СЂР°РЅРёС†Рµ
                       "NAME_TEMPLATE" => "",	// Р¤РѕСЂРјР°С‚ РёРјРµРЅРё
@@ -206,7 +200,7 @@ $this->setFrameMode(true);
 			7 => "SCHEDULE",
 			8 => "",
 		),
-		"IBLOCK_ID" => "21",
+		"IBLOCK_ID" => $arParams['IBLOCK_ID'],
 		"IBLOCK_TYPE" => "1c_catalog",
 		"MAIN_TITLE" => "",
 		"MIN_AMOUNT" => "0",
@@ -266,7 +260,7 @@ $this->setFrameMode(true);
             "CONVERT_CURRENCY" => "N",
             "DETAIL_URL" => "",
             "HIDE_NOT_AVAILABLE" => "N",
-            "IBLOCK_ID" => "21",
+            "IBLOCK_ID" => $arParams['IBLOCK_ID'],
             "IBLOCK_TYPE" => "1c_catalog",
             "ID" => $arResult['ID'],
             "LABEL_PROP_10" => "-",
@@ -394,7 +388,7 @@ $this->setFrameMode(true);
             "ENLARGE_PRODUCT" => "STRICT",	// Р’С‹РґРµР»СЏС‚СЊ С‚РѕРІР°СЂС‹ РІ СЃРїРёСЃРєРµ
             "HIDE_NOT_AVAILABLE" => "N",	// РќРµ РѕС‚РѕР±СЂР°Р¶Р°С‚СЊ С‚РѕРІР°СЂС‹, РєРѕС‚РѕСЂС‹С… РЅРµС‚ РЅР° СЃРєР»Р°РґР°С…
             "HIDE_NOT_AVAILABLE_OFFERS" => "N",	// РўРѕСЂРіРѕРІС‹Рµ РїСЂРµРґР»РѕР¶РµРЅРёСЏ, РЅРµРґРѕСЃС‚СѓРїРЅС‹Рµ РґР»СЏ РїРѕРєСѓРїРєРё
-            "IBLOCK_ID" => "21",	// Р?РЅС„РѕР±Р»РѕРє
+            "IBLOCK_ID" => $arParams['IBLOCK_ID'],	// Р?РЅС„РѕР±Р»РѕРє
             "IBLOCK_MODE" => "single",	// РџРѕРєР°Р·С‹РІР°С‚СЊ С‚РѕРІР°СЂС‹ РёР·
             "IBLOCK_TYPE" => "1c_catalog",	// РўРёРї РёРЅС„РѕР±Р»РѕРєР°
             "LABEL_PROP_10" => "",
