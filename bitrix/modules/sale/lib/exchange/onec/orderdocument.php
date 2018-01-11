@@ -121,9 +121,20 @@ class OrderDocument extends DocumentImport
                                 ),
                                 'TAX_VALUE' => array(
                                     'TYPE' => 'string'
-                                )
+                                ),
+								'IN_PRICE' => array(
+									'TYPE' => 'bool'
+								)
                             )
-                        )
+                        ),
+						'DISCOUNTS' => array(
+							'TYPE' => 'array',
+							'FIELDS' => array(
+								'SUMM' => array(
+									'TYPE' => 'string'
+								)
+							)
+						)
                     )
                 ),
                 'TAXES' => array(

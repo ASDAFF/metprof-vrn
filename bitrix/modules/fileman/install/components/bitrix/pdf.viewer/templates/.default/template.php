@@ -60,7 +60,7 @@ See https://github.com/adobe-type-tools/cmap-resources
 		{?>
 		window.addEventListener('pagesloaded', function(params){
 			setTimeout(function(){
-				var printButton = document.getElementById('print_<?=htmlspecialcharsbx($arResult['ID']);?>');
+				var printButton = document.getElementById('print_<?=CUtil::JSEscape($arResult['ID']);?>');
 				if(!!printButton)
 				{
 					printButton.dispatchEvent(new Event('click'));
@@ -89,7 +89,7 @@ else
 		function showOnTimeout()
 		{
 			setTimeout(function(){
-				BX.show(BX('outerContainer_<?=$arResult['ID'];?>'));
+				BX.show(BX('outerContainer_<?=CUtil::JSEscape($arResult['ID']);?>'));
 			}, 50);
 		}
 		if(!!window.PdfJsLoaded)
@@ -112,7 +112,7 @@ else
 		{?>
 		function openPrintInNewWindow()
 		{
-			window.open('<?=$arResult['PRINT_URL'];?>', '_blank');
+			window.open('<?=CUtil::JSEscape($arResult['PRINT_URL']);?>', '_blank');
 		}
 		window.pdfJsPrintDisabled = true;
 		<?}?>

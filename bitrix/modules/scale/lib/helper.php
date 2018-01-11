@@ -202,4 +202,26 @@ class Helper
 
 		return $result;
 	}
+
+	public static function isScaleCanBeUsed()
+	{
+		global $DB;
+
+		return getenv('BITRIX_VA_VER')
+			&& stristr(php_uname('s'), 'linux')
+			&& strtolower($DB->type) == 'mysql'
+			&& self::checkBxEnvVersion();
+	}
+
+	public static function getTmpDir()
+	{
+		$path = '/home/bitrix/.webdir';
+		$permissionsForOwnerOnly = '0600';
+		$res = true;
+
+		if(!file_exists($path))
+			$res = mkdir($path, $permissionsForOwnerOnly, true);
+
+		return $res ? $path : '';
+	}
 }

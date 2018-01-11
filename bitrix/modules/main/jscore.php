@@ -270,7 +270,9 @@ $arJSCoreConfig = array(
 		'js' => '/bitrix/js/main/spotlight/spotlight.js',
 		'css' => '/bitrix/js/main/spotlight/css/spotlight.css',
 		'lang' => $pathLang.'/js/spotlight.php',
-		'rel' => array('popup'),
+		'rel' => array('popup', 'ajax'),
+		'bundle_js' => 'spotlight',
+		'bundle_css' => 'spotlight',
 	),
 	'sidepanel' => array(
 		'js' => array(

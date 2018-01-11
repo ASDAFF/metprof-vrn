@@ -13,7 +13,7 @@ namespace Bitrix\Main\Entity\Query\Filter\Expression;
  * @package    bitrix
  * @subpackage main
  */
-class Column
+class Column extends Base
 {
 	/**
 	 * @var string

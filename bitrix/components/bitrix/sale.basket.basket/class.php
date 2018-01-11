@@ -241,7 +241,7 @@ class CBitrixBasketComponent extends CBitrixComponent
 				"ID", "NAME", "CALLBACK_FUNC", "MODULE", "PRODUCT_ID", "PRODUCT_PRICE_ID", "QUANTITY", "DELAY", "CAN_BUY",
 				"PRICE", "WEIGHT", "DETAIL_PAGE_URL", "NOTES", "CURRENCY", "VAT_RATE", "CATALOG_XML_ID",
 				"PRODUCT_XML_ID", "SUBSCRIBE", "DISCOUNT_PRICE", "PRODUCT_PROVIDER_CLASS", "TYPE", "SET_PARENT_ID", 'PRODUCT_PRICE_ID',
-				'CUSTOM_PRICE', 'BASE_PRICE'
+				'CUSTOM_PRICE', 'BASE_PRICE', 'PRICE_TYPE_ID'
 			)
 		);
 		while ($arItem = $dbItems->GetNext())
@@ -446,7 +446,7 @@ class CBitrixBasketComponent extends CBitrixComponent
 			{
 				if (($arItem['DISCOUNT_PRICE'] + $arItem['PRICE']) > 0)
 				{
-					$arItem['DISCOUNT_PRICE_PERCENT'] = ($arItem['DISCOUNT_PRICE']*100)/($arItem['DISCOUNT_PRICE'] + $arItem['PRICE']);
+					$arItem['DISCOUNT_PRICE_PERCENT'] = roundEx(($arItem['DISCOUNT_PRICE']*100)/($arItem['DISCOUNT_PRICE'] + $arItem['PRICE']), 0);
 					$arItem['FULL_PRICE'] = $arItem["PRICE"] + $arItem["DISCOUNT_PRICE"];
 				}
 			}
@@ -579,10 +579,7 @@ class CBitrixBasketComponent extends CBitrixComponent
 			{
 				if (($customPrice || $arOneItem['DISCOUNTS_APPLY']) && $arOneItem["BASE_PRICE"] > 0 && $arOneItem["DISCOUNT_PRICE"] > 0)
 				{
-					$arOneItem["DISCOUNT_PRICE_PERCENT"] = PriceMaths::roundByFormatCurrency(
-						($arOneItem["DISCOUNT_PRICE"] * 100) / $arOneItem["BASE_PRICE"],
-						$arOneItem["CURRENCY"]
-					);
+					$arOneItem["DISCOUNT_PRICE_PERCENT"] = roundEx(($arOneItem["DISCOUNT_PRICE"] * 100) / $arOneItem["BASE_PRICE"], 0);
 				}
 				else
 				{
@@ -1182,6 +1179,8 @@ class CBitrixBasketComponent extends CBitrixComponent
 
 								$arTmpRes['n'.$propId]["ID"] = $arProp["ID"];
 								$arTmpRes['n'.$propId]["CODE"] = $arProp["CODE"];
+								$arTmpRes['n'.$propId]["TYPE"] = $arProp["TYPE"];
+								$arTmpRes['n'.$propId]["USER_TYPE"] = $arProp["USER_TYPE"];
 								$arTmpRes['n'.$propId]["NAME"] = $arProp["NAME"];
 								$arTmpRes['n'.$propId]["VALUES"][$valId] = $arValue;
 							}

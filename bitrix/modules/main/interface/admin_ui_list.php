@@ -43,6 +43,42 @@ class CAdminUiList extends CAdminList
 		$this->enableNextPage = $queryObject->PAGEN < $queryObject->NavPageCount;
 	}
 
+	public function setNavigation(\Bitrix\Main\UI\PageNavigation $nav, $title, $showAllways = true, $post = false)
+	{
+		global $APPLICATION;
+
+		$this->totalRowCount = $nav->getRecordCount();
+		$this->enableNextPage = $nav->getCurrentPage() < $nav->getPageCount();
+
+		ob_start();
+
+		$APPLICATION->IncludeComponent(
+			"bitrix:main.pagenavigation",
+			"grid",
+			array(
+				"NAV_OBJECT" => $nav,
+				"TITLE" => $title,
+				"PAGE_WINDOW" => 5,
+				"SHOW_ALWAYS" => $showAllways,
+				"POST" => $post,
+				"TABLE_ID" => $this->table_id,
+			),
+			false,
+			array(
+				"HIDE_ICONS" => "Y",
+			)
+		);
+
+		$this->NavText(ob_get_clean());
+	}
+
+	public function getNavSize()
+	{
+		$gridOptions = new Bitrix\Main\Grid\Options($this->table_id);
+		$navParams = $gridOptions->getNavParams();
+		return $navParams["nPageSize"];
+	}
+
 	public function EditAction()
 	{
 		if($_SERVER["REQUEST_METHOD"] == "POST" &&
@@ -586,7 +622,7 @@ class CAdminUiResult extends CAdminResult
 
 		$this->nInitialSize = $nPageSize["nPageSize"];
 
-		parent::NavStart($nPageSize, $bShowAll, $iNumPage);
+		$this->parentNavStart($nPageSize, $bShowAll, $iNumPage);
 	}
 
 	public function GetNavPrint($title, $show_allways=true, $StyleText="", $template_path=false, $arDeleteParam=false)

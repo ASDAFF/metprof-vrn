@@ -113,4 +113,35 @@ class ActionModifyer
 		$actionParams['START_COMMAND_TEMPLATE'] = preg_replace($pattern, '', $actionParams['START_COMMAND_TEMPLATE']);
 		return $actionParams;
 	}
+
+	/**
+	 * SITE_CREATE_LINK modifier
+	 * @param string $actionId
+	 * @param array $actionParams
+	 * @param string $hostname
+	 * @param array $userParamsValues
+	 * @return array mixed
+	 */
+	public static function siteCreateLinkModifier($actionId, $actionParams, $hostname, $userParamsValues)
+	{
+		if($actionId != 'SITE_CREATE_LINK')
+			return $actionParams;
+
+		if(empty($userParamsValues['KERNEL_SITE']))
+			return $actionParams;
+
+		$siteId = $userParamsValues['KERNEL_SITE'];
+		$sites = SitesData::getList();
+
+		if(empty($sites[$siteId]))
+			return $actionParams;
+
+		$actionParams['START_COMMAND_TEMPLATE'] =  str_replace(
+			'##MODIFYER:KERNEL_ROOT##',
+			$sites[$siteId]['DocumentRoot'],
+			$actionParams['START_COMMAND_TEMPLATE']
+		);
+
+		return $actionParams;
+	}
 }

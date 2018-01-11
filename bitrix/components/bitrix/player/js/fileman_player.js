@@ -15,8 +15,7 @@ BX.Fileman.PlayerManager = {
 	{
 		this.players.push(player);
 
-		BX.bind(BX(player.id), 'click', BX.proxy(player.onClick, player));
-		BX.bind(BX(player.id), 'keydown', BX.proxy(player.onKeyDown, player));
+		this.bindPlayerEvents(player);
 
 		if(player.autostart || player.lazyload)
 		{
@@ -34,9 +33,22 @@ BX.Fileman.PlayerManager = {
 
 		BX.ready(function () {
 			BX.bind(window, 'scroll', BX.throttle(BX.Fileman.PlayerManager.onScroll, 300, BX.Fileman.PlayerManager));
+			setTimeout(BX.delegate(BX.Fileman.PlayerManager.onScroll, BX.Fileman.PlayerManager), 50);
 		});
-
-		BX.Fileman.PlayerManager.onScroll();
+	},
+	bindPlayerEvents: function(player)
+	{
+		var events = player.getEventList();
+		if(events)
+		{
+			for(var i = 0; i < events.length; i++)
+			{
+				BX.addCustomEvent(player, events[i], BX.proxy(function(player, eventName)
+				{
+					BX.onCustomEvent(BX.Fileman.PlayerManager, 'PlayerManager.' + eventName, [player])
+				}, this));
+			}
+		}
 	},
 	onScroll: function()
 	{
@@ -115,6 +127,8 @@ BX.Fileman.PlayerManager = {
 			}
 			else if(topVisiblePlayer.isReady() && !topVisiblePlayer.isEnded())
 			{
+				topVisiblePlayer.mute(true);
+				BX.addCustomEvent(topVisiblePlayer, 'Player:onClick', BX.proxy(topVisiblePlayer.disableMute, topVisiblePlayer));
 				topVisiblePlayer.play();
 			}
 		}
@@ -207,7 +221,7 @@ BX.Fileman.PlayerManager = {
 		}
 		for(var i in this.players)
 		{
-			if(this.players[i].id == id)
+			if(this.players[i].id === id)
 			{
 				return this.players[i];
 			}
@@ -220,11 +234,12 @@ BX.Fileman.PlayerManager = {
 BX.Fileman.Player = function(id, params)
 {
 	this.inited = false;
-	this.isStarted = false;
-	this.active = false;
 	this.id = id;
 	this.fillParameters(params);
 	BX.Fileman.PlayerManager.addPlayer(this);
+	this.fireEvent('onCreate');
+	BX.bind(BX(this.id), 'click', BX.proxy(this.onClick, this));
+	BX.bind(BX(this.id), 'keydown', BX.proxy(this.onKeyDown, this));
 };
 
 BX.Fileman.Player.prototype.onClick = function()
@@ -235,6 +250,7 @@ BX.Fileman.Player.prototype.onClick = function()
 		playButton.focus();
 	}
 	this.active = true;
+	this.fireEvent('onClick');
 };
 
 BX.Fileman.Player.prototype.isPlaying = function()
@@ -253,6 +269,7 @@ BX.Fileman.Player.prototype.pause = function()
 		this.vjsPlayer.pause();
 	}
 	catch(e) {}
+	this.fireEvent('onPause');
 };
 
 BX.Fileman.Player.prototype.isEnded = function()
@@ -271,46 +288,36 @@ BX.Fileman.Player.prototype.isReady = function()
 
 BX.Fileman.Player.prototype.play = function()
 {
+	this.setPlayedState();
 	try
 	{
 		this.vjsPlayer.play();
 	}
 	catch(e) {}
+	this.fireEvent('onPlay');
 };
 
-BX.Fileman.Player.prototype.adjust = function()
+BX.Fileman.Player.prototype.setPlayedState = function()
 {
-	var containerWidth = BX.width(BX(this.id).parentNode);
-	if(!this.vjsPlayer)
+	var storageHash = this.__getStorageHash();
+	BX.localStorage.set(storageHash, 'played', 1209600);
+};
+
+BX.Fileman.Player.prototype.isPlayed = function()
+{
+	var storageHash = this.__getStorageHash();
+	return (BX.localStorage.get(storageHash) === 'played');
+};
+
+BX.Fileman.Player.prototype.__getStorageHash = function()
+{
+	var storageHash = this.id;
+	if(this.params.sources && BX.type.isArray(this.params.sources) && this.params.sources[0].src)
 	{
-		return;
+		storageHash = this.params.sources[0].src;
 	}
-	if(this.vjsPlayer.videoWidth() == 0 || this.vjsPlayer.videoHeight() == 0)
-	{
-		return;
-	}
-	if(this.vjsPlayer.videoWidth() < containerWidth)
-	{
-		this.vjsPlayer.width(this.vjsPlayer.videoWidth());
-		this.vjsPlayer.height(this.vjsPlayer.videoHeight());
-		this.vjsPlayer.fluid(false);
-		if(!BX(this.id + '_container'))
-		{
-			var container = BX.create('div', {
-				'attrs': {'id': this.id + '_container'},
-				'props': {
-					'className': 'videojs-player-container'
-				}
-			});
-			BX.insertAfter(container, BX(this.id));
-			BX.append(BX(this.id), container);
-			BX.addClass(BX(this.id), 'videojs-adjusted');
-		}
-	}
-	else
-	{
-		this.vjsPlayer.fluid(true);
-	}
+
+	return 'player_' + storageHash;
 };
 
 BX.Fileman.Player.prototype.getElement = function()
@@ -343,7 +350,8 @@ BX.Fileman.Player.prototype.createElement = function()
 		'id': this.id,
 		'className': className,
 		'width': this.width,
-		'height': this.height
+		'height': this.height,
+		'controls': true
 	};
 	if(this.muted)
 	{
@@ -352,26 +360,26 @@ BX.Fileman.Player.prototype.createElement = function()
 	node = BX.create(tagName, {
 		'attrs': attrs
 	});
-	/*if(this.tracks)
+	if(this.params.sources)
 	{
-		if(BX.type.isArray(this.tracks))
+		if(BX.type.isArray(this.params.sources))
 		{
-			for(var i in this.tracks)
+			for(var i in this.params.sources)
 			{
-				if(!this.tracks[i].path || !this.tracks[i].type)
+				if(!this.params.sources[i].src || !this.params.sources[i].type)
 				{
 					continue;
 				}
 				var source = BX.create('source', {
 					'attrs': {
-						'src': this.tracks[i].path,
-						'type': this.tracks[i].type
+						'src': this.params.sources[i].src,
+						'type': this.params.sources[i].type
 					}
 				});
 				BX.append(source, node);
 			}
 		}
-	}*/
+	}
 	return node;
 };
 
@@ -401,13 +409,14 @@ BX.Fileman.Player.prototype.fillParameters = function(params)
 		}
 	}
 	this.volume = params.volume || 0.8;
-	this.playlistParams = params.playlistParams;
+	this.playlistParams = params.playlistParams || false;
 	this.startTime = params.startTime || 0;
-	this.wmvConfig = params.wmvConfig;
+	this.wmvConfig = params.wmvConfig || false;
 	this.onInit = params.onInit;
-	this.isAdjust = params.isAdjust || false;
 	this.lazyload = params.lazyload;
+	this.skin = params.skin || '';
 	this.params = params;
+	this.active = this.isPlayed();
 };
 
 BX.Fileman.Player.prototype.onKeyDown = function(event)
@@ -427,6 +436,7 @@ BX.Fileman.Player.prototype.onKeyDown = function(event)
 		event.stopPropagation();
 		return false;
 	}
+	this.fireEvent('onKeyDown');
 };
 
 BX.Fileman.Player.prototype.setSource = function(source)
@@ -436,6 +446,7 @@ BX.Fileman.Player.prototype.setSource = function(source)
 		return false;
 	}
 	this.vjsPlayer.src(source);
+	this.fireEvent('onSetSource');
 };
 
 BX.Fileman.Player.prototype.getSource = function()
@@ -445,20 +456,26 @@ BX.Fileman.Player.prototype.getSource = function()
 
 BX.Fileman.Player.prototype.init = function()
 {
+	this.fireEvent('onBeforeInit');
 	if(videojs.players[this.id])
 	{
 		delete videojs.players[this.id];
 	}
 	this.vjsPlayer = videojs(this.id, this.params);
+	this.vjsPlayer.on('error', BX.proxy(function()
+	{
+		this.fireEvent('onError');
+	}, this));
 	if(this.hasFlash)
 	{
-		this.vjsPlayer.setTimeout(function()
+		setTimeout(BX.proxy(function()
 		{
-			if(!this.hasStarted())
+			if(!this.inited)
 			{
-				this.error(BX.message('PLAYER_FLASH_REQUIRED'));
+				this.vjsPlayer.error(BX.message('PLAYER_FLASH_REQUIRED'));
+				this.inited = true;
 			}
-		}, 10000);
+		}, this), 2000);
 	}
 	this.vjsPlayer.ready(BX.proxy(function(){
 		var playButton = BX.findChildByClassName(BX(this.id), 'vjs-play-control');
@@ -467,11 +484,8 @@ BX.Fileman.Player.prototype.init = function()
 			playButton.addEventListener('click', BX.proxy(this.onClick, this));
 		}
 		this.vjsPlayer.volume(this.volume);
-		if(this.muted)
+		this.vjsPlayer.one('play', BX.proxy(function()
 		{
-			this.vjsPlayer.muted(true);
-		}
-		this.vjsPlayer.one('play', BX.proxy(function(){
 			if(this.playbackRate != 1)
 			{
 				this.vjsPlayer.playbackRate(this.playbackRate);
@@ -515,21 +529,46 @@ BX.Fileman.Player.prototype.init = function()
 		{
 			this.onInit(this);
 		}
-		if(this.isAdjust)
-		{
-			if(this.vjsPlayer.videoWidth() == 0 || this.vjsPlayer.videoHeight() == 0)
-			{
-				this.vjsPlayer.one('loadedmetadata', BX.proxy(function(){
-					this.adjust();
-				}, this));
-			}
-			else
-			{
-				this.adjust();
-			}
-			this.isAdjust = false;
-		}
+		this.fireEvent('onAfterInit');
 	}, this));
-}
+};
+
+BX.Fileman.Player.prototype.getEventList = function()
+{
+	return [
+		'Player:onBeforeInit',
+		'Player:onAfterInit',
+		'Player:onCreate',
+		'Player:onSetSource',
+		'Player:onKeyDown',
+		'Player:onPlay',
+		'Player:onPause',
+		'Player:onClick',
+		'Player:onError'
+	];
+};
+
+BX.Fileman.Player.prototype.fireEvent = function(eventName)
+{
+	if (BX.type.isNotEmptyString(eventName))
+	{
+		eventName = 'Player:' + eventName;
+		BX.onCustomEvent(this, eventName, [this, eventName]);
+	}
+};
+
+BX.Fileman.Player.prototype.mute = function(mute)
+{
+	return this.vjsPlayer.muted(mute);
+};
+
+BX.Fileman.Player.prototype.disableMute = function()
+{
+	BX.removeCustomEvent(this, 'Player:onClick', BX.proxy(this.disableMute, this));
+	setTimeout(BX.proxy(function()
+	{
+		this.mute(false);
+	}, this), 100);
+};
 
 })(window);

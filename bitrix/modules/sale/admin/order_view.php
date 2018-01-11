@@ -185,7 +185,7 @@ foreach ($dirs as $dir)
 			while (($file = readdir($handle)) !== false)
 			{
 				$file_contents = '';
-				if ($file == "." || $file == ".." || $file == ".access.php")
+				if ($file == "." || $file == ".." || $file == ".access.php" || isset($arReports[$file]))
 					continue;
 				if (is_file($dir.$file) && ToUpper(substr($file, -4)) == ".PHP")
 				{
@@ -224,7 +224,7 @@ foreach ($dirs as $dir)
 							continue;
 					}
 
-					$arReports[] = array(
+					$arReports[$file] = array(
 						"TEXT" => $rep_title,
 						"ONCLICK" => "window.open('/bitrix/admin/sale_order_print_new.php?&ORDER_ID=".$ID."&doc=".substr($file, 0, strlen($file) - 4)."&".bitrix_sessid_get()."', '_blank');"
 					);

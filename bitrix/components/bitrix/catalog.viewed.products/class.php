@@ -693,14 +693,8 @@ class CCatalogViewedProductsComponent extends CBitrixComponent
 			return array();
 
 		$skipUserInit = false;
-		if (
-			Main\Loader::includeModule('statistic')
-			&& isset($_SESSION['SESS_SEARCHER_ID'])
-			&& (int)$_SESSION["SESS_SEARCHER_ID"] > 0
-		)
-		{
+		if (!Catalog\Product\Basket::isNotCrawler())
 			$skipUserInit = true;
-		}
 
 		$basketUserId = (int)CSaleBasket::GetBasketUserID($skipUserInit);
 		if ($basketUserId <= 0)

@@ -73,6 +73,6 @@ if($arParams["arUserField"]["USER_TYPE"])
 		$arParams['skip_manager'] = true;
 
 		global $USER_FIELD_MANAGER;
-		echo $USER_FIELD_MANAGER->GetPublicView($arParams["arUserField"], $arParams);
+		echo $USER_FIELD_MANAGER->GetPublicView($arParams["~arUserField"], $arParams);
 	}
 }

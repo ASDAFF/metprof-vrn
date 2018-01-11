@@ -75,7 +75,14 @@ class Address extends \Bitrix\Main\UserField\TypeBase
 			}
 			else
 			{
-				$settingsPath = SITE_DIR.'configs/';
+				if(defined('ADMIN_SECTION') && ADMIN_SECTION === true)
+				{
+					$settingsPath = '/bitrix/admin/settings.php?lang='.LANGUAGE_ID.'&mid=fileman';
+				}
+				else
+				{
+					$settingsPath = SITE_DIR.'configs/';
+				}
 
 				if(
 					!file_exists($_SERVER['DOCUMENT_ROOT'].$settingsPath)
@@ -350,7 +357,7 @@ class Address extends \Bitrix\Main\UserField\TypeBase
 
 				if(strlen($text) > 0)
 				{
-					if($coords && static::getApiKey() !== '')
+					if(!$arAdditionalParameters['printable'] && $coords && static::getApiKey() !== '')
 					{
 						$res = '<a href="javascript:void(0)" onmouseover="BX.Fileman.UserField.addressSearchResultDisplayMap.showHover(this, '.HtmlFilter::encode(\CUtil::PhpToJSObject(array('text' => $text, 'coords' => $coords))).');" onmouseout="BX.Fileman.UserField.addressSearchResultDisplayMap.closeHover(this)">'.HtmlFilter::encode($text).'</a>';
 					}

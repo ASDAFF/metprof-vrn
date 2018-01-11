@@ -134,7 +134,7 @@ create table if not exists b_catalog_export
 	IN_MENU char(1) not null default 'N',
 	IN_AGENT char(1) not null default 'N',
 	IN_CRON char(1) not null default 'N',
-	SETUP_VARS text null,
+	SETUP_VARS mediumtext null,
 	LAST_USE datetime null,
 	IS_EXPORT char(1) not null default 'Y',
 	NEED_EDIT char(1) not null default 'N',

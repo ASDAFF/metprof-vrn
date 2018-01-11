@@ -266,6 +266,7 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 		{
 			$arResult["QUANTITY"] = ($quantityLimitExceeded ? $dblQuantity : $quantity);
 			if ($quantityLimitExceeded)
+			{
 				$APPLICATION->ThrowException(
 					Loc::getMessage(
 						"CATALOG_QUANTITY_NOT_ENOGH",
@@ -278,6 +279,7 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 					),
 					"CATALOG_QUANTITY_NOT_ENOGH"
 				);
+			}
 		}
 		else
 		{
@@ -310,15 +312,12 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 					CCatalogDiscountSave::Disable();
 			}
 
-			$currentVatMode = CCatalogProduct::getPriceVatIncludeMode();
-			$currentUseDiscount = CCatalogProduct::getUseDiscount();
-			CCatalogProduct::setUseDiscount($arParams['CHECK_DISCOUNT'] == 'Y');
-			CCatalogProduct::setPriceVatIncludeMode(true);
-
 			Price\Calculation::pushConfig();
 			Price\Calculation::setConfig(array(
 				'CURRENCY' => $arParams['CURRENCY'],
-				'PRECISION' => (int)Main\Config\Option::get('sale', 'value_precision')
+				'PRECISION' => (int)Main\Config\Option::get('sale', 'value_precision'),
+				'USE_DISCOUNTS' => $arParams['CHECK_DISCOUNT'] == 'Y',
+				'RESULT_WITH_VAT' => true
 			));
 
 			$arPrice = CCatalogProduct::GetOptimalPrice(
@@ -350,9 +349,7 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 
 			Price\Calculation::popConfig();
 
-			CCatalogProduct::setPriceVatIncludeMode($currentVatMode);
-			CCatalogProduct::setUseDiscount($currentUseDiscount);
-			unset($userGroups, $currentUseDiscount, $currentVatMode);
+			unset($userGroups);
 
 			if ($adminSection)
 			{
@@ -590,15 +587,12 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 		if (!empty($arCoupons))
 			$arCoupons = array_keys($arCoupons);
 
-		$currentVatMode = CCatalogProduct::getPriceVatIncludeMode();
-		$currentUseDiscount = CCatalogProduct::getUseDiscount();
-		CCatalogProduct::setUseDiscount($arParams['CHECK_DISCOUNT'] == 'Y');
-		CCatalogProduct::setPriceVatIncludeMode(true);
-
 		Price\Calculation::pushConfig();
 		Price\Calculation::setConfig(array(
 			'CURRENCY' => $arParams['CURRENCY'],
-			'PRECISION' => (int)Main\Config\Option::get('sale', 'value_precision')
+			'PRECISION' => (int)Main\Config\Option::get('sale', 'value_precision'),
+			'USE_DISCOUNTS' => $arParams['CHECK_DISCOUNT'] == 'Y',
+			'RESULT_WITH_VAT' => true
 		));
 
 		$arPrice = CCatalogProduct::GetOptimalPrice(
@@ -630,9 +624,7 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 
 		Price\Calculation::popConfig();
 
-		CCatalogProduct::setPriceVatIncludeMode($currentVatMode);
-		CCatalogProduct::setUseDiscount($currentUseDiscount);
-		unset($userGroups, $currentUseDiscount, $currentVatMode);
+		unset($userGroups);
 		if ($adminSection)
 			CCatalogDiscountSave::ClearDiscountUserID();
 
@@ -777,9 +769,7 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 			return $arRes;
 		}
 
-		$disableReservation = (COption::GetOptionString("catalog", "enable_reservation") == "N"
-			&& COption::GetOptionString("sale", "product_reserve_condition") != "S"
-			&& COption::GetOptionString('catalog','default_use_store_control') != "Y");
+		$disableReservation = !static::isReservationEnabled();
 
 
 		if ((string)$arParams["UNDO_RESERVATION"] != "Y")
@@ -988,9 +978,7 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 
 		$strUseStoreControl = COption::GetOptionString('catalog','default_use_store_control');
 
-		$disableReservation = (COption::GetOptionString("catalog", "enable_reservation") == "N"
-			&& COption::GetOptionString("sale", "product_reserve_condition") != "S"
-			&& $strUseStoreControl != "Y");
+		$disableReservation = !static::isReservationEnabled();
 
 
 		if ((string)$arParams["UNDO_DEDUCTION"] != "Y")
@@ -1520,7 +1508,7 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 					}
 					else //store control not used
 					{
-						if ($arParams["PRODUCT_RESERVED"] == "Y")
+						if ($arParams["PRODUCT_RESERVED"] == "Y" && !$disableReservation)
 						{
 							$arFields["QUANTITY_RESERVED"] = $arProduct["QUANTITY_RESERVED"] + $arParams["QUANTITY"];
 							// $arFields["QUANTITY"] = $arProduct["QUANTITY"] - $arParams["QUANTITY_RESERVED"];
@@ -1584,11 +1572,6 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 		$storesList = array();
 
 		$strUseStoreControl = COption::GetOptionString('catalog','default_use_store_control');
-
-		$disableReservation = (COption::GetOptionString("catalog", "enable_reservation") == "N"
-			&& COption::GetOptionString("sale", "product_reserve_condition", "O") != "S"
-			&& $strUseStoreControl != "Y");
-
 
 		$productId = $basketItem->getProductId();
 
@@ -1800,10 +1783,6 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 		$fields = array();
 
 		$strUseStoreControl = COption::GetOptionString('catalog','default_use_store_control');
-
-		$disableReservation = (COption::GetOptionString("catalog", "enable_reservation") == "N"
-			&& COption::GetOptionString("sale", "product_reserve_condition", "O") != "S"
-			&& $strUseStoreControl != "Y");
 
 
 		$rsProducts = CCatalogProduct::GetList(
@@ -2479,7 +2458,6 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 			}
 		}
 
-
 		return ($countProductStores == 1);
 	}
 
@@ -2641,5 +2619,24 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 		}
 
 		return true;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public static function isReservationEnabled()
+	{
+		return !((string)Main\Config\Option::get("catalog", "enable_reservation") == "N"
+			&& (string)Main\Config\Option::get("sale", "product_reserve_condition") != "S"
+			&& (string)Main\Config\Option::get('catalog','default_use_store_control') != "Y"
+		);
+	}
+
+	/**
+	 * @return bool
+	 */
+	public static function isNeedShip()
+	{
+		return static::isReservationEnabled();
 	}
 }

@@ -59,16 +59,18 @@ class pull extends CModule
 		RegisterModule("pull");
 		RegisterModuleDependences("main", "OnBeforeProlog", "main", "", "", 50, "/modules/pull/ajax_hit_before.php");
 		RegisterModuleDependences("main", "OnProlog", "main", "", "", 3, "/modules/pull/ajax_hit.php");
-		RegisterModuleDependences("main", "OnEpilog", "pull", "CPullWatch", "DeferredSql");
 		RegisterModuleDependences("main", "OnEpilog", "pull", "CPullOptions", "OnEpilog");
+		RegisterModuleDependences("main", "OnAfterEpilog", "pull", "\Bitrix\Pull\Event", "onAfterEpilog");
+		RegisterModuleDependences("main", "OnAfterEpilog", "pull", "CPullWatch", "DeferredSql");
 
 		RegisterModuleDependences("perfmon", "OnGetTableSchema", "pull", "CPullTableSchema", "OnGetTableSchema");
 		RegisterModuleDependences("main", "OnAfterRegisterModule", "pull", "CPullOptions", "ClearCheckCache");
 		RegisterModuleDependences("main", "OnAfterUnRegisterModule", "pull", "CPullOptions", "ClearCheckCache");
-		
+		RegisterModuleDependences("socialnetwork", "OnSonetLogCounterClear", "pull", "\Bitrix\Pull\MobileCounter", "onSonetLogCounterClear");
+
 		$eventManager = \Bitrix\Main\EventManager::getInstance();
 		$eventManager->registerEventHandler('rest', 'OnRestServiceBuildDescription', 'pull', '\Bitrix\Pull\Rest', 'onRestServiceBuildDescription');
-		
+
 		CAgent::AddAgent("CPullOptions::ClearAgent();", "pull", "N", 30, "", "Y", ConvertTimeStamp(time()+CTimeZone::GetOffset()+30, "FULL"));
 
 		return true;
@@ -83,7 +85,7 @@ class pull extends CModule
 		}
 		return true;
 	}
-	
+
 	function InstallEvents(){ return true; }
 
 	function DoUninstall()
@@ -125,14 +127,16 @@ class pull extends CModule
 		UnRegisterModuleDependences("main", "OnAfterRegisterModule", "pull", "CPullOptions", "ClearCheckCache");
 		UnRegisterModuleDependences("main", "OnAfterUnRegisterModule", "pull", "CPullOptions", "ClearCheckCache");
 		UnRegisterModuleDependences("perfmon", "OnGetTableSchema", "pull", "CPullTableSchema", "OnGetTableSchema");
-		UnRegisterModuleDependences("main", "OnEpilog", "pull", "CPullWatch", "DeferredSql");
-		UnRegisterModuleDependences("main", "OnEpilog", "pull", "CPullOptions", "OnEpilog");
 		UnRegisterModuleDependences("main", "OnProlog", "main", "", "", "/modules/pull/ajax_hit.php");
+		UnRegisterModuleDependences("main", "OnEpilog", "pull", "CPullOptions", "OnEpilog");
+		UnRegisterModuleDependences("main", "OnAfterEpilog", "pull", "\Bitrix\Pull\Event", "onAfterEpilog");
+		UnRegisterModuleDependences("main", "OnAfterEpilog", "pull", "CPullWatch", "DeferredSql");
 		UnRegisterModuleDependences("main", "OnBeforeProlog", "main", "", "", "/modules/pull/ajax_hit_before.php");
+		UnRegisterModuleDependences("socialnetwork", "OnSonetLogCounterClear", "pull", "\Bitrix\Pull\MobileCounter", "onSonetLogCounterClear");
 
 		$eventManager = \Bitrix\Main\EventManager::getInstance();
 		$eventManager->unRegisterEventHandler('rest', 'OnRestServiceBuildDescription', 'pull', '\Bitrix\Pull\Rest', 'onRestServiceBuildDescription');
-		
+
 		UnRegisterModule("pull");
 
 		return true;
@@ -142,6 +146,6 @@ class pull extends CModule
 	{
 		return true;
 	}
-	
+
 	function UnInstallEvents(){ return true; }
 }

@@ -252,6 +252,10 @@ class CBitrixPersonalOrderDetailComponent extends CBitrixComponent
 
 		$this->tryParseBoolean($arParams['AUTH_FORM_IN_TEMPLATE']);
 
+		if (empty($arParams['REFRESH_PRICES']))
+		{
+			$arParams['REFRESH_PRICES'] = "N";
+		}
 
 		if (empty($arParams['ALLOW_INNER']))
 		{
@@ -346,7 +350,7 @@ class CBitrixPersonalOrderDetailComponent extends CBitrixComponent
 		global $APPLICATION;
 
 		if ($this->arParams["SET_TITLE"] == 'Y')
-			$APPLICATION->SetTitle(str_replace("#ID#", $this->dbResult["ACCOUNT_NUMBER"], Localization\Loc::getMessage("SPOD_TITLE")));
+			$APPLICATION->SetPageProperty('title',Localization\Loc::getMessage("SPOD_TITLE", array("#ID#" => $this->dbResult["ACCOUNT_NUMBER"])));
 	}
 
 	/**
@@ -1050,7 +1054,13 @@ class CBitrixPersonalOrderDetailComponent extends CBitrixComponent
 							$fileList = "";
 							foreach ($propertyList["VALUE"] as $fileElement)
 							{
-								$fileList = $fileList.CFile::ShowFile($fileElement['ID'], 0, 90, 90, true)."<br/>";
+								if (is_array($fileElement))
+									$fileId = $fileElement['ID'];
+								else
+									$fileId = $fileElement;
+
+								if ((int)($fileId) > 0)
+									$fileList .= CFile::ShowFile((int)$fileId, 0, 90, 90, true)."<br/>";
 							}
 							$propertyList["VALUE"] = $fileList;
 						}

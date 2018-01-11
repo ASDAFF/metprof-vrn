@@ -1,6 +1,87 @@
-/**********************************************************************/
-/*********** Bitrix JS Core library ver 0.9.0 beta ********************/
-/**********************************************************************/
+if (typeof WeakMap === "undefined")
+{
+	(function() {
+
+		var counter = Date.now() % 1e9;
+
+		var WeakMap = function(iterable)
+		{
+			this.name = "__bx" + (Math.random() * 1e9 >>> 0) + counter++;
+		};
+
+		WeakMap.prototype =
+		{
+			set: function(key, value)
+			{
+				if (!this.isValid(key))
+				{
+					throw new TypeError("Invalid value used as weak map key");
+				}
+
+				var entry = key[this.name];
+				if (entry && entry[0] === key)
+				{
+					entry[1] = value;
+				}
+				else
+				{
+					Object.defineProperty(key, this.name, { value: [key, value], writable: true });
+				}
+
+				return this;
+			},
+
+			get: function(key)
+			{
+				if (!this.isValid(key))
+				{
+					return undefined;
+				}
+
+				var entry = key[this.name];
+
+				return entry && entry[0] === key ? entry[1] : undefined;
+			},
+
+			"delete": function(key)
+			{
+				if (!this.isValid(key))
+				{
+					return false;
+				}
+
+				var entry = key[this.name];
+				if (!entry)
+				{
+					return false;
+				}
+				var hasValue = entry[0] === key;
+				entry[0] = entry[1] = undefined;
+
+				return hasValue;
+			},
+
+			has: function(key)
+			{
+				if (!this.isValid(key))
+				{
+					return false;
+				}
+
+				var entry = key[this.name];
+
+				return entry && entry[0] === key;
+			},
+
+			isValid: function(key)
+			{
+				return key && (typeof key === "object" || typeof key === "function");
+			}
+		};
+
+		window.WeakMap = WeakMap;
+	})();
+}
 
 ;(function(window){
 
@@ -102,9 +183,8 @@ readyBound = false,
 readyList = [],
 
 /* list of registered proxy functions */
-proxySalt = Math.random(),
-proxyId = 1,
-proxyList = [],
+proxyList = new WeakMap(),
+deferList = new WeakMap(),
 
 /* getElementById cache */
 NODECACHE = {},
@@ -113,10 +193,11 @@ NODECACHE = {},
 deniedEvents = [],
 
 /* list of registered event handlers */
-eventsList = [],
+eventsList = new WeakMap(),
 
 /* list of registered custom events */
-customEvents = {},
+customEvents = new WeakMap(),
+customEventsCnt = 0,
 
 /* list of external garbage collectors */
 garbageCollectors = [],
@@ -177,7 +258,7 @@ BX.MSRIGHT = 4;
 BX.AM_PM_UPPER = 1;
 BX.AM_PM_LOWER = 2;
 BX.AM_PM_NONE = false;
-	
+
 BX.ext = function(ob)
 {
 	for (var i in ob)
@@ -271,7 +352,7 @@ BX.debugEnable = function(flag)
 
 BX.debugStatus = function()
 {
-	return BX.debugEnableFlag || true;
+	return BX.debugEnableFlag;
 };
 
 BX.is_subclass_of = function(ob, parent_class)
@@ -1248,8 +1329,9 @@ BX.mergeEx = function()
 /* events */
 BX.bind = function(el, evname, func)
 {
-	if (!el)
+	if (!el || typeof(el) !== "object")
 	{
+		//BX.debug("BX.bind: 'element' is not a DOM node.", el);
 		return;
 	}
 
@@ -1304,7 +1386,14 @@ BX.bind = function(el, evname, func)
 		}
 	}
 
-	eventsList[eventsList.length] = {'element': el, 'event': evname, 'fn': func};
+	var events = eventsList.get(el) || {};
+	if (!BX.type.isArray(events[evname]))
+	{
+		events[evname] = [];
+	}
+
+	events[evname].push(func);
+	eventsList.set(el, events);
 };
 
 BX.unbind = function(el, evname, func)
@@ -1347,6 +1436,14 @@ BX.unbind = function(el, evname, func)
 	{
 		el["on" + evname] = null;
 	}
+
+	var events = eventsList.get(el);
+	if (events && BX.type.isArray(events[evname]))
+	{
+		events[evname] = events[evname].filter(function(item) {
+			return item !== func;
+		});
+	}
 };
 
 BX.getEventButton = function(e)
@@ -1374,25 +1471,19 @@ BX.getEventButton = function(e)
 
 BX.unbindAll = function(el)
 {
+	var events = eventsList.get(el);
 	if (!el)
-		return;
-
-	for (var i=0,len=eventsList.length; i<len; i++)
 	{
-		try
-		{
-			if (eventsList[i] && (null==el || el==eventsList[i].element))
-			{
-				BX.unbind(eventsList[i].element, eventsList[i].event, eventsList[i].fn);
-				eventsList[i] = null;
-			}
-		}
-		catch(e){}
+		return;
 	}
 
-	if (null==el)
+	eventsList.delete(el);
+
+	for (var eventName in events)
 	{
-		eventsList = [];
+		events[eventName].forEach(function(fn) {
+			BX.unbind(el, eventName, fn);
+		});
 	}
 };
 
@@ -1521,29 +1612,9 @@ BX.delegateLater = function (func_name, thisObject, contextObject)
 	}
 };
 
-BX._initObjectProxy = function(thisObject)
-{
-	if (typeof thisObject['__proxy_id_' + proxySalt] == 'undefined')
-	{
-		thisObject['__proxy_id_' + proxySalt] = proxyList.length;
-		proxyList[thisObject['__proxy_id_' + proxySalt]] = {};
-	}
-};
-
 BX.proxy = function(func, thisObject)
 {
-	if (!func || !thisObject)
-		return func;
-
-	BX._initObjectProxy(thisObject);
-
-	if (typeof func['__proxy_id_' + proxySalt] == 'undefined')
-		func['__proxy_id_' + proxySalt] = proxyId++;
-
-	if (!proxyList[thisObject['__proxy_id_' + proxySalt]][func['__proxy_id_' + proxySalt]])
-		proxyList[thisObject['__proxy_id_' + proxySalt]][func['__proxy_id_' + proxySalt]] = BX.delegate(func, thisObject);
-
-	return proxyList[thisObject['__proxy_id_' + proxySalt]][func['__proxy_id_' + proxySalt]];
+	return getObjectDelegate(func, thisObject, proxyList);
 };
 
 BX.defer = function(func, thisObject)
@@ -1559,45 +1630,51 @@ BX.defer = function(func, thisObject)
 
 BX.defer_proxy = function(func, thisObject)
 {
-	if (!func || !thisObject)
-		return func;
+	return getObjectDelegate(func, thisObject, deferList, BX.defer);
+};
 
-	BX.proxy(func, thisObject);
-
-	this._initObjectProxy(thisObject);
-
-	if (typeof func['__defer_id_' + proxySalt] == 'undefined')
-		func['__defer_id_' + proxySalt] = proxyId++;
-
-	if (!proxyList[thisObject['__proxy_id_' + proxySalt]][func['__defer_id_' + proxySalt]])
+/**
+ *
+ * @private
+ */
+function getObjectDelegate(func, thisObject, collection, decorator)
+{
+	if (!BX.type.isFunction(func) || !BX.type.isMapKey(thisObject))
 	{
-		proxyList[thisObject['__proxy_id_' + proxySalt]][func['__defer_id_' + proxySalt]] = BX.defer(BX.delegate(func, thisObject));
+		return func;
 	}
 
-	return proxyList[thisObject['__proxy_id_' + proxySalt]][func['__defer_id_' + proxySalt]];
+	var objectDelegates = collection.get(thisObject);
+	if (!objectDelegates)
+	{
+		objectDelegates = new WeakMap();
+		collection.set(thisObject, objectDelegates);
+	}
+
+	var delegate = objectDelegates.get(func);
+	if (!delegate)
+	{
+		delegate = decorator ? decorator(BX.delegate(func, thisObject)) : BX.delegate(func, thisObject);
+		objectDelegates.set(func, delegate);
+	}
+
+	return delegate;
+}
+
+BX.bindOnce = function(el, evname, func)
+{
+	return BX.bind(el, evname, BX.once(el, evname, func));
 };
 
 BX.once = function(el, evname, func)
 {
-	if (typeof func['__once_id_' + evname + '_' + proxySalt] == 'undefined')
+	var fn = function()
 	{
-		func['__once_id_' + evname + '_' + proxySalt] = proxyId++;
-	}
+		BX.unbind(el, evname, fn);
+		func.apply(this, arguments);
+	};
 
-	this._initObjectProxy(el);
-
-	if (!proxyList[el['__proxy_id_' + proxySalt]][func['__once_id_' + evname + '_' + proxySalt]])
-	{
-		var g = function()
-		{
-			BX.unbind(el, evname, g);
-			func.apply(this, arguments);
-		};
-
-		proxyList[el['__proxy_id_' + proxySalt]][func['__once_id_' + evname + '_' + proxySalt]] = g;
-	}
-
-	return proxyList[el['__proxy_id_' + proxySalt]][func['__once_id_' + evname + '_' + proxySalt]];
+	return fn;
 };
 
 BX.bindDelegate = function (elem, eventName, isTarget, handler)
@@ -1738,17 +1815,19 @@ BX.addCustomEvent = function(eventObject, eventName, eventHandler)
 		eventObject = window;
 	}
 
-	eventName = eventName.toUpperCase();
+	if (!BX.type.isFunction(eventHandler) || !BX.type.isNotEmptyString(eventName) || !BX.type.isMapKey(eventObject))
+	{
+		return;
+	}
 
-	if (!customEvents[eventName])
-		customEvents[eventName] = [];
+	eventName = eventName.toLowerCase();
 
-	customEvents[eventName].push(
-		{
-			handler: eventHandler,
-			obj: eventObject
-		}
-	);
+	var events = customEvents.get(eventObject) || {};
+	events[eventName] = BX.type.isArray(events[eventName]) ? events[eventName] : [];
+	eventHandler["__bxSort"] = ++customEventsCnt;
+
+	events[eventName].push(eventHandler);
+	customEvents.set(eventObject, events);
 };
 
 BX.removeCustomEvent = function(eventObject, eventName, eventHandler)
@@ -1761,55 +1840,84 @@ BX.removeCustomEvent = function(eventObject, eventName, eventHandler)
 		eventObject = window;
 	}
 
-	eventName = eventName.toUpperCase();
+	eventName = eventName.toLowerCase();
 
-	if (!customEvents[eventName])
-		return;
-
-	for (var i = 0, l = customEvents[eventName].length; i < l; i++)
+	var events = customEvents.get(eventObject);
+	if (events && BX.type.isArray(events[eventName]))
 	{
-		if (!customEvents[eventName][i])
-			continue;
-		if (customEvents[eventName][i].handler == eventHandler && customEvents[eventName][i].obj == eventObject)
+		for (var i = events[eventName].length - 1; i >= 0; i--)
 		{
-			delete customEvents[eventName][i];
-			return;
+			if (events[eventName][i] === eventHandler)
+			{
+				events[eventName].splice(i, 1);
+			}
 		}
 	}
 };
 
-// Warning! Don't use secureParams with DOM nodes in arEventParams
-BX.onCustomEvent = function(eventObject, eventName, arEventParams, secureParams)
+BX.removeAllCustomEvents = function(eventObject, eventName)
 {
 	/* shift parameters for short version */
 	if (BX.type.isString(eventObject))
 	{
-		secureParams = arEventParams;
-		arEventParams = eventName;
 		eventName = eventObject;
 		eventObject = window;
 	}
 
-	eventName = eventName.toUpperCase();
+	eventName = eventName.toLowerCase();
 
-	if (!customEvents[eventName])
-		return;
-
-	if (!arEventParams)
-		arEventParams = [];
-
-	var h;
-	for (var i = 0, l = customEvents[eventName].length; i < l; i++)
+	var events = customEvents.get(eventObject);
+	if (events)
 	{
-		h = customEvents[eventName][i];
-		if (!h || !h.handler)
-			continue;
+		delete events[eventName];
+	}
+};
 
-		if (h.obj == window || /*eventObject == window || */h.obj == eventObject) //- only global event handlers will be called
+// Warning! Don't use secureParams with DOM nodes in eventParams
+BX.onCustomEvent = function(eventObject, eventName, eventParams, secureParams)
+{
+	/* shift parameters for short version */
+	if (BX.type.isString(eventObject))
+	{
+		secureParams = eventParams;
+		eventParams = eventName;
+		eventName = eventObject;
+		eventObject = window;
+	}
+
+	if (!eventParams)
+	{
+		eventParams = [];
+	}
+
+	eventName = eventName.toLowerCase();
+
+	var globalEvents = customEvents.get(window);
+	var globalHandlers = globalEvents && BX.type.isArray(globalEvents[eventName]) ? globalEvents[eventName] : [];
+	var objectHandlers = [];
+
+	if (eventObject !== window && BX.type.isMapKey(eventObject))
+	{
+		var objectEvents = customEvents.get(eventObject);
+		if (objectEvents && BX.type.isArray(objectEvents[eventName]))
 		{
-			h.handler.apply(eventObject, !!secureParams ? BX.clone(arEventParams) : arEventParams);
+			objectHandlers = objectEvents[eventName];
 		}
 	}
+
+	var handlers = globalHandlers.concat(objectHandlers);
+
+	handlers.sort(function(a, b) {
+		return a["__bxSort"] - b["__bxSort"];
+	});
+
+	handlers.forEach(function(handler) {
+		//A previous handler could remove a current handler.
+		if (globalHandlers.indexOf(handler) !== -1 || objectHandlers.indexOf(handler) !== -1)
+		{
+			handler.apply(eventObject, secureParams === true ? BX.clone(eventParams) : eventParams);
+		}
+	});
 };
 
 BX.bindDebouncedChange = function(node, fn, fnInstant, timeout, ctx)
@@ -2473,16 +2581,16 @@ BX.util = {
 
 	htmlspecialchars: function(str)
 	{
-		if(!str.replace) return str;
+		if(typeof str != 'string' || !str.replace) return str;
 
 		return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 	},
 
 	htmlspecialcharsback: function(str)
 	{
-		if(!str.replace) return str;
+		if(typeof str != 'string' || !str.replace) return str;
 
-		return str.replace(/\&quot;/g, '"').replace(/&#39;/g, "'").replace(/\&lt;/g, '<').replace(/\&gt;/g, '>').replace(/\&amp;/g, '&');
+		return str.replace(/\&quot;/g, '"').replace(/&#39;/g, "'").replace(/\&lt;/g, '<').replace(/\&gt;/g, '>').replace(/\&amp;/g, '&').replace(/\&nbsp;/g, ' ');
 	},
 
 	// Quote regular expression characters plus an optional character
@@ -2626,14 +2734,29 @@ BX.util = {
 		{
 			arItems.sort(function(i, ii) {
 				var s1, s2;
-				if (!isNaN(i[1]) && !isNaN(ii[1]))
+				if (BX.type.isDate(i[1]))
+				{
+					s1 = i[1].getTime();
+				}
+				else if (!isNaN(i[1]))
 				{
 					s1 = parseInt(i[1]);
-					s2 = parseInt(ii[1]);
 				}
 				else
 				{
 					s1 = i[1].toString().toLowerCase();
+				}
+
+				if (BX.type.isDate(ii[1]))
+				{
+					s2 = ii[1].getTime();
+				}
+				else if (!isNaN(ii[1]))
+				{
+					s2 = parseInt(ii[1]);
+				}
+				else
+				{
 					s2 = ii[1].toString().toLowerCase();
 				}
 
@@ -2649,16 +2772,32 @@ BX.util = {
 		{
 			arItems.sort(function(i, ii) {
 				var s1, s2;
-				if (!isNaN(i[1]) && !isNaN(ii[1]))
+				if (BX.type.isDate(i[1]))
+				{
+					s1 = i[1].getTime();
+				}
+				else if (!isNaN(i[1]))
 				{
 					s1 = parseInt(i[1]);
-					s2 = parseInt(ii[1]);
 				}
 				else
 				{
 					s1 = i[1].toString().toLowerCase();
+				}
+
+				if (BX.type.isDate(ii[1]))
+				{
+					s2 = ii[1].getTime();
+				}
+				else if (!isNaN(ii[1]))
+				{
+					s2 = parseInt(ii[1]);
+				}
+				else
+				{
 					s2 = ii[1].toString().toLowerCase();
 				}
+				
 				if (s1 < s2)
 					return 1;
 				else if (s1 > s2)
@@ -2675,6 +2814,16 @@ BX.util = {
 		}
 
 		return arReturnArray;
+	},
+
+	objectMerge: function()
+	{
+		return BX.mergeEx.apply(window, arguments);
+	},
+
+	objectClone : function(object)
+	{
+		return BX.clone(object, true);
 	},
 
 	// #fdf9e5 => {r=253, g=249, b=229}
@@ -2963,20 +3112,24 @@ BX.type = {
 		}
 		return typeof(key) === "undefined" || hasProp.call(item, key);
 	},
-	ensureInteger: function(value)
+	isNotEmptyObject: function (item)
 	{
-		if(BX.type.isNumber(value))
+		for (var i in item)
 		{
-			return value;
+			if (item.hasOwnProperty(i))
+				return true;
 		}
 
-		value = parseInt(value);
-		return !isNaN(value) ? value : 0;
+		return false;
 	},
 	stringToInt: function(s)
 	{
 		var i = parseInt(s);
 		return !isNaN(i) ? i : 0;
+	},
+	isMapKey: function(key)
+	{
+		return key && (typeof key === "object" || typeof key === "function");
 	}
 };
 
@@ -3687,6 +3840,16 @@ BX.load = function(items, callback, doc)
 
 BX.convert =
 {
+	toNumber: function(value)
+	{
+		if(BX.type.isNumber(value))
+		{
+			return value;
+		}
+
+		value = Number(value);
+		return !isNaN(value) ? value : 0;
+	},
 	nodeListToArray: function(nodes)
 	{
 		try
@@ -5238,17 +5401,6 @@ function Trash()
 			garbageCollectors[i] = null;
 		} catch (e) {}
 	}
-
-	try {BX.unbindAll();} catch(e) {}
-/*
-	for (i = 0, len = proxyList.length; i < len; i++)
-	{
-		try {
-			delete proxyList[i];
-			proxyList[i] = null;
-		} catch (e) {}
-	}
-*/
 }
 
 if(window.attachEvent) // IE
@@ -6070,3 +6222,64 @@ if(typeof(BX.Promise) === "undefined")
 
 })(window);
 
+/* Polyfill section */
+
+if (!Array.prototype.find)
+{
+	Array.prototype.find = function(predicate)
+	{
+		if (this == null)
+		{
+			throw new TypeError('Array.prototype.find called on null or undefined');
+		}
+		if (typeof predicate !== 'function')
+		{
+			throw new TypeError('predicate must be a function');
+		}
+		var list = Object(this);
+		var length = list.length >>> 0;
+		var thisArg = arguments[1];
+		var value;
+
+		for (var i = 0; i < length; i++)
+		{
+			value = list[i];
+			if (predicate.call(thisArg, value, i, list))
+			{
+				return value;
+			}
+		}
+		return undefined;
+	};
+}
+
+if (!Array.prototype.findIndex)
+{
+	Array.prototype.findIndex = function(predicate)
+	{
+		if (this == null)
+		{
+			throw new TypeError('Array.prototype.findIndex called on null or undefined');
+		}
+
+		if (typeof predicate !== 'function')
+		{
+			throw new TypeError('predicate must be a function');
+		}
+
+		var list = Object(this);
+		var length = list.length >>> 0;
+		var thisArg = arguments[1];
+		var value;
+
+		for (var i = 0; i < length; i++)
+		{
+			value = list[i];
+			if (predicate.call(thisArg, value, i, list))
+			{
+				return i;
+			}
+		}
+		return -1;
+	};
+}

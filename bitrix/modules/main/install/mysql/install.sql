@@ -221,6 +221,7 @@ CREATE TABLE b_user_index
 	USER_ID int(11) not null,
 	SEARCH_USER_CONTENT text null,
 	SEARCH_DEPARTMENT_CONTENT text null,
+	SEARCH_ADMIN_CONTENT text null,
 	NAME varchar(50),
 	LAST_NAME varchar(50),
 	SECOND_NAME varchar(50),

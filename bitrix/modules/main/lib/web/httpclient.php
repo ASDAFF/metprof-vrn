@@ -20,6 +20,7 @@ class HttpClient
 	const HTTP_PUT = "PUT";
 	const HTTP_HEAD = "HEAD";
 	const HTTP_PATCH = "PATCH";
+	const HTTP_DELETE = "DELETE";
 
 	const BUF_READ_LEN = 16384;
 	const BUF_POST_LEN = 131072;

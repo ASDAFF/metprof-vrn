@@ -16,7 +16,8 @@ Loader::registerAutoLoadClasses(
 		'\Bitrix\Currency\CurrencyManager' => 'lib/currencymanager.php',
 		'\Bitrix\Currency\CurrencyTable' => 'lib/currency.php',
 		'\Bitrix\Currency\CurrencyLangTable' => 'lib/currencylang.php',
-		'\Bitrix\Currency\CurrencyRateTable' => 'lib/currencyrate.php'
+		'\Bitrix\Currency\CurrencyRateTable' => 'lib/currencyrate.php',
+		'\Bitrix\Currency\CurrencyClassifier' => 'lib/currencyclassifier.php'
 	)
 );
 unset($strDBType);

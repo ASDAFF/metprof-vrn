@@ -124,7 +124,10 @@ function updateBasketTable(basketItemId, res)
 		propId,
 		arProp,
 		bIsImageProperty,
+		countValues,
 		full,
+		fullWidth,
+		itemWidth,
 		arVal,
 		valId,
 		arSkuValue,
@@ -325,7 +328,19 @@ function updateBasketTable(basketItemId, res)
 									selectedIndex = 0;
 									arProp = arItem.SKU_DATA[propId];
 									bIsImageProperty = false;
-									full = (BX.util.array_keys(arProp['VALUES']).length > 5) ? 'full' : '';
+									countValues = BX.util.array_keys(arProp['VALUES']).length;
+									if (countValues > 5)
+									{
+										full = 'full';
+										fullWidth = (countValues*20) + '%';
+										itemWidth = (100/countValues) + '%';
+									}
+									else
+									{
+										full = '';
+										fullWidth = '100%';
+										itemWidth = '20%';
+									}
 
 									counter = 0;
 									for (valId in arProp['VALUES'])
@@ -344,8 +359,9 @@ function updateBasketTable(basketItemId, res)
 									}
 
 									marginLeft = '0';
-									if (full != '' && selectedIndex > 5)
+									if (full !== '' && selectedIndex > 5)
 										marginLeft = ((5 - selectedIndex) * 20) + '%';
+
 									// sku property can contain list of images or values
 									if (bIsImageProperty)
 									{
@@ -354,7 +370,7 @@ function updateBasketTable(basketItemId, res)
 										cellItemHTML += '<div class="bx_scu_scroller_container">';
 										cellItemHTML += '<div class="bx_scu">';
 
-										cellItemHTML += '<ul id="prop_' + arProp['CODE'] + '_' + arItem['ID'] + '" style="width: 200%; margin-left: ' + marginLeft + ';" class="sku_prop_list">';
+										cellItemHTML += '<ul id="prop_' + arProp['CODE'] + '_' + arItem['ID'] + '" style="width: ' + fullWidth + '; margin-left: ' + marginLeft + ';" class="sku_prop_list">';
 
 										counter = 0;
 										for (valueId in arProp['VALUES'])
@@ -363,7 +379,7 @@ function updateBasketTable(basketItemId, res)
 											arSkuValue = arProp['VALUES'][valueId];
 											selected = (selectedIndex == counter ? ' bx_active' : '');
 
-											cellItemHTML += '<li style="width:10%;"\
+											cellItemHTML += '<li style="width: ' + itemWidth + '; padding-top: ' + itemWidth + ';"\
 															class="sku_prop' + selected + '" \
 															data-sku-selector="Y" \
 															data-value-id="' + arSkuValue['XML_ID'] + '" \
@@ -391,7 +407,7 @@ function updateBasketTable(basketItemId, res)
 										cellItemHTML += '<div class="bx_size_scroller_container">';
 										cellItemHTML += '<div class="bx_size">';
 
-										cellItemHTML += '<ul id="prop_' + arProp['CODE'] + '_' + arItem['ID'] + '" style="width: 200%; margin-left: ' + marginLeft + ';" class="sku_prop_list">';
+										cellItemHTML += '<ul id="prop_' + arProp['CODE'] + '_' + arItem['ID'] + '" style="width: ' + fullWidth + '; margin-left: ' + marginLeft + ';" class="sku_prop_list">';
 
 										counter = 0;
 										for (valueId in arProp['VALUES'])
@@ -400,7 +416,7 @@ function updateBasketTable(basketItemId, res)
 											arSkuValue = arProp['VALUES'][valueId];
 											selected = (selectedIndex == counter ? ' bx_active' : '');
 
-											cellItemHTML += '<li style="width:10%;"\
+											cellItemHTML += '<li style="width: ' + itemWidth + ';"\
 															class="sku_prop ' + selected + '" \
 															data-sku-selector="Y" \
 															data-value-id="' + (arProp['TYPE'] === 'S' && arProp['USER_TYPE'] === 'directory' ? arSkuValue['XML_ID'] : BX.util.htmlspecialchars(arSkuValue['NAME'])) + '" \
@@ -895,6 +911,7 @@ function leftScroll(prop, id, count)
 function rightScroll(prop, id, count)
 {
 	count = parseInt(count, 10);
+
 	var el = BX('prop_' + prop + '_' + id);
 
 	if (el)

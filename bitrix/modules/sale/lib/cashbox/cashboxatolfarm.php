@@ -4,6 +4,7 @@ namespace Bitrix\Sale\Cashbox;
 
 use Bitrix\Main;
 use Bitrix\Main\Localization;
+use Bitrix\Sale\Cashbox\Internals\CashboxTable;
 use Bitrix\Sale\Result;
 use Bitrix\Catalog;
 
@@ -353,6 +354,15 @@ class CashboxAtolFarm extends Cashbox implements IPrintImmediately, ICheckable
 			$result->addError(new Main\Error(Localization\Loc::getMessage('SALE_CASHBOX_ATOL_ERR_EMPTY_PHONE_EMAIL')));
 		}
 
+		foreach ($checkData['receipt']['items'] as $item)
+		{
+			if ($item['tax'] === null)
+			{
+				$result->addError(new Main\Error(Localization\Loc::getMessage('SALE_CASHBOX_ATOL_ERR_EMPTY_TAX')));
+				break;
+			}
+		}
+
 		return $result;
 	}
 
@@ -416,6 +426,7 @@ class CashboxAtolFarm extends Cashbox implements IPrintImmediately, ICheckable
 		$settings = array(
 			'AUTH' => array(
 				'LABEL' => Localization\Loc::getMessage('SALE_CASHBOX_ATOL_FARM_SETTINGS_AUTH'),
+				'REQUIRED' => 'Y',
 				'ITEMS' => array(
 					'LOGIN' => array(
 						'TYPE' => 'STRING',
@@ -429,6 +440,7 @@ class CashboxAtolFarm extends Cashbox implements IPrintImmediately, ICheckable
 			),
 			'SERVICE' => array(
 				'LABEL' => Localization\Loc::getMessage('SALE_CASHBOX_ATOL_FARM_SETTINGS_SERVICE'),
+				'REQUIRED' => 'Y',
 				'ITEMS' => array(
 					'INN' => array(
 						'TYPE' => 'STRING',
@@ -444,6 +456,7 @@ class CashboxAtolFarm extends Cashbox implements IPrintImmediately, ICheckable
 
 		$settings['PAYMENT_TYPE'] = array(
 			'LABEL' => Localization\Loc::getMessage('SALE_CASHBOX_ATOL_FARM_SETTINGS_P_TYPE'),
+			'REQUIRED' => 'Y',
 			'ITEMS' => array()
 		);
 
@@ -459,6 +472,7 @@ class CashboxAtolFarm extends Cashbox implements IPrintImmediately, ICheckable
 
 		$settings['VAT'] = array(
 			'LABEL' => Localization\Loc::getMessage('SALE_CASHBOX_BITRIX_SETTINGS_VAT'),
+			'REQUIRED' => 'Y',
 			'ITEMS' => array(
 				'NOT_VAT' => array(
 					'TYPE' => 'STRING',
@@ -492,6 +506,7 @@ class CashboxAtolFarm extends Cashbox implements IPrintImmediately, ICheckable
 
 		$settings['TAX'] = array(
 			'LABEL' => Localization\Loc::getMessage('SALE_CASHBOX_ATOL_FARM_SETTINGS_SNO'),
+			'REQUIRED' => 'Y',
 			'ITEMS' => array(
 				'SNO' => array(
 					'TYPE' => 'ENUM',
@@ -513,29 +528,15 @@ class CashboxAtolFarm extends Cashbox implements IPrintImmediately, ICheckable
 	}
 
 	/**
-	 * @param $data
-	 * @return Result
+	 * @return array
 	 */
-	public static function validateSettings($data)
+	public static function getGeneralRequiredFields()
 	{
-		$result = new Result();
+		$generalRequiredFields = parent::getGeneralRequiredFields();
 
-		if (empty($data['NUMBER_KKM']))
-		{
-			$result->addError(new Main\Error(Localization\Loc::getMessage('SALE_CASHBOX_ATOL_VALIDATE_E_NUMBER_KKM')));
-		}
-
-		if (empty($data['SETTINGS']['SERVICE']['INN']))
-		{
-			$result->addError(new Main\Error(Localization\Loc::getMessage('SALE_CASHBOX_ATOL_VALIDATE_E_INN')));
-		}
-
-		if (empty($data['SETTINGS']['SERVICE']['P_ADDRESS']))
-		{
-			$result->addError(new Main\Error(Localization\Loc::getMessage('SALE_CASHBOX_ATOL_VALIDATE_E_ADDRESS')));
-		}
-
-		return $result;
+		$map = CashboxTable::getMap();
+		$generalRequiredFields['NUMBER_KKM'] = $map['NUMBER_KKM']['title'];
+		return $generalRequiredFields;
 	}
 
 	/**
@@ -549,7 +550,7 @@ class CashboxAtolFarm extends Cashbox implements IPrintImmediately, ICheckable
 	/**
 	 * @param $token
 	 */
-	private function setToken($token)
+	private function setAccessToken($token)
 	{
 		Main\Config\Option::set('sale', $this->getOptionName(), $token);
 	}
@@ -595,7 +596,7 @@ class CashboxAtolFarm extends Cashbox implements IPrintImmediately, ICheckable
 		if ($result->isSuccess())
 		{
 			$response = $result->getData();
-			$this->setToken($response['token']);
+			$this->setAccessToken($response['token']);
 
 			return $response['token'];
 		}
@@ -611,5 +612,13 @@ class CashboxAtolFarm extends Cashbox implements IPrintImmediately, ICheckable
 	protected static function getErrorType($errorCode)
 	{
 		return Errors\Error::TYPE;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public static function isSupportedFFD105()
+	{
+		return false;
 	}
 }

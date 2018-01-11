@@ -113,6 +113,17 @@ if ($APPLICATION->GetGroupRight("sale")!="D")
 						)
 					),
 					array(
+						"text" => GetMessage("SALE_MENU_DELIVERY_REQUESTS"),
+						"title" => GetMessage("SALE_MENU_DELIVERY_REQUESTS"),
+						"url" => "sale_delivery_request_list.php?lang=".LANGUAGE_ID,
+						"page_icon" => "sale_page_icon",
+						"more_url" => array(
+							"sale_delivery_request.php",
+							"sale_delivery_request_list.php",
+							"sale_delivery_request_view.php"
+						)
+					),
+					array(
 						"text" => GetMessage("SALE_ORDERS_ARCHIVE"),
 						"title" => GetMessage("SALE_ORDERS_ARCHIVE"),
 						"url" => "sale_order_archive.php?lang=".LANGUAGE_ID,

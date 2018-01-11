@@ -114,6 +114,7 @@ else
 		"paymentNumber" => $arParams['PAYMENT_NUMBER'],
 		"inner" => $arParams['ALLOW_INNER'],
 		"onlyInnerFull" => $arParams['ONLY_INNER_FULL'],
+		"refreshPrices" => $arParams['REFRESH_PRICES'],
 		"wrapperId" => $wrapperId
 	);
 	$javascriptParams = CUtil::PhpToJSObject($javascriptParams);

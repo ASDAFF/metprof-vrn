@@ -194,8 +194,6 @@ class Dispatcher
 
 	public function validateField($fieldInfo)
 	{
-		global $APPLICATION, $USER_FIELD_MANAGER;
-
 		$userFieldInfo = $this->getUserFieldInfo($fieldInfo['ENTITY_ID'], $fieldInfo['FIELD']);
 
 		if(!$userFieldInfo)

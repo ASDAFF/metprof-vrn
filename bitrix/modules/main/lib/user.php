@@ -364,7 +364,7 @@ class UserTable extends Entity\DataManager
 
 		$intranetInstalled = \Bitrix\Main\ModuleManager::isModuleInstalled('intranet');
 
-		$select = Array('ID', 'NAME', 'SECOND_NAME', 'LAST_NAME', 'WORK_POSITION');
+		$select = Array('ID', 'NAME', 'SECOND_NAME', 'LAST_NAME', 'WORK_POSITION', 'LOGIN', 'EMAIL');
 		if ($intranetInstalled)
 		{
 			$select[] = 'UF_DEPARTMENT';
@@ -395,12 +395,13 @@ class UserTable extends Entity\DataManager
 
 		UserIndexTable::merge(array(
 			'USER_ID' => $id,
-			'NAME' => MapBuilder::create()->addText($record['NAME'])->build(),
-			'SECOND_NAME' => MapBuilder::create()->addText($record['SECOND_NAME'])->build(),
-			'LAST_NAME' => MapBuilder::create()->addText($record['LAST_NAME'])->build(),
-			'WORK_POSITION' => MapBuilder::create()->addText($record['WORK_POSITION'])->build(),
-			'UF_DEPARTMENT_NAME' => MapBuilder::create()->addText($departmentName)->build(),
+			'NAME' => (string)$record['NAME'],
+			'SECOND_NAME' => (string)$record['SECOND_NAME'],
+			'LAST_NAME' => (string)$record['LAST_NAME'],
+			'WORK_POSITION' => (string)$record['WORK_POSITION'],
+			'UF_DEPARTMENT_NAME' => (string)$departmentName,
 			'SEARCH_USER_CONTENT' => self::generateSearchUserContent($record),
+			'SEARCH_ADMIN_CONTENT' => self::generateSearchAdminContent($record),
 			'SEARCH_DEPARTMENT_CONTENT' => MapBuilder::create()->addText($searchDepartmentContent)->build(),
 		));
 
@@ -421,6 +422,21 @@ class UserTable extends Entity\DataManager
 			->addText($fields['LAST_NAME'])
 			->addText($fields['WORK_POSITION'])
 			->addText(implode(' ', $fields['UF_DEPARTMENT_NAMES']))
+			->build();
+
+		return $result;
+	}
+
+	private static function generateSearchAdminContent(array $fields)
+	{
+		$result = MapBuilder::create()
+			->addInteger($fields['ID'])
+			->addText($fields['NAME'])
+			->addText($fields['SECOND_NAME'])
+			->addText($fields['LAST_NAME'])
+			->addEmail($fields['EMAIL'])
+			->addText($fields['WORK_POSITION'])
+			->addText($fields['LOGIN'])
 			->build();
 
 		return $result;

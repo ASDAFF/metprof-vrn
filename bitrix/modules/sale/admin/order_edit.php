@@ -141,6 +141,9 @@ if (($isSavingOperation || $isNeedFieldsRestore || $isRefreshDataAndSaveOperatio
 		if($isSavingOperation)
 			OrderEdit::$isTrustProductFormData = true;
 
+		if($isRefreshDataAndSaveOperation)
+			OrderEdit::$isRefreshData = true;
+
 		$res = OrderEdit::editOrderByFormData($_POST, $order, $USER->GetID(), true, $_FILES, $result);
 
 		if($res)
@@ -189,6 +192,7 @@ if (($isSavingOperation || $isNeedFieldsRestore || $isRefreshDataAndSaveOperatio
 
 				if(!$res->isSuccess())
 					$result->addErrors($res->getErrors());
+
 			}
 
 			$res = $discount->calculate();
@@ -386,11 +390,25 @@ $aMenu[] = array(
 
 $actionMenu = array();
 
-$actionMenu[] = array(
-	"TEXT" => Loc::getMessage("SOE_ORDER_REFRESH"),
-	"TITLE"=> Loc::getMessage("SOE_ORDER_REFRESH_TITLE"),
-	"LINK" => "javascript:if(confirm('".GetMessageJS("SOE_ORDER_REFRESH_CONFIRM")."')) BX.Sale.Admin.OrderEditPage.onRefreshOrderDataAndSave();"
-);
+$disabledRefresh = false;
+if ($order && $order->getId() > 0)
+{
+	$shipmentCollection = $order->getShipmentCollection();
+
+	if ($shipmentCollection->isShipped())
+	{
+		$disabledRefresh = true;
+	}
+}
+
+if (!$disabledRefresh)
+{
+	$actionMenu[] = array(
+		"TEXT" => Loc::getMessage("SOE_ORDER_REFRESH"),
+		"TITLE"=> Loc::getMessage("SOE_ORDER_REFRESH_TITLE"),
+		"LINK" => "javascript:if(confirm('".GetMessageJS("SOE_ORDER_REFRESH_CONFIRM")."')) BX.Sale.Admin.OrderEditPage.onRefreshOrderDataAndSave();"
+	);
+}
 
 $actionMenu[] = array(
 	"TEXT" => Loc::getMessage("NEWO_ORDER_DELETE"),

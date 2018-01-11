@@ -1001,7 +1001,12 @@
 								});
 							}
 
-							if (label.length)
+							if (!BX.type.isArray(label))
+							{
+								label = [ label ];
+							}
+
+							if (label.length > 0)
 							{
 								value = current.LABEL + ': ';
 								value += label.join(', ');

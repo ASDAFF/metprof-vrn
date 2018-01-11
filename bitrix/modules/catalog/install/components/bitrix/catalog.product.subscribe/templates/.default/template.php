@@ -13,6 +13,8 @@
 
 use Bitrix\Main\Localization\Loc;
 
+CJSCore::init(array('popup', 'ajax'));
+
 $this->setFrameMode(true);
 
 $strMainId = $this->getEditAreaId($arResult['PRODUCT_ID']);

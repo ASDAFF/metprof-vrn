@@ -455,7 +455,7 @@ if ($errors)
 				false
 			);
 			?>
-			<div id="new_color_label" style="background: <?=$status['COLOR']?>"></div>
+			<div id="new_color_label" style="background: <?=htmlspecialcharsbx($status['COLOR'])?>"></div>
 		</td>
 	</tr>
 	<?foreach ($languages as $languageId => $languageName):?>

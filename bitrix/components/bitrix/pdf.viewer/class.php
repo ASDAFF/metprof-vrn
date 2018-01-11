@@ -12,7 +12,7 @@ class CDiskPdfComponent extends \CBitrixComponent
 
 	public function onPrepareComponentParams($arParams)
 	{
-		$arParams['VIEWER_ID'] = htmlspecialcharsbx ($arParams['VIEWER_ID']);
+		$arParams['VIEWER_ID'] = $arParams['VIEWER_ID'];
 
 		return $arParams;
 	}
@@ -69,7 +69,7 @@ class CDiskPdfComponent extends \CBitrixComponent
 		{
 			if($this->arParams['PRINT_URL'])
 			{
-				$this->arResult['PRINT_URL'] = CUtil::JSEscape($this->arParams['PRINT_URL']);
+				$this->arResult['PRINT_URL'] = $this->arParams['PRINT_URL'];
 			}
 		}
 

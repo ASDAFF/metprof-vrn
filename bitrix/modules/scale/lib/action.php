@@ -1,6 +1,7 @@
 <?php
 namespace Bitrix\Scale;
 
+use Bitrix\Main\IO\File;
 use \Bitrix\Main\Localization\Loc;
 Loc::loadMessages(__FILE__);
 
@@ -77,7 +78,24 @@ class Action
 		$retStr = $this->actionParams["START_COMMAND_TEMPLATE"];
 
 		foreach ($this->userParams as $key => $paramValue)
+		{
+			if($this->actionParams['USER_PARAMS'][$key]['THROUGH_FILE'] == 'Y')
+			{
+				if(strlen($paramValue) > 0)
+				{
+					$tmpDir = Helper::getTmpDir();
+					$tmpFile = $tmpDir.'/.'.randString();
+					$res = File::putFileContents($tmpFile, $paramValue);
+
+					if($res === false)
+						return '';
+
+					$paramValue = $tmpFile;
+				}
+			}
+
 			$retStr = str_replace('##USER_PARAMS:'.$key.'##', $paramValue, $retStr);
+		}
 
 		if(strlen($this->serverHostname) > 0 && $this->serverHostname != "global")
 		{
@@ -150,27 +168,38 @@ class Action
 		}
 
 		$result = null;
-		$command = $this->makeStartCommand($inputParams);
-		$result =  $this->shellAdapter->syncExec($command);
-		$output = $this->shellAdapter->getLastOutput();
+		$output = '';
 		$arOutput = array();
+		$command = $this->makeStartCommand($inputParams);
 
-		if(strlen($output) > 0)
+		if(strlen($command) > 0)
 		{
-			$arOut = json_decode($output, true);
+			$result =  $this->shellAdapter->syncExec($command);
+			$output = $this->shellAdapter->getLastOutput();
+			$arOutput = array();
 
-			if(is_array($arOut) && !empty($arOut))
-				$arOutput = $arOut;
+			if(strlen($output) > 0)
+			{
+				$arOut = json_decode($output, true);
+
+				if(is_array($arOut) && !empty($arOut))
+					$arOutput = $arOut;
+			}
+
+			//error returned by shell
+			$error = $this->shellAdapter->getLastError();
+
+			//error returned by bitrix-env
+			if(isset($arOutput["error"]) && intval($arOutput["error"]) > 0 && isset($arOutput["message"]) && strlen($arOutput["message"]) > 0)
+				$error .= " ".$arOutput["message"];
+
+			$this->makeLogRecords($command, $result, $output, $error);
 		}
-
-		//error returned by shell
-		$error = $this->shellAdapter->getLastError();
-
-		//error returned by bitrix-env
-		if(isset($arOutput["error"]) && intval($arOutput["error"]) > 0 && isset($arOutput["message"]) && strlen($arOutput["message"]) > 0)
-			$error .= " ".$arOutput["message"];
-
-		$this->makeLogRecords($command, $result, $output, $error);
+		else //$command == ''
+		{
+			$result = false;
+			$error = 'Cant\'t create command for action execution';
+		}
 
 		$this->result = array(
 			$this->id => array(

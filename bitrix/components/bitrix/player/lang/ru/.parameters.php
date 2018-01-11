@@ -106,4 +106,6 @@ $MESS["PC_PAR_PLAYLIST_HIDE"] = "Скрыть плейлист";
 $MESS["PC_PAR_START_TIME"] = "Время начала проигрывания (секунды)";
 $MESS["PC_PAR_PLAYBACK_RATE"] = "Скорость воспроизведения";
 $MESS["PC_PAR_AUTOSTART_ON_SCROLL"] = "Автоматически начинать проигрывать при появлении плеера на экране";
+$MESS["PC_PAR_FILE_TYPE"] = "Mime-type файла";
+$MESS["PC_PAR_USE_PLAYLIST_AS_SOURCES"] = "Использовать список воспроизведения как альтернативные версии файла";
 ?>

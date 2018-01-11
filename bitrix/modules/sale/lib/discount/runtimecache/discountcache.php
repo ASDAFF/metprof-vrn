@@ -127,7 +127,7 @@ final class DiscountCache
 			}
 
 			if (!empty($needToLoad))
-				$resultEntities = array_merge_recursive($resultEntities, DiscountEntitiesTable::getByDiscount($needToLoad));
+				self::recursiveMerge($resultEntities, DiscountEntitiesTable::getByDiscount($needToLoad));
 
 			$this->discountEntities[$cacheKey] = array($discountIds, $resultEntities);
 		}
@@ -136,13 +136,13 @@ final class DiscountCache
 
 	public function getDiscounts(array $discountIds, array $executeModuleFilter, $siteId, array $couponList = array())
 	{
-		$cacheKey = 'D' . implode('_', $discountIds) . '-S' . $siteId;
+		$cacheKey = 'D'.implode('_', $discountIds).'-S'.$siteId;
 		if(!empty($couponList))
 		{
-			$cacheKey .= '-C' . implode('_', array_keys($couponList));
+			$cacheKey .= '-C'. implode('_', array_keys($couponList));
 		}
 
-		$cacheKey .= '-MF' . implode('_', $executeModuleFilter);
+		$cacheKey .= '-MF'.implode('_', $executeModuleFilter);
 		$cacheKey = md5($cacheKey);
 
 		if(!isset($this->discounts[$cacheKey]))
@@ -220,5 +220,34 @@ final class DiscountCache
 		}
 
 		return $this->discounts[$cacheKey];
+	}
+
+	/**
+	 * Added keys from source array to destination array.
+	 *
+	 * @param array &$dest			Destination array.
+	 * @param array $src			Source array.
+	 * @return void
+	 */
+	private static function recursiveMerge(&$dest, $src)
+	{
+		if (!is_array($dest) || !is_array($src))
+			return;
+		if (empty($dest))
+		{
+			$dest = $src;
+			return;
+		}
+		foreach ($src as $key => $value)
+		{
+			if (!isset($dest[$key]))
+			{
+				$dest[$key] = $value;
+				continue;
+			}
+			if (is_array($dest[$key]))
+				self::recursiveMerge($dest[$key], $value);
+		}
+		unset($value, $key);
 	}
 }

@@ -698,12 +698,12 @@ class CCatalogProduct extends CAllCatalogProduct
 		return false;
 	}
 
-	function GetVATInfo($PRODUCT_ID)
+	public static function GetVATInfo($PRODUCT_ID)
 	{
 		global $DB;
 
 		$query = "
-SELECT CAT_VAT.*, CAT_PR.VAT_INCLUDED
+SELECT CAT_PR.ID as PRODUCT_ID, CAT_VAT.*, CAT_PR.VAT_INCLUDED
 FROM b_catalog_product CAT_PR
 LEFT JOIN b_iblock_element BE ON (BE.ID = CAT_PR.ID)
 LEFT JOIN b_catalog_iblock CAT_IB ON ((CAT_PR.VAT_ID IS NULL OR CAT_PR.VAT_ID = 0) AND CAT_IB.IBLOCK_ID = BE.IBLOCK_ID)
@@ -712,6 +712,110 @@ WHERE CAT_PR.ID = '".intval($PRODUCT_ID)."'
 AND CAT_VAT.ACTIVE='Y'
 ";
 		return $DB->Query($query);
+	}
+
+	/**
+	 * @param array $list
+	 *
+	 * @return array
+	 */
+	public static function GetVATDataByIDList(array $list)
+	{
+		$output = array();
+		foreach ($list as $index => $id)
+		{
+			$output[$id] = false;
+			$id = (int)$id;
+			if ($id <= 0)
+			{
+				unset($list[$index]);
+				continue;
+			}
+
+			if (!empty(static::$vatCache[$id]))
+			{
+				$output[$id] = static::$vatCache[$id];
+				unset($list[$index]);
+			}
+		}
+
+		if (!empty($list))
+		{
+			$vatDataList = static::loadVatInfoFromDB($list);
+		}
+
+		if (!empty($vatDataList) && is_array($vatDataList))
+		{
+			$output = $output + $vatDataList;
+		}
+
+		return $output;
+	}
+
+	/**
+	 * @param $id
+	 *
+	 * @return bool|mixed
+	 */
+	public static function GetVATDataByID($id)
+	{
+		if (array_key_exists($id, static::$vatCache))
+		{
+			return static::$vatCache[$id];
+		}
+		$dataList = static::loadVatInfoFromDB(array($id));
+		return (!empty($dataList[$id]) ? $dataList[$id] : false);
+	}
+
+	/**
+	 * @param array $list
+	 *
+	 * @return array
+	 */
+	private static function loadVatInfoFromDB(array $list)
+	{
+		global $DB;
+		$output = array();
+		foreach ($list as $index => $id)
+		{
+			$output[$id] = false;
+			$id = (int)$id;
+			if ($id <= 0)
+			{
+				unset($list[$index]);
+				continue;
+			}
+
+			if (!empty(static::$vatCache[$id]))
+			{
+				$output[$id] = static::$vatCache[$id];
+				unset($list[$index]);
+			}
+			else
+			{
+				static::$vatCache[$id] = false;
+			}
+		}
+
+		if (!empty($list))
+		{
+			$query = "
+	SELECT CAT_PR.ID as PRODUCT_ID, CAT_VAT.*, CAT_PR.VAT_INCLUDED
+	FROM b_catalog_product CAT_PR
+	LEFT JOIN b_iblock_element BE ON (BE.ID = CAT_PR.ID)
+	LEFT JOIN b_catalog_iblock CAT_IB ON ((CAT_PR.VAT_ID IS NULL OR CAT_PR.VAT_ID = 0) AND CAT_IB.IBLOCK_ID = BE.IBLOCK_ID)
+	LEFT JOIN b_catalog_vat CAT_VAT ON (CAT_VAT.ID = IF((CAT_PR.VAT_ID IS NULL OR CAT_PR.VAT_ID = 0), CAT_IB.VAT_ID, CAT_PR.VAT_ID))
+	WHERE CAT_PR.ID IN (".join(', ', $list).")
+	AND CAT_VAT.ACTIVE='Y'
+	";
+			$res = $DB->Query($query);
+			while ($data = $res->Fetch())
+			{
+				static::$vatCache[$data['PRODUCT_ID']] = $output[$data['PRODUCT_ID']] = $data;
+			}
+		}
+
+		return $output;
 	}
 
 	public static function SetProductType($intID, $intTypeID)

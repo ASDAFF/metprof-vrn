@@ -9,6 +9,7 @@ $MESS['SALE_CASHBOX_BITRIX_ERR-3816'] = 'неверный вид оплаты';
 $MESS['SALE_CASHBOX_BITRIX_ERR-3807'] = 'нет бумаги';
 $MESS['SALE_CASHBOX_BITRIX_ERR-3896'] = 'сумма не наличных оплат превышает сумму чека';
 $MESS['SALE_CASHBOX_BITRIX_ERR-3897'] = 'чек оплачен не полностью';
+$MESS['SALE_CASHBOX_BITRIX_ERR-4026'] = 'невозможно начислить скидку';
 $MESS['SALE_CASHBOX_BITRIX_SETTINGS_P_TYPE'] = 'Настройки оплат';
 $MESS['SALE_CASHBOX_BITRIX_SETTINGS_VAT'] = 'Настройки ставок НДС';
 $MESS['SALE_CASHBOX_BITRIX_SETTINGS_P_TYPE_LABEL_Y'] = 'Наличный';

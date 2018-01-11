@@ -303,7 +303,7 @@ $currency = preg_replace('/(^|[^&])#/', '${1}', $arCurFormat['FORMAT_STRING']);
 
 
 
-		<?if (DoubleVal($arOrder["PRICE_DELIVERY"])>0):?>
+		<?if ($arOrder["DELIVERY_ID"]):?>
 			<tr>
 				<td bgcolor="#ffffff" style="border: 1pt solid #000000; border-right:none; border-top:none;">
 					<?echo $n?>

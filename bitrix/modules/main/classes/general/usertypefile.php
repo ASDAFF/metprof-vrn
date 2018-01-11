@@ -577,7 +577,7 @@ class CUserTypeFile extends Main\UserField\TypeBase
 					{
 						$src = $fileInfo["SRC"];
 					}
-					$tag .= '<a href="'.htmlspecialcharsbx($src).'">'.htmlspecialcharsbx($fileInfo["FILE_NAME"]).'</a> ('.\CFile::formatSize($fileInfo["FILE_SIZE"]).')';
+					$tag .= '<a href="'.htmlspecialcharsbx($src).'">'.htmlspecialcharsbx($fileInfo["ORIGINAL_NAME"]).'</a> ('.\CFile::formatSize($fileInfo["FILE_SIZE"]).')';
 				}
 
 				$html .= static::getHelper()->wrapSingleField($tag);

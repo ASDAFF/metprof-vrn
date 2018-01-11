@@ -18,6 +18,14 @@ class CSaleExportCML2 extends CSaleExport
 	protected static function saveExportParams(array $arOrder)
 	{
 	}
+
+	protected function outputXmlUnit($arBasket)
+	{
+		$measures = \Bitrix\Sale\Helpers\Admin\Blocks\OrderBasket::getCatalogMeasures();
+		?>
+		<<?=CSaleExport::getTagName("SALE_EXPORT_BASE_UNIT")?> <?=CSaleExport::getTagName("SALE_EXPORT_CODE")?>="<?=$arBasket["MEASURE_CODE"]?>" <?=CSaleExport::getTagName("SALE_EXPORT_FULL_NAME_UNIT")?>="<?=htmlspecialcharsbx(self::$measures[$arBasket["MEASURE_CODE"]])?>" <?=CSaleExport::getTagName("SALE_EXPORT_INTERNATIONAL_ABR")?>="<?=CSaleExport::getTagName("SALE_EXPORT_RCE")?>"><?=$measures[$arBasket["MEASURE_CODE"]]?></<?=CSaleExport::getTagName("SALE_EXPORT_BASE_UNIT")?>>
+		<?
+	}
 }
 
 ob_start();

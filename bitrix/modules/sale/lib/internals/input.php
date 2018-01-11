@@ -1514,8 +1514,8 @@ class Location extends Base
 
 		if ($onChange = $input['ONCHANGE'])
 		{
-			$functionName = $selector.'OnLocationChange';
-			$html .= "<script>function $functionName (this){ $onChange }</script>";
+			$functionName = 'OnLocationChange'.$selector;
+			$html .= "<script>function $functionName (){ $onChange }; BX.proxy($functionName, this);</script>";
 			$input['JS_CALLBACK'] = $functionName;
 		}
 		else

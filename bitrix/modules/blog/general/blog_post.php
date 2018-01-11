@@ -768,7 +768,7 @@ class CAllBlogPost
 				$arSoFields["USER_ID"] = $arParams["user_id"];
 			}
 
-			$post = \Bitrix\Blog\Item\Post::getById($arPost);
+			$post = \Bitrix\Blog\Item\Post::getById($arPost["ID"]);
 			$arSoFields["TAGS"] = $post->getTags();
 
 			$logID = CSocNetLog::Add($arSoFields, false);

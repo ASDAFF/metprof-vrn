@@ -17,6 +17,7 @@ use Bitrix\Main\Config\Option;
 use Bitrix\Highloadblock as HL;
 use Bitrix\Main\SystemException;
 use Bitrix\Main\Localization\Loc;
+use Bitrix\Sale\SaleProviderBase;
 use Bitrix\Sale\Services\Company;
 use Bitrix\Main\Entity\EntityError;
 use Bitrix\Sale\UserMessageException;
@@ -52,6 +53,7 @@ class OrderEdit
 	public static $isTrustProductFormData = false;
 	public static $needUpdateNewProductPrice = false;
 	public static $isBuyerIdChanged = false;
+	public static $isRefreshData = false;
 
 	const BASKET_CODE_NEW = 'new';
 
@@ -353,11 +355,16 @@ class OrderEdit
 		if($name = $orderProps->getPayerName())
 			$name = $name->getValue();
 
+		if($phone = $orderProps->getPhone())
+			$phone = $phone->getValue();
+
 		$userId = \CSaleUser::DoAutoRegisterUser(
 			$email,
 			$name,
 			$formData["SITE_ID"],
-			$errors);
+			$errors,
+			array('PERSONAL_PHONE' => $phone)
+		);
 
 		if (!empty($errors))
 		{
@@ -1191,6 +1198,31 @@ class OrderEdit
 				$params[] = "PRICE";
 
 			$providerData = Provider::getProductData($basket, $params);
+
+			foreach($basketItems as $item)
+			{
+				$basketCode = $item->getBasketCode();
+
+				if($order->getId() <= 0 && !empty($providerData[$basketCode]) && empty($providerData[$basketCode]['QUANTITY']))
+				{
+					$result->addError(
+						new Error(
+							Loc::getMessage(
+								"SALE_ORDEREDIT_PRODUCT_QUANTITY_IS_EMPTY",
+								array(
+									"#NAME#" => $item->getField('NAME')
+								)
+							),
+							'SALE_ORDEREDIT_PRODUCT_QUANTITY_IS_EMPTY'
+						)
+					);
+				}
+			}
+		}
+
+		if (!$result->isSuccess())
+		{
+			return $result;
 		}
 
 		$data = array();
@@ -1204,6 +1236,11 @@ class OrderEdit
 
 			if(!empty($providerData[$basketCode]))
 			{
+				if (static::$isRefreshData === true)
+				{
+					unset($providerData[$basketCode]['QUANTITY']);
+				}
+				
 				$data[$basketCode] = $providerData[$basketCode];
 			}
 			elseif(!empty($trustData[$basketCode]))
@@ -1634,14 +1671,19 @@ class OrderEdit
 
 		if($calcResults === null || $needRecalculate)
 		{
-			/** @var \Bitrix\Sale\Result $r */
-			$r = $order->getDiscount()->calculate();
-			if ($r->isSuccess())
+			if($needRecalculate)
 			{
-				$discountData = $r->getData();
-				$order->applyDiscount($discountData);
-				$calcResults = $order->getDiscount()->getApplyResult(true);
+				/** @var \Bitrix\Sale\Result $r */
+				$r = $order->getDiscount()->calculate();
+
+				if ($r->isSuccess())
+				{
+					$discountData = $r->getData();
+					$order->applyDiscount($discountData);
+				}
 			}
+
+			$calcResults = $order->getDiscount()->getApplyResult(true);
 		}
 
 		return $calcResults === null ? array() : $calcResults;

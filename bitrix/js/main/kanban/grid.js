@@ -635,15 +635,7 @@ BX.Kanban.Grid.prototype =
 		BX.cleanNode(this.getGridContainer());
 		this.getGridContainer().appendChild(docFragment);
 
-		var dropZoneItems = document.createDocumentFragment();
-		var dropZones = this.getDropZoneArea().getDropZones();
-		for (i = 0; i < dropZones.length; i++)
-		{
-			dropZoneItems.appendChild(dropZones[i].render());
-		}
-
-		BX.cleanNode(this.getDropZoneArea().getContainer());
-		this.getDropZoneArea().getContainer().appendChild(dropZoneItems);
+		this.getDropZoneArea().render();
 
 		if (!this.isRendered())
 		{

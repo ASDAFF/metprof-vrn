@@ -39,7 +39,10 @@
 
 			if (activeTargets.length)
 			{
-				observer.callback(activeTargets);
+				clearTimeout(observer.timeout);
+				observer.timeout = setTimeout(function() {
+					observer.callback(activeTargets);
+				}, 400);
 			}
 		});
 
@@ -54,14 +57,16 @@
 	 */
 	BX.ResizeObserver.setFrameWait = function(callback)
 	{
-		if (typeof window.requestAnimationFrame === 'undefined')
-		{
-			window.setTimeout(callback, 1000 / 60);
-		}
-		else
-		{
-			window.requestAnimationFrame(callback);
-		}
+		setTimeout(function() {
+			if (typeof window.requestAnimationFrame === 'function')
+			{
+				window.requestAnimationFrame(callback);
+			}
+			else
+			{
+				callback();
+			}
+		}, 200);
 	};
 
 
@@ -106,7 +111,7 @@
 		 */
 		disconnect: function()
 		{
-			this.targets = [];
+			this.targets = new BX.ResizeObserverItemCollection();
 		}
 	};
 

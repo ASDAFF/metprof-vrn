@@ -280,8 +280,9 @@ $MESS["INST_ALLOW_CALL_REFERENCE"] = "Параметр allow_call_time_pass_refe
 $MESS["INST_UTF8_NOT_SUPPORT"] = "UTF-8 не поддерживается в PHP (не настроена библиотека mbstring)";
 $MESS["INST_JAVASCRIPT_DISABLED"] = "Для установки продукта необходимо включить JavaScript. По-видимому, JavaScript либо не поддерживается браузером, либо отключен. Измените настройки браузера и затем <a href=\"\">повторите попытку</a>.";
 $MESS["INS_UTF_PARAMS"] = "Установка продукта в кодировке UTF-8";
-$MESS["INST_UTF8_RECOMENDATION"] = "Для установки продукта в кодировке UTF-8 необходимо установить библиотеку mbstring c параметрами mbstring.func_overload=2, mbstring.internal_encoding=UTF-8.";
-$MESS["ERR_MBSTRING_EXISTS"] = "Для установки продукта не в кодировке UTF-8 необходимо, или установить для параметра mbstring.func_overload  значение 0, или сделать значение mbstring.internal_encoding отличным от UTF-8. В противном случае рекомендуется установить в кодировке UTF-8.";
+$MESS["INST_UTF8_RECOMENDATION1"] = "Для установки продукта в кодировке UTF-8 необходимо установить библиотеку mbstring c параметрами mbstring.func_overload=2, default_charset=UTF-8.";
+$MESS["ERR_MBSTRING_EXISTS1"] = "Для установки продукта не в кодировке UTF-8 необходимо или установить для параметра mbstring.func_overload значение 0, или сделать значение default_charset отличным от UTF-8. В противном случае рекомендуется установить в кодировке UTF-8.";
+$MESS["INST_UTF8_DEFAULT_ENCODING"] = "Значения параметров default_charset и mbstring.internal_encoding не совпадают. Рекомендуется удалить параметр mbstring.internal_encoding.";
 $MESS["BAD_LICENSE_KEY"] = "Вы ввели неправильный лицензионный ключ.";
 $MESS["NLS_LANGUAGE_TERRITORY"] = "язык_страна";
 $MESS["INST_YES"] = "Да";

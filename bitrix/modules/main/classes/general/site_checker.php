@@ -2633,7 +2633,7 @@ class CSiteCheckerTest
 						),
 					"TAG" => "SITE_CHECKER",
 					"MODULE_ID" => "MAIN",
-					'TYPE' => 'ERROR'
+					'NOTIFY_TYPE' => CAdminNotify::TYPE_NORMAL
 				);
 				CAdminNotify::Add($ar);
 				break;

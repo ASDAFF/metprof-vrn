@@ -947,7 +947,6 @@
 						if (key.indexOf('_datesel') !== -1)
 						{
 							var datesel = fields[key];
-							var cleanKey = key.replace('_datesel', '');
 
 							if (datesel === dateType.EXACT ||
 								datesel === dateType.RANGE ||
@@ -958,12 +957,7 @@
 								datesel === dateType.QUARTER ||
 								datesel === dateType.NONE)
 							{
-								Object.keys(fields).forEach(function(item) {
-									if (item.indexOf(cleanKey) !== -1)
-									{
-										delete fields[item];
-									}
-								});
+								delete fields[key];
 							}
 						}
 

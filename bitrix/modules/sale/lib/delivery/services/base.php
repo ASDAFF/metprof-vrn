@@ -10,6 +10,7 @@ use Bitrix\Main\EventResult;
 use Bitrix\Sale\Internals\Input;
 use Bitrix\Main\SystemException;
 use Bitrix\Main\Localization\Loc;
+use Bitrix\Sale\Delivery\Requests;
 
 Loc::loadMessages(__FILE__);
 
@@ -26,6 +27,7 @@ abstract class Base
 	protected $id = 0;
 	protected $name = "";
 	protected $code = "";
+	protected $vatId = 0;
 	protected $sort = 100;
 	protected $logotip = 0;
 	protected $parentId = 0;
@@ -35,6 +37,8 @@ abstract class Base
 	protected $config = array();
 	protected $restricted = false;
 	protected $trackingClass = "";
+	/** @var Requests\HandlerBase  */
+	protected $deliveryRequestHandler = null;
 	protected $extraServices = array();
 	protected $trackingParams = array();
 	protected $allowEditShipment = array();
@@ -101,6 +105,9 @@ abstract class Base
 
 		if(isset($initParams["ALLOW_EDIT_SHIPMENT"]))
 			$this->allowEditShipment = $initParams["ALLOW_EDIT_SHIPMENT"];
+
+		if(isset($initParams["VAT_ID"]))
+			$this->vatId = intval($initParams["VAT_ID"]);
 
 		if(isset($initParams["RESTRICTED"]))
 			$this->restricted = $initParams["RESTRICTED"];
@@ -327,6 +334,14 @@ abstract class Base
 			$configStructure[$key] = $this->glueValuesToConfig($configSection, isset($this->config[$key]) ? $this->config[$key] : array());
 
 		return $configStructure;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getConfigValues()
+	{
+		return $this->config;
 	}
 
 	/**
@@ -577,6 +592,14 @@ abstract class Base
 	/**
 	 * @return bool
 	 */
+	public function isTrackingInherited()
+	{
+		return false;
+	}
+
+	/**
+	 * @return bool
+	 */
 	public function isCalculatePriceImmediately()
 	{
 		return self::$isCalculatePriceImmediately;
@@ -750,5 +773,29 @@ abstract class Base
 	public function getAdminAdditionalTabs()
 	{
 		return array();
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getVatId()
+	{
+		return $this->vatId;
+	}
+
+	/**
+	 * @param int $vatId
+	 */
+	public function setVatId($vatId)
+	{
+		$this->vatId = $vatId;
+	}
+
+	/**
+	 * @return Requests\HandlerBase
+	 */
+	public function getDeliveryRequestHandler()
+	{
+		return $this->deliveryRequestHandler;
 	}
 }

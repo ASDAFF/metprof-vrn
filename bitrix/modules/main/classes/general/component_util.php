@@ -511,7 +511,8 @@ class CComponentUtil
 					"NAME" => GetMessage("COMP_PROP_SET_TITLE"),
 					"TYPE" => "CHECKBOX",
 					"DEFAULT" => "Y",
-					"ADDITIONAL_VALUES" => "N"
+					"ADDITIONAL_VALUES" => "N",
+					"REFRESH" => "Y"
 				);
 			}
 			elseif ($arParamKeys[$i] == "CACHE_TIME")

@@ -1780,12 +1780,15 @@ class DiscountManager
 		);
 
 		if (isset($basketItem['BASE_PRICE']))
+		{
 			$result['DISCOUNT_PRICE'] = $basketItem['BASE_PRICE'] - $result['PRICE'];
+		}
 		else
+		{
+			if (!isset($result['DISCOUNT_PRICE']))
+				$result['DISCOUNT_PRICE'] = 0;
 			$result['DISCOUNT_PRICE'] += ($basketItem['PRICE'] - $result['PRICE']);
-
-		if ($result['DISCOUNT_PRICE'] < 0)
-			$result['DISCOUNT_PRICE'] = 0;
+		}
 
 		return $result;
 	}

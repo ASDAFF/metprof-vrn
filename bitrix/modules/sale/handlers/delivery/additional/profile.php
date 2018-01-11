@@ -4,6 +4,7 @@ namespace Sale\Handlers\Delivery;
 use Bitrix\Main\Error;
 use Bitrix\Main\Loader;
 use Bitrix\Main\SystemException;
+use Bitrix\Sale\Delivery\Requests\Result;
 use Bitrix\Sale\Order;
 use Bitrix\Sale\Shipment;
 use Bitrix\Main\Localization\Loc;
@@ -106,10 +107,12 @@ class AdditionalProfile extends \Bitrix\Sale\Delivery\Services\Base
 		if(strlen($this->name) <= 0) $this->name = $this->additionalHandler->getName();
 		if(intval($this->logotip) <= 0) $this->logotip = $this->additionalHandler->getLogotip();
 		if(strlen($this->description) <= 0) $this->description = $this->additionalHandler->getDescription();
-		if(empty($this->trackingParams)) $this->trackingParams = $this->additionalHandler->getTrackingParams();
-		if(strlen($this->trackingClass) <= 0) $this->trackingClass = $this->additionalHandler->getTrackingClass();
-		if(strlen($this->trackingTitle) <= 0) $this->trackingTitle = $this->additionalHandler->getTrackingClassTitle();
-		if(strlen($this->trackingDescription) <= 0) $this->trackingDescription = $this->additionalHandler->getTrackingClassDescription();
+
+		$this->trackingParams = $this->additionalHandler->getTrackingParams();
+		$this->trackingClass = $this->additionalHandler->getTrackingClass();
+		$this->trackingTitle = $this->additionalHandler->getTrackingClassTitle();
+		$this->trackingDescription = $this->additionalHandler->getTrackingClassDescription();
+		$this->deliveryRequestHandler = $this->additionalHandler->getDeliveryRequestHandler();
 
 		$parentES = \Bitrix\Sale\Delivery\ExtraServices\Manager::getExtraServicesList($this->parentId);
 
@@ -331,5 +334,13 @@ class AdditionalProfile extends \Bitrix\Sale\Delivery\Services\Base
 	public function getTrackingClassDescription()
 	{
 		return !empty($this->config['MAIN']['TRACKING_DESCRIPTION']) ? $this->config['MAIN']['TRACKING_DESCRIPTION'] : '';
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isTrackingInherited()
+	{
+		return true;
 	}
 }

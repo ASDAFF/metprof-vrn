@@ -920,6 +920,7 @@ class CTextParser
 		$height = "";
 		$preview = "";
 		$provider = "";
+		$type = "";
 		preg_match("/width\\=([0-9]+)/is".BX_UTF_PCRE_MODIFIER, $params, $width);
 		preg_match("/height\\=([0-9]+)/is".BX_UTF_PCRE_MODIFIER, $params, $height);
 
@@ -927,7 +928,9 @@ class CTextParser
 		if (empty($preview))
 			preg_match("/preview\\=\"([^\"]+)\"/is".BX_UTF_PCRE_MODIFIER, $params, $preview);
 
-		preg_match("/type\\=(YOUTUBE|RUTUBE|VIMEO)/is".BX_UTF_PCRE_MODIFIER, $params, $provider);
+		preg_match("/type\\=(YOUTUBE|RUTUBE|VIMEO|VK|FACEBOOK|INSTAGRAM)/is".BX_UTF_PCRE_MODIFIER, $params, $provider);
+		preg_match("/mimetype\\='([^']+)'/is".BX_UTF_PCRE_MODIFIER, $params, $type);
+
 
 		$width = intval($width[1]);
 		$width = ($width > 0 ? $width : 400);
@@ -936,6 +939,7 @@ class CTextParser
 		$preview = trim($preview[1]);
 		$preview = (strlen($preview) > 0 ? $preview : "");
 		$provider = isset($provider[1]) ? strtoupper(trim($provider[1])) : '';
+		$type = trim($type[1]);
 
 		$arFields = array(
 			"PATH" => $path,
@@ -943,6 +947,7 @@ class CTextParser
 			"HEIGHT" => $height,
 			"PREVIEW" => $preview,
 			"TYPE" => $provider,
+			"MIME_TYPE" => $type,
 			"PARSER_OBJECT" => $this
 		);
 
@@ -965,6 +970,14 @@ class CTextParser
 		{
 			return false;
 		}
+		$trustedProviders = array(
+			'YOUTUBE',
+			'RUTUBE',
+			'VIMEO',
+			'VK',
+			'FACEBOOK',
+			'INSTAGRAM',
+		);
 
 		ob_start();
 
@@ -974,9 +987,10 @@ class CTextParser
 
 			?><a href="<?=$pathEncoded?>"><?=$pathEncoded?></a><?
 		}
-		elseif ($arParams["TYPE"] == 'YOUTUBE' || $arParams["TYPE"] == 'RUTUBE' || $arParams["TYPE"] == 'VIMEO')
+		elseif (in_array($arParams["TYPE"], $trustedProviders))
 		{
-			if(preg_match("/^(https?:)?\\/\\/(www\\.)?(youtube\\.com|youtu\\.be|rutube\\.ru|vimeo\\.com|player\\.vimeo\\.com)\\//i", $arParams["PATH"]))
+			$uri = new \Bitrix\Main\Web\Uri('http:'.$arParams["PATH"]);
+			if(\Bitrix\Main\UrlPreview\UrlPreview::isHostTrusted($uri) || $uri->getHost() == \Bitrix\Main\Application::getInstance()->getContext()->getServer()->getServerName())
 			{
 				// Replace http://someurl, https://someurl by //someurl
 				$arParams["PATH"] = preg_replace("/https?:\\/\\//is", '//', $arParams["PATH"]);
@@ -1032,7 +1046,8 @@ class CTextParser
 					"ADVANCED_MODE_SETTINGS" => "N",
 					"BUFFER_LENGTH" => "10",
 					"DOWNLOAD_LINK" => "",
-					"DOWNLOAD_LINK_TARGET" => "_self"
+					"DOWNLOAD_LINK_TARGET" => "_self",
+					"TYPE" => $arParams['MIME_TYPE'],
 				),
 				null,
 				array(

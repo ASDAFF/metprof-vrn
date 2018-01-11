@@ -839,6 +839,21 @@ function RaiseErrorAndDie($strError, $errCode = 0, $ITEM_ID = '')
 
 		foreach(GetModuleEvents("main", "OnAutoBackupError", true) as $arEvent)
 			ExecuteModuleEventEx($arEvent, array(array_merge($NS0, array('ERROR' => $strError, 'ERROR_CODE' => $errCode, 'ITEM_ID' => $ITEM_ID))));
+
+		$link = '/bitrix/admin/event_log.php?set_filter=Y&find_type=audit_type_id&find_audit_type[]=BACKUP_ERROR';
+		$ar = Array(
+			"MESSAGE" => 'The last automatic backup has failed. Please check your <a href="'.$link.'">system log<a>',
+			"TAG" => "BACKUP",
+			"MODULE_ID" => "MAIN",
+			'NOTIFY_TYPE' => CAdminNotify::TYPE_ERROR,
+			'ENABLE_CLOSE' => 'Y'
+		);
+		foreach(array('ru', 'ua', 'en', 'de') as $lang)
+		{
+			\Bitrix\Main\Localization\Loc::loadLanguageFile($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/main/admin/dump.php', $lang);
+			$ar["LANG"][$lang] = \Bitrix\Main\Localization\Loc::getMessage('DUMP_ERR_AUTO', array('#MESSAGE#' => $strError, '#LINK#' => $link), $lang);
+		}
+		CAdminNotify::Add($ar);
 	}
 	die();
 }

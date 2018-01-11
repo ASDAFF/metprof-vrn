@@ -36,8 +36,7 @@ class Content
 	 */
 	public static function isIntegerToken($token)
 	{
-		$value = intval($token);
-		return $value === $token;
+		return preg_match('/^[0-9]{1,}$/i', $token);
 	}
 
 	/**

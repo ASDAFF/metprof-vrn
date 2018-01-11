@@ -438,8 +438,8 @@ class CSaleBasket extends CAllSaleBasket
 		$isOrderConverted = \Bitrix\Main\Config\Option::get("main", "~sale_converted_15", 'N');
 
 		CSaleBasket::Init();
-		if (!CSaleBasket::CheckFields("ADD", $arFields))
-			return false;
+//		if (!CSaleBasket::CheckFields("ADD", $arFields))
+//			return false;
 
 		if ($isOrderConverted != "Y")
 		{

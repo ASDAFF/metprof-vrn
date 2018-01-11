@@ -320,7 +320,7 @@ class CAllSalePaySystemAction
 		$shipment = \Bitrix\Sale\Internals\ShipmentTable::getRow(
 			array(
 				'select' => array('DELIVERY_ID'),
-				'filter' => array('ORDER_ID' => $orderID, 'SYSTEM' => 'N')
+				'filter' => array('=ORDER_ID' => $orderID, '=SYSTEM' => 'N')
 			)
 		);
 

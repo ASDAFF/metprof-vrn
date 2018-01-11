@@ -318,14 +318,21 @@ if(!empty($arProfile) && !empty($arUser))
 				<td width="60%">
 					<select multiple size="5" name="<?echo "CODE_".$arProperties["ID"];?>[]">
 					<?
-					if (strlen($fieldValue) > 0)
+					if (is_array($fieldValue))
 					{
-						$curVal = explode(",", $fieldValue);
+						$arCurVal = $fieldValue;
+					}
+					else
+					{
+						if (strlen($fieldValue) > 0)
+						{
+							$curVal = explode(",", $fieldValue);
 
-						$arCurVal = array();
-						$curValCount = count($curVal);
-						for ($i = 0; $i < $curValCount; $i++)
-							$arCurVal[$i] = trim($curVal[$i]);
+							$arCurVal = array();
+							$curValCount = count($curVal);
+							for ($i = 0; $i < $curValCount; $i++)
+								$arCurVal[$i] = trim($curVal[$i]);
+						}
 					}
 
 					$dbVariants = CSaleOrderPropsVariant::GetList(

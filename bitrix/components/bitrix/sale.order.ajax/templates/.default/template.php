@@ -126,7 +126,7 @@ if ($useDefaultMessages || !isset($arParams['MESS_EDIT']))
 
 if ($useDefaultMessages || !isset($arParams['MESS_ORDER']))
 {
-	$arParams['MESS_ORDER'] = Loc::getMessage('ORDER_DEFAULT');
+	$arParams['MESS_ORDER'] = $arParams['~MESS_ORDER'] = Loc::getMessage('ORDER_DEFAULT');
 }
 
 if ($useDefaultMessages || !isset($arParams['MESS_PRICE']))
@@ -305,7 +305,7 @@ else
 {
 	$hideDelivery = empty($arResult['DELIVERY']);
 	?>
-	<form action="<?=$APPLICATION->GetCurPage();?>" method="POST" name="ORDER_FORM" id="bx-soa-order-form" enctype="multipart/form-data">
+	<form action="<?=POST_FORM_ACTION_URI?>" method="POST" name="ORDER_FORM" id="bx-soa-order-form" enctype="multipart/form-data">
 		<?
 		echo bitrix_sessid_post();
 

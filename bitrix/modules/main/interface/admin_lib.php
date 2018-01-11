@@ -1084,7 +1084,7 @@ window.'.$this->name.' = new PopupMenu("'.$this->id.'"'.
 		return null;
 	}
 
-	function GetGlobalIconClass($old_icon)
+	public static function GetGlobalIconClass($old_icon)
 	{
 		switch($old_icon)
 		{
@@ -1633,6 +1633,11 @@ class CAdminResult extends CDBResult
 
 		$this->nInitialSize = $nPageSize["nPageSize"];
 
+		parent::NavStart($nPageSize, $bShowAll, $iNumPage);
+	}
+
+	protected function parentNavStart($nPageSize, $bShowAll, $iNumPage)
+	{
 		parent::NavStart($nPageSize, $bShowAll, $iNumPage);
 	}
 

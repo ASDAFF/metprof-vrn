@@ -1152,7 +1152,7 @@
 				return;
 			}
 		}
-		else if(e.key.length === 1 && e.key.search(/\d/) !== 0 && !e.ctrlKey)
+		else if(e.key.length === 1 && e.key.search(/\d/) !== 0 && !e.ctrlKey && !e.metaKey)
 		{
 			e.preventDefault();
 			e.stopPropagation();

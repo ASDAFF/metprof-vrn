@@ -2710,6 +2710,16 @@ class CIBlockCMLImport
 					$cacheValue[$xmlValue] = $arIDUnit["SYMBOL_RUS"];
 					$cacheDescr[$xmlValue] = $arIDUnit["ID"];
 				}
+				else
+				{
+					$rsBaseUnit = CCatalogMeasure::GetList(array(), array("ID" => $xmlValue));
+					$arIDUnit = $rsBaseUnit->Fetch();
+					if ($arIDUnit)
+					{
+						$cacheValue[$xmlValue] = $arIDUnit["SYMBOL_RUS"];
+						$cacheDescr[$xmlValue] = $arIDUnit["ID"];
+					}
+				}
 			}
 		}
 
@@ -3098,7 +3108,7 @@ class CIBlockCMLImport
 				}
 			}
 
-			if(array_key_exists($this->mess["IBLOCK_XML2_AMOUNT"], $arXMLElement))
+			if($this->bCatalog && array_key_exists($this->mess["IBLOCK_XML2_AMOUNT"], $arXMLElement))
 			{
 				$arElementTmp = array();
 				$arElement["QUANTITY_RESERVED"] = 0;
@@ -3974,7 +3984,7 @@ class CIBlockCMLImport
 				}
 			}
 
-			if(array_key_exists($this->mess["IBLOCK_XML2_AMOUNT"], $arXMLElement))
+			if($this->bCatalog && array_key_exists($this->mess["IBLOCK_XML2_AMOUNT"], $arXMLElement))
 			{
 				$arElementTmp = array();
 				$arElement["QUANTITY_RESERVED"] = 0;

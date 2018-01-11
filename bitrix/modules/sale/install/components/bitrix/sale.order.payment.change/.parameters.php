@@ -43,6 +43,13 @@ if (isset($paySystemList))
 	);
 }
 
+$arComponentParameters['PARAMETERS']['REFRESH_PRICES'] = array(
+	"NAME" => GetMessage("SPOC_REFRESH_PRICE"),
+	"TYPE" => "CHECKBOX",
+	"DEFAULT" => "N",
+	"PARENT" => "ORDER",
+);
+
 if (CBXFeatures::IsFeatureEnabled('SaleAccounts'))
 {
 	$arComponentParameters['PARAMETERS']['ALLOW_INNER'] = array(

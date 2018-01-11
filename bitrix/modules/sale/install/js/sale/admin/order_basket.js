@@ -1322,7 +1322,32 @@ BX.Sale.Admin.OrderBasketEdit.prototype.updateProductPriceCell = function(produc
 	priceParent.removeChild(oldPriceCell);
 	priceParent.appendChild(newPriceCell);
 	newPriceCell.id = id;
+	this.updateBasePrice(basketCode, product);
+	this.updateProviderData(basketCode, product);
 	this.updateProductSumm(basketCode);
+};
+
+BX.Sale.Admin.OrderBasketEdit.prototype.updateBasePrice = function(basketCode, product)
+{
+	var form = BX.Sale.Admin.OrderEditPage.getForm();
+	var basePrice = form.elements[this.getFieldName(basketCode, "BASE_PRICE")];
+
+	if(basePrice)
+		basePrice.value = product.BASE_PRICE;
+
+	var priceBase = form.elements[this.getFieldName(basketCode, "PRICE_BASE")];
+
+	if(priceBase)
+		priceBase.value = product.PRICE_BASE;
+};
+
+BX.Sale.Admin.OrderBasketEdit.prototype.updateProviderData = function(basketCode, product)
+{
+	var form = BX.Sale.Admin.OrderEditPage.getForm(),
+		providerData = form.elements[this.getFieldName(basketCode, "PROVIDER_DATA")];
+
+	if(providerData)
+		providerData.value = product.PROVIDER_DATA;
 };
 
 BX.Sale.Admin.OrderBasketEdit.prototype.updateProductDiscountsCell = function(product)

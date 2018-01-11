@@ -250,7 +250,7 @@
 .main-ui-control-input.main-ui-number-input {
 	width: 100%;
 	box-sizing: border-box;
-	padding: 0 10px 0 10px;
+	padding: 0 10px 0 10px!important;
 	line-height: 38px;
 }
 
@@ -274,7 +274,6 @@ input[type=number].main-ui-number-input::-webkit-outer-spin-button {
 .main-ui-control-entity {
 	display: flex;
 	padding: 3px 32px 0 3px;
-	height: auto;
 	min-height: 38px;
 	color: #535c69;
 	flex-wrap: wrap;
@@ -286,6 +285,7 @@ input[type=number].main-ui-number-input::-webkit-outer-spin-button {
 
 .main-ui-control-entity.main-ui-control {
 	padding: 3px 32px 0 3px;
+	height: auto;
 }
 
 .main-ui-control-entity .main-ui-square {
@@ -405,6 +405,7 @@ input[type=number].main-ui-number-input::-webkit-outer-spin-button {
 	height: auto;
 	margin-top: 6px;
 	margin-left: 27px;
+	word-break: break-word;
 }
 
 .main-ui-filter-field-list-item .main-ui-select-inner-label::before {
@@ -514,6 +515,10 @@ input[type=number].main-ui-number-input::-webkit-outer-spin-button {
 	opacity: .6;
 }
 
+.main-ui-filter-edit .main-ui-filter-sidebar-item-text {
+	max-width: -webkit-calc(172px - 40px);
+	max-width: calc(172px - 40px);
+}
 
 .main-ui-filter-sidebar-item .main-ui-item-icon.main-ui-filter-icon-restore {
 	background: none;

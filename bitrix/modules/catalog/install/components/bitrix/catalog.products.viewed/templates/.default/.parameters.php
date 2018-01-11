@@ -39,7 +39,7 @@ if (is_dir($dir))
 
 $documentRoot = Loader::getDocumentRoot();
 
-$singleIblockMode = isset($arCurrentValues['IBLOCK_MODE']) && $arCurrentValues['IBLOCK_MODE'] === 'single';
+$singleIblockMode = !isset($arCurrentValues['IBLOCK_MODE']) || $arCurrentValues['IBLOCK_MODE'] === 'single';
 
 if (
 	$singleIblockMode && isset($arCurrentValues['IBLOCK_ID']) && (int)$arCurrentValues['IBLOCK_ID'] > 0

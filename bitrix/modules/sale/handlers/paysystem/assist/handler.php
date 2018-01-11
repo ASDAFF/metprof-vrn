@@ -256,7 +256,7 @@ class AssistHandler extends PaySystem\ServiceHandler implements PaySystem\IRefun
 	{
 		$url = parent::getUrl($payment, $action);
 		if ($this->isTestMode($payment))
-			$domain = 'payments.demo.paysecure.ru.';
+			$domain = 'payments.demo.paysecure.ru';
 		else
 			$domain = $this->getBusinessValue($payment, 'ASSIST_SERVER_URL');
 

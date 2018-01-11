@@ -19,6 +19,7 @@
 		this.resetButton = null;
 		this.cancelButton = null;
 		this.init(parent);
+		BX.onCustomEvent(window, 'BX.Grid.SettingsWindow:init', [this]);
 	};
 
 
@@ -97,6 +98,7 @@
 
 		_onSettingsButtonClick: function()
 		{
+			BX.onCustomEvent(window, 'BX.Grid.SettingsWindow:show', [this]);
 			this.getPopup().show();
 		},
 
@@ -382,6 +384,7 @@
 						this.disableWait(this.getApplyButton());
 						this.unselectForAllCheckbox();
 					}, this));
+					BX.onCustomEvent(window, 'BX.Grid.SettingsWindow:save', [this]);
 				}, this),
 				BX.delegate(function() {
 					this.unselectForAllCheckbox();
@@ -557,6 +560,7 @@
 
 		onPopupClose: function()
 		{
+			BX.onCustomEvent(window, 'BX.Grid.SettingsWindow:close', [this]);
 			this.restoreLastColumns();
 			this.disableAllColumnslabelEdit();
 			this.adjustActionButtonsState();

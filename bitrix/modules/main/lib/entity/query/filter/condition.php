@@ -8,6 +8,7 @@
 
 namespace Bitrix\Main\Entity\Query\Filter;
 use Bitrix\Main\Entity\Field;
+use Bitrix\Main\Entity\Query\Filter\Expression\Base as FilterExpression;
 
 /**
  * Single condition handler.
@@ -102,12 +103,22 @@ class Condition
 	 */
 	public function getAtomicValues()
 	{
-		if (in_array($this->operator, array('in', 'between'), true) && is_array($this->value))
+		if ($this->hasMultiValues())
 		{
 			return $this->value;
 		}
 
 		return array($this->value);
+	}
+
+	/**
+	 * Checks for multi-values (array for IN etc.)
+	 *
+	 * @return bool
+	 */
+	public function hasMultiValues()
+	{
+		return in_array($this->operator, array('in', 'between'), true) && is_array($this->value);
 	}
 
 	/**
@@ -124,5 +135,24 @@ class Condition
 	public function setDefinition($definition)
 	{
 		$this->setColumn($definition);
+	}
+
+	public function __clone()
+	{
+		// clone value if there any filter expressions
+		$newValues = array();
+
+		foreach ($this->getAtomicValues() as $atomicValue)
+		{
+			$newValues[] =  ($atomicValue instanceof FilterExpression) ? clone $atomicValue : $atomicValue;
+		}
+
+		$this->value = $this->hasMultiValues() ? $newValues : $newValues[0];
+
+		// clone field
+		if ($this->column instanceof Field)
+		{
+			$this->column = clone $this->column;
+		}
 	}
 }

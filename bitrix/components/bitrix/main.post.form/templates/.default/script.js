@@ -593,6 +593,8 @@ diskController.prototype = {
 				};
 				if (node.hasAttribute("bx-attach-xml-id"))
 					data['E' + id]["xmlId"] = node.getAttribute("bx-attach-xml-id");
+				if (node.hasAttribute("bx-attach-file-type"))
+					data['E' + id]["fileType"] = node.getAttribute("bx-attach-file-type");
 			}
 		}
 		this.handler.selectFile({}, {}, data);

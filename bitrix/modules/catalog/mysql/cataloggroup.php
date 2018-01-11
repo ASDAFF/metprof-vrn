@@ -1,4 +1,6 @@
 <?
+use Bitrix\Catalog;
+
 require_once($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/catalog/general/cataloggroup.php");
 
 class CCatalogGroup extends CAllCatalogGroup
@@ -243,6 +245,7 @@ class CCatalogGroup extends CAllCatalogGroup
 				$DB->Query("DELETE FROM b_catalog_price WHERE CATALOG_GROUP_ID = ".$ID);
 				$DB->Query("DELETE FROM b_catalog_group2group WHERE CATALOG_GROUP_ID = ".$ID);
 				$DB->Query("DELETE FROM b_catalog_group_lang WHERE CATALOG_GROUP_ID = ".$ID);
+				Catalog\RoundingTable::deleteByPriceType($ID);
 				return $DB->Query("DELETE FROM b_catalog_group WHERE ID = ".$ID, true);
 			}
 			else

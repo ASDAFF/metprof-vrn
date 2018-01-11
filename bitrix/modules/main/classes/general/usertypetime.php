@@ -133,6 +133,16 @@ class CUserTypeDateTime extends Main\UserField\TypeBase
 							'find_form', 'Y');
 	}
 
+	function GetFilterData($arUserField, $arHtmlControl)
+	{
+		return array(
+			"id" => $arHtmlControl["ID"],
+			"name" => $arHtmlControl["NAME"],
+			"type" => "date",
+			'time' => true
+		);
+	}
+
 	function GetAdminListViewHTML($arUserField, $arHtmlControl)
 	{
 		if(strlen($arHtmlControl["VALUE"])>0)

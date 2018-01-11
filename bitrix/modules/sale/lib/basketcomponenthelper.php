@@ -1,14 +1,15 @@
 <?php
 namespace Bitrix\Sale;
 
-use Bitrix\Main,
-	Bitrix\Catalog;
+use Bitrix\Catalog;
+use Bitrix\Main;
+use Bitrix\Sale;
 
 Main\Localization\Loc::loadMessages(__FILE__);
 
 class BasketComponentHelper
 {
-
+	static $cacheRatio = array();
 	/**
 	 * @param int $fuserId
 	 * @param string|null $siteId
@@ -68,36 +69,63 @@ class BasketComponentHelper
 	}
 
 	/**
-	 * @param int $fuserId
-	 * @param int|float $quantity
+	 * @param int         $fUserId
+	 * @param int|float   $quantity
 	 * @param string|null $siteId
-	 *
 	 * @return void
 	 */
-	protected static function setFUserBasketQuantity($fuserId, $quantity, $siteId = null)
+	protected static function setFUserBasketQuantity($fUserId, $quantity, $siteId = null)
 	{
 		if ($siteId === null)
 		{
 			$siteId = SITE_ID;
 		}
 
-		$_SESSION['SALE_USER_BASKET_QUANTITY'][$siteId][$fuserId] = $quantity;
+		$_SESSION['SALE_USER_BASKET_QUANTITY'][$siteId][$fUserId] = $quantity;
 	}
 
 	/**
-	 * @param int $fuserId
-	 * @param int|float $price
-	 * @param string|null $siteId
-	 *
-	 * @return void
+	 * @param      $fUserId
+	 * @param null $siteId
 	 */
-	protected static function setFUserBasketPrice($fuserId, $price, $siteId = null)
+	public static function clearFUserBasketQuantity($fUserId, $siteId = null)
 	{
 		if ($siteId === null)
 		{
 			$siteId = SITE_ID;
 		}
-		$_SESSION['SALE_USER_BASKET_PRICE'][$siteId][$fuserId] = $price;
+
+		unset($_SESSION['SALE_USER_BASKET_QUANTITY'][$siteId][$fUserId]);
+	}
+
+	/**
+	 * @param int         $fUserId
+	 * @param int|float   $price
+	 * @param string|null $siteId
+	 * @return void
+	 */
+	protected static function setFUserBasketPrice($fUserId, $price, $siteId = null)
+	{
+		if ($siteId === null)
+		{
+			$siteId = SITE_ID;
+		}
+
+		$_SESSION['SALE_USER_BASKET_PRICE'][$siteId][$fUserId] = $price;
+	}
+
+	/**
+	 * @param      $fUserId
+	 * @param null $siteId
+	 */
+	public static function clearFUserBasketPrice($fUserId, $siteId = null)
+	{
+		if ($siteId === null)
+		{
+			$siteId = SITE_ID;
+		}
+
+		unset($_SESSION['SALE_USER_BASKET_PRICE'][$siteId][$fUserId]);
 	}
 
 	/**
@@ -192,26 +220,27 @@ class BasketComponentHelper
 		}
 
 		$registry = Registry::getInstance(Registry::REGISTRY_TYPE_ORDER);
+		/** @var Sale\Basket $basketClassName */
 		$basketClassName = $registry->getBasketClassName();
 
 		$basketList = array();
 		$res = $basketClassName::getList(array(
-								   'filter' => array(
-									   'FUSER_ID' => $fuserId,
-									   'ORDER_ID' => null,
-									   'LID' => $siteId,
-									   'CAN_BUY' => 'Y',
-									   'DELAY' => 'N'
-								   ),
-							   ));
-		while($data = $res->fetch())
+			'filter' => array(
+				'FUSER_ID' => $fuserId,
+				'ORDER_ID' => null,
+				'LID' => $siteId,
+				'CAN_BUY' => 'Y',
+				'DELAY' => 'N'
+			)
+		));
+		while ($data = $res->fetch())
 		{
 			if (\CSaleBasketHelper::isSetItem($data))
 				continue;
 
-			if (!isset($basketData['BASE_PRICE']) || (float)$basketData['BASE_PRICE'] <= 0)
+			if (!isset($data['BASE_PRICE']) || (float)$data['BASE_PRICE'] <= 0)
 			{
-				$basketData['BASE_PRICE'] = $basketData['PRICE'] + $basketData['DISCOUNT_PRICE'];
+				$data['BASE_PRICE'] = $data['PRICE'] + $data['DISCOUNT_PRICE'];
 			}
 
 			$basketList[] = $data;
@@ -324,13 +353,8 @@ class BasketComponentHelper
 
 			if ($updateSessionData)
 			{
-				/** @var \Bitrix\Sale\Basket $allBasket */
-				if ($allBasket = $basketItem->getCollection())
-				{
-
-					static::updateFUserBasketPrice($fuserId, SITE_ID);
-					static::updateFUserBasketQuantity($fuserId, SITE_ID);
-				}
+				static::clearFUserBasketPrice($fuserId, SITE_ID);
+				static::clearFUserBasketQuantity($fuserId, SITE_ID);
 			}
 		}
 
@@ -351,8 +375,8 @@ class BasketComponentHelper
 			return new Main\EventResult( Main\EventResult::SUCCESS, null, 'sale');
 		}
 
-		static::updateFUserBasketPrice($fuserId, SITE_ID);
-		static::updateFUserBasketQuantity($fuserId, SITE_ID);
+		static::clearFUserBasketPrice($fuserId, SITE_ID);
+		static::clearFUserBasketQuantity($fuserId, SITE_ID);
 
 		return new Main\EventResult( Main\EventResult::SUCCESS, null, 'sale');
 	}
@@ -524,7 +548,6 @@ class BasketComponentHelper
 		$ratioList = array();
 		if (Main\Loader::includeModule('catalog'))
 		{
-			static $cacheRatio = array();
 			$map = array();
 			$elementList = array();
 
@@ -539,9 +562,9 @@ class BasketComponentHelper
 
 				$hash = md5((strval($basketItem->getField("PRODUCT_PROVIDER_CLASS")) != '' ? $basketItem->getField("PRODUCT_PROVIDER_CLASS"): "")."|".(strval($basketItem->getField("MODULE")) != '' ? $basketItem->getField("MODULE"): "")."|".$basketItem->getField("PRODUCT_ID"));
 
-				if (array_key_exists($hash, $cacheRatio))
+				if (array_key_exists($hash, static::$cacheRatio))
 				{
-					$ratioList[$code] = $cacheRatio[$hash];
+					$ratioList[$code] = static::$cacheRatio[$hash];
 				}
 				else
 				{
@@ -576,7 +599,7 @@ class BasketComponentHelper
 
 						$hash = md5((strval($basketItem->getField("PRODUCT_PROVIDER_CLASS")) != '' ? $basketItem->getField("PRODUCT_PROVIDER_CLASS"): "")."|".(strval($basketItem->getField("MODULE")) != '' ? $basketItem->getField("MODULE"): "")."|".$basketItem->getField("PRODUCT_ID"));
 
-						$cacheRatio[$hash] = $ratioData["RATIO"];
+						static::$cacheRatio[$hash] = $ratioData["RATIO"];
 					}
 					unset($key);
 				}
@@ -632,5 +655,14 @@ class BasketComponentHelper
 		unset($discountResult);
 
 		return $result;
+	}
+
+	/**
+	 * @internal
+	 * @return array
+	 */
+	public static function getRatioCache()
+	{
+		return static::$cacheRatio;
 	}
 }

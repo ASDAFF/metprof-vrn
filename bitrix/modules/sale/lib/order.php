@@ -7,6 +7,7 @@
  */
 namespace Bitrix\Sale;
 
+use Bitrix\Catalog\Product\QuantityControl;
 use Bitrix\Main\Config;
 use Bitrix\Main\Entity;
 use Bitrix\Main;
@@ -21,8 +22,7 @@ Loc::loadMessages(__FILE__);
 class Order
 	extends OrderBase implements \IShipmentOrder, \IPaymentOrder, IBusinessValueProvider
 {
-
-	private $isNew = null;
+	private $isNew = true;
 
 	/** @var Discount $discount */
 	protected $discount = null;
@@ -39,6 +39,15 @@ class Order
 	protected $isClone = false;
 	protected $printedChecks = array();
 
+	/**
+	 * @param array $fields				Data.
+	 */
+	protected function __construct(array $fields = array())
+	{
+		parent::__construct($fields);
+		$this->isNew = (empty($fields['ID']));
+	}
+
 	public function getPrintedChecks()
 	{
 		return $this->printedChecks;
@@ -48,6 +57,8 @@ class Order
 	{
 		$this->printedChecks[] = $check;
 	}
+
+	private static $eventClassName = null;
 
 	/**
 	 * @param array $fields
@@ -134,10 +145,14 @@ class Order
 			$r = $shipment->deliver();
 			if ($r->isSuccess())
 			{
-				$event = new Main\Event('sale', EventActions::EVENT_ON_SHIPMENT_DELIVER, array(
-					'ENTITY' =>$shipment
-				));
-				$event->send();
+				$eventManager = Main\EventManager::getInstance();
+				if ($eventsList = $eventManager->findEventHandlers('sale', EventActions::EVENT_ON_SHIPMENT_DELIVER))
+				{
+					$event = new Main\Event('sale', EventActions::EVENT_ON_SHIPMENT_DELIVER, array(
+						'ENTITY' =>$shipment
+					));
+					$event->send();
+				}
 
 				Notify::callNotify($shipment, EventActions::EVENT_ON_SHIPMENT_DELIVER);
 			}
@@ -563,7 +578,7 @@ class Order
 		}
 
 		/** @var Result $r */
-		$r = $shipmentCollection->resetCollection();
+		$result = $shipmentCollection->resetCollection();
 		if (!$r->isSuccess())
 		{
 			$result->addErrors($r->getErrors());
@@ -580,7 +595,6 @@ class Order
 			}
 		}
 
-
 		if ($isStartField)
 		{
 			$hasMeaningfulFields = $this->hasMeaningfulField();
@@ -593,6 +607,63 @@ class Order
 			}
 		}
 
+		return $result;
+	}
+
+	/**
+	 * @param BasketBase $basket
+	 *
+	 * @return Result
+	 * @throws Main\ObjectNotFoundException
+	 */
+	public function appendBasket(BasketBase $basket)
+	{
+		$result = new Result();
+
+		$isStartField = $this->isStartField();
+
+		$r = parent::appendBasket($basket);
+		if (!$r->isSuccess())
+		{
+			$result->addErrors($r->getErrors());
+			return $result;
+		}
+
+		/** @var ShipmentCollection $shipmentCollection */
+		if (!$shipmentCollection = $this->getShipmentCollection())
+		{
+			throw new Main\ObjectNotFoundException('Entity "ShipmentCollection" not found');
+		}
+
+		/** @var Result $r */
+		$result = $shipmentCollection->resetCollection();
+		if (!$r->isSuccess())
+		{
+			$result->addErrors($r->getErrors());
+			return $result;
+		}
+
+		if (!$this->isMathActionOnly())
+		{
+			/** @var Result $r */
+			$r = $this->refreshData();
+			if (!$r->isSuccess())
+			{
+				$result->addErrors($r->getErrors());
+			}
+		}
+
+		if ($isStartField)
+		{
+			$hasMeaningfulFields = $this->hasMeaningfulField();
+
+			/** @var Result $r */
+			$r = $this->doFinalAction($hasMeaningfulFields);
+			if (!$r->isSuccess())
+			{
+				$result->addErrors($r->getErrors());
+			}
+		}
 
 		return $result;
 	}
@@ -770,31 +841,35 @@ class Order
 		/** @var array $oldEntityValues */
 		$oldEntityValues = $this->fields->getOriginalValues();
 
-		/** @var Main\Entity\Event $event */
-		$event = new Main\Event('sale', EventActions::EVENT_ON_ORDER_BEFORE_SAVED, array(
-			'ENTITY' => $this,
-			'VALUES' => $oldEntityValues
-		));
-		$event->send();
-
-		if ($event->getResults())
+		$eventManager = Main\EventManager::getInstance();
+		if ($eventsList = $eventManager->findEventHandlers('sale', EventActions::EVENT_ON_ORDER_BEFORE_SAVED))
 		{
-			/** @var Main\EventResult $eventResult */
-			foreach($event->getResults() as $eventResult)
-			{
-				if($eventResult->getType() == Main\EventResult::ERROR)
-				{
-					$errorMsg = new ResultError(Main\Localization\Loc::getMessage('SALE_EVENT_ON_BEFORE_ORDER_SAVED_ERROR'), 'SALE_EVENT_ON_BEFORE_ORDER_SAVED_ERROR');
-					if ($eventResultData = $eventResult->getParameters())
-					{
-						if (isset($eventResultData) && $eventResultData instanceof ResultError)
-						{
-							/** @var ResultError $errorMsg */
-							$errorMsg = $eventResultData;
-						}
-					}
+			/** @var Main\Entity\Event $event */
+			$event = new Main\Event('sale', EventActions::EVENT_ON_ORDER_BEFORE_SAVED, array(
+				'ENTITY' => $this,
+				'VALUES' => $oldEntityValues
+			));
+			$event->send();
 
-					$result->addError($errorMsg);
+			if ($event->getResults())
+			{
+				/** @var Main\EventResult $eventResult */
+				foreach($event->getResults() as $eventResult)
+				{
+					if($eventResult->getType() == Main\EventResult::ERROR)
+					{
+						$errorMsg = new ResultError(Main\Localization\Loc::getMessage('SALE_EVENT_ON_BEFORE_ORDER_SAVED_ERROR'), 'SALE_EVENT_ON_BEFORE_ORDER_SAVED_ERROR');
+						if ($eventResultData = $eventResult->getParameters())
+						{
+							if (isset($eventResultData) && $eventResultData instanceof ResultError)
+							{
+								/** @var ResultError $errorMsg */
+								$errorMsg = $eventResultData;
+							}
+						}
+
+						$result->addError($errorMsg);
+					}
 				}
 			}
 		}
@@ -1003,18 +1078,27 @@ class Order
 			$result->setId($id);
 		}
 
-		if ($eventName = static::getEntityEventName())
+		if (self::$eventClassName === null)
+		{
+			self::$eventClassName = static::getEntityEventName();
+		}
+
+		if (self::$eventClassName)
 		{
 			$oldEntityValues = $this->fields->getOriginalValues();
 
 			if (!empty($oldEntityValues))
 			{
-				/** @var Main\Event $event */
-				$event = new Main\Event('sale', 'On'.$eventName.'EntitySaved', array(
-					'ENTITY' => $this,
-					'VALUES' => $oldEntityValues,
-				));
-				$event->send();
+				$eventManager = Main\EventManager::getInstance();
+				if ($eventsList = $eventManager->findEventHandlers('sale', 'On'.self::$eventClassName.'EntitySaved'))
+				{
+					/** @var Main\Event $event */
+					$event = new Main\Event('sale', 'On'.self::$eventClassName.'EntitySaved', array(
+						'ENTITY' => $this,
+						'VALUES' => $oldEntityValues,
+					));
+					$event->send();
+				}
 			}
 		}
 
@@ -1125,9 +1209,12 @@ class Order
 		$res = Cashbox\Internals\Pool::generateChecks($this->getInternalId());
 		if (!$res->isSuccess())
 		{
-			$errCollection = $res->getErrorCollection();
-			foreach ($errCollection as $error)
-				$result->addWarning($error);
+			$result->addWarnings($res->getErrors());
+
+			$warningResult = new Result();
+			$warningResult->addWarnings($res->getErrors());
+			EntityMarker::addMarker($this, $this, $warningResult);
+			Internals\OrderTable::update($id, array('MARKED' => 'Y'));
 		}
 
 
@@ -1162,14 +1249,17 @@ class Order
 
 		static::clearChanged();
 
-		$event = new Main\Event('sale', EventActions::EVENT_ON_ORDER_SAVED, array(
-			'ENTITY' => $this,
-			'IS_NEW' => $isNew,
+		$eventManager = Main\EventManager::getInstance();
+		if ($eventsList = $eventManager->findEventHandlers('sale', EventActions::EVENT_ON_ORDER_SAVED))
+		{
+			$event = new Main\Event('sale', EventActions::EVENT_ON_ORDER_SAVED, array(
+				'ENTITY' => $this,
+				'IS_NEW' => $isNew,
 			'IS_CHANGED' => $isChanged,
-			'VALUES' => $oldEntityValues,
-		));
-		$event->send();
-
+				'VALUES' => $oldEntityValues,
+			));
+			$event->send();
+		}
 
 		if (($eventList = Internals\EventsPool::getEvents($this->getInternalId())) && !empty($eventList) && is_array($eventList))
 		{
@@ -1242,8 +1332,8 @@ class Order
 			return $result;
 		}
 
-		$basketItemClassName = $registry->getBasketItemClassName();
-		$basketItemClassName::deleteNoDemand($id);
+		$basketClassName = $registry->getBasketClassName();
+		$basketClassName::deleteNoDemand($id);
 
 		$shipmentClassName = $registry->getShipmentClassName();
 		$shipmentClassName::deleteNoDemand($id);
@@ -1256,6 +1346,8 @@ class Order
 
 		OrderHistory::deleteByOrderId($id);
 		EntityMarker::deleteByOrderId($id);
+		TradingPlatform\OrderTable::deleteByOrderId($id);
+		OrderProcessingTable::deleteByOrderId($id);
 		Internals\OrderTable::delete($id);
 
 		return $result;
@@ -1367,6 +1459,7 @@ class Order
 				OrderHistory::deleteByOrderId($id);
 				EntityMarker::deleteByOrderId($id);
 				\Bitrix\Sale\TradingPlatform\OrderTable::deleteByOrderId($id);
+				OrderProcessingTable::deleteByOrderId($id);
 			}
 		}
 		else
@@ -1558,7 +1651,7 @@ class Order
 							if ($overPaid > 0)
 							{
 								$userBudget = Internals\UserBudgetPool::getUserBudgetByOrder($this);
-								if (PriceMaths::roundByFormatCurrency($overPaid, $this->getCurrency()) > PriceMaths::roundByFormatCurrency($userBudget, $this->getCurrency()))
+								if (PriceMaths::roundPrecision($overPaid) > PriceMaths::roundPrecision($userBudget))
 								{
 									$result->addError(new Entity\EntityError(Loc::getMessage('SALE_ORDER_PAYMENT_RETURN_PAID'), 'SALE_ORDER_PAYMENT_RETURN_PAID'));
 									return $result;
@@ -1612,7 +1705,7 @@ class Order
 				}
 
 				$userBudget = Internals\UserBudgetPool::getUserBudgetByOrder($this);
-				if (PriceMaths::roundByFormatCurrency($userBudget, $this->getCurrency()) < PriceMaths::roundByFormatCurrency($payment->getSum(), $this->getCurrency()))
+				if (PriceMaths::roundPrecision($userBudget) < PriceMaths::roundPrecision($payment->getSum()))
 				{
 					$result->addError( new ResultError( Loc::getMessage('SALE_ORDER_PAYMENT_NOT_ENOUGH_USER_BUDGET'), "SALE_ORDER_PAYMENT_NOT_ENOUGH_USER_BUDGET") );
 					return $result;
@@ -1973,7 +2066,7 @@ class Order
 	 * Modify basket.
 	 *
 	 * @param string $action				Action.
-	 * @param BasketItem $basketItem		Basket item.
+	 * @param BasketItemBase $basketItem		Basket item.
 	 * @param null|string $name				Field name.
 	 * @param null|string|int|float $oldValue		Old value.
 	 * @param null|string|int|float $value			New value.
@@ -1982,7 +2075,7 @@ class Order
 	 * @throws Main\NotSupportedException
 	 * @throws Main\ObjectNotFoundException
 	 */
-	public function onBasketModify($action, BasketItem $basketItem, $name = null, $oldValue = null, $value = null)
+	public function onBasketModify($action, BasketItemBase $basketItem, $name = null, $oldValue = null, $value = null)
 	{
 		$result = new Result();
 		if ($action != EventActions::UPDATE)
@@ -2054,10 +2147,7 @@ class Order
 		elseif ($name == "PRICE")
 		{
 			/** @var Result $result */
-			$r = $this->setField(
-				"PRICE",
-				$this->getBasket()->getPrice() + $this->getShipmentCollection()->getPriceDelivery()
-			);
+			$r = $this->refreshOrderPrice();
 
 			if (!$r->isSuccess())
 			{
@@ -2094,6 +2184,55 @@ class Order
 
 		return $result;
 	}
+
+
+	/**
+	 * @return Result
+	 */
+	public function onBeforeBasketRefresh()
+	{
+		$result = new Result();
+
+		$shipmentCollection = $this->getShipmentCollection();
+		if ($shipmentCollection)
+		{
+			$r = $shipmentCollection->tryUnreserve();
+			if(!$r->isSuccess())
+			{
+				$result->addErrors($r->getErrors());
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * @return Result
+	 */
+	public function onAfterBasketRefresh()
+	{
+		$result = new Result();
+
+		$shipmentCollection = $this->getShipmentCollection();
+		if ($shipmentCollection)
+		{
+			/** @var \Bitrix\Sale\Shipment $shipment */
+			foreach ($shipmentCollection as $shipment)
+			{
+				if ($shipment->isShipped() || !$shipment->needReservation())
+					continue;
+
+				$r = $shipment->tryReserve();
+				if(!$r->isSuccess())
+				{
+					$result->addErrors($r->getErrors());
+				}
+			}
+		}
+
+		return $result;
+	}
+
 
 	/**
 	 * Modify property value collection.
@@ -2181,7 +2320,7 @@ class Order
 		$paid = false;
 
 		if ($finalSumPaid >= 0 && $paymentCollection->hasPaidPayment()
-			&& PriceMaths::roundByFormatCurrency($this->getPrice(), $this->getCurrency()) <= PriceMaths::roundByFormatCurrency($finalSumPaid, $this->getCurrency()))
+			&& PriceMaths::roundPrecision($this->getPrice()) <= PriceMaths::roundPrecision($finalSumPaid))
 		{
 			$paid = true;
 		}
@@ -2267,7 +2406,7 @@ class Order
 
 		if ($debitSum > 0 && $payment->isInner())
 		{
-			if (PriceMaths::roundByFormatCurrency($debitSum, $this->getCurrency()) > PriceMaths::roundByFormatCurrency($userBudget, $this->getCurrency()))
+			if (PriceMaths::roundPrecision($debitSum) > PriceMaths::roundPrecision($userBudget))
 			{
 				$result->addError( new ResultError(Loc::getMessage('SALE_ORDER_PAYMENT_CANCELLED_PAID'), 'SALE_ORDER_PAYMENT_NOT_ENOUGH_USER_BUDGET_SYNCPAID') );
 				return $result;
@@ -2334,7 +2473,7 @@ class Order
 	 */
 	protected function onAfterSyncPaid($oldPaid = null)
 	{
-		global $USER;
+
 		$result = new Result();
 		/** @var PaymentCollection $paymentCollection */
 		if (!$paymentCollection = $this->getPaymentCollection())
@@ -2602,20 +2741,6 @@ class Order
 	}
 
 	/**
-	 * Get the entity of taxes
-	 *
-	 * @return Tax
-	 */
-	public function getTax()
-	{
-		if ($this->tax === null)
-		{
-			$this->tax = $this->loadTax();
-		}
-		return $this->tax;
-	}
-
-	/**
 	 *
 	 * @return Result
 	 * @throws Main\ObjectNotFoundException
@@ -2683,7 +2808,7 @@ class Order
 	}
 
 	/**
-	 * @return Tax|static
+	 * @return Tax
 	 */
 	protected function loadTax()
 	{
@@ -2750,8 +2875,8 @@ class Order
 							{
 								$basketItemData['PRICE'] = PriceMaths::roundPrecision($basketItemData['PRICE']);
 								$basketItemData['DISCOUNT_PRICE'] = PriceMaths::roundPrecision($basketItemData['DISCOUNT_PRICE']);
-								$basketItem->setField('PRICE', $basketItemData['PRICE']);
-								$basketItem->setField('DISCOUNT_PRICE', $basketItemData['DISCOUNT_PRICE']);
+								$basketItem->setFieldNoDemand('PRICE', $basketItemData['PRICE']);
+								$basketItem->setFieldNoDemand('DISCOUNT_PRICE', $basketItemData['DISCOUNT_PRICE']);
 							}
 						}
 					}
@@ -2759,6 +2884,8 @@ class Order
 				unset($basketItem);
 			}
 			unset($basketCode, $basketItemData);
+
+			$this->refreshOrderPrice();
 		}
 
 		if (isset($data['SHIPMENT']) && intval($data['SHIPMENT']) > 0
@@ -2779,7 +2906,7 @@ class Order
 							$shipment->setField('PRICE_DELIVERY', $data['PRICE_DELIVERY']);
 						}
 
-						if (floatval($data['DISCOUNT_PRICE']) >= 0)
+						if (floatval($data['DISCOUNT_PRICE']) != 0)
 						{
 							$data['DISCOUNT_PRICE'] = PriceMaths::roundPrecision(floatval($data['DISCOUNT_PRICE']));
 							$shipment->setField('DISCOUNT_PRICE', $data['DISCOUNT_PRICE']);
@@ -2798,6 +2925,16 @@ class Order
 		}
 
 		return new Result();
+	}
+
+	private function refreshOrderPrice()
+	{
+		$taxPrice = !$this->isUsedVat() ? $this->getField('TAX_PRICE') : 0;
+
+		return $this->setField(
+			"PRICE",
+			$this->getBasket()->getPrice() + $this->getShipmentCollection()->getPriceDelivery() + $taxPrice
+		);
 	}
 
 	/**
@@ -3020,45 +3157,71 @@ class Order
 	{
 		$result = new Result();
 
+		$orderInternalId = $this->getInternalId();
+
+		$r = Internals\ActionEntity::runActions($orderInternalId);
+		if (!$r->isSuccess())
+		{
+			$result->addErrors($r->getErrors());
+		}
+
 		if (!$hasMeaningfulField)
 		{
 			$this->clearStartField();
 			return $result;
 		}
+		
+
+		if ($r->hasWarnings())
+		{
+			$result->addWarnings($r->getWarnings());
+		}
 
 		$currentIsMathActionOnly = $this->isMathActionOnly();
 
-		if ($basket = $this->getBasket())
+		$basket = $this->getBasket();
+		if ($basket)
 		{
 			$this->setMathActionOnly(true);
 
-			if ($eventName = static::getEntityEventName())
+			if (self::$eventClassName === null)
 			{
-				$event = new Main\Event('sale', 'OnBefore'.$eventName.'FinalAction', array(
-					'ENTITY' => $this,
-					'HAS_MEANINGFUL_FIELD' => $hasMeaningfulField,
-					'BASKET' => $basket,
-				));
-				$event->send();
+				self::$eventClassName = static::getEntityEventName();
+			}
 
-				if ($event->getResults())
+			if (self::$eventClassName)
+			{
+				$eventManager = Main\EventManager::getInstance();
+				$eventsList = $eventManager->findEventHandlers('sale', 'OnBefore'.self::$eventClassName.'FinalAction');
+				if (!empty($eventsList))
 				{
-					/** @var Main\EventResult $eventResult */
-					foreach($event->getResults() as $eventResult)
-					{
-						if($eventResult->getType() == Main\EventResult::ERROR)
-						{
-							$errorMsg = new ResultError(Main\Localization\Loc::getMessage('SALE_EVENT_ON_BEFORE_'.strtoupper($eventName).'_FINAL_ACTION_ERROR'), 'SALE_EVENT_ON_BEFORE_'.strtoupper($eventName).'_FINAL_ACTION_ERROR');
-							if ($eventResultData = $eventResult->getParameters())
-							{
-								if (isset($eventResultData) && $eventResultData instanceof ResultError)
-								{
-									/** @var ResultError $errorMsg */
-									$errorMsg = $eventResultData;
-								}
-							}
+					$event = new Main\Event('sale', 'OnBefore'.self::$eventClassName.'FinalAction', array(
+						'ENTITY' => $this,
+						'HAS_MEANINGFUL_FIELD' => $hasMeaningfulField,
+						'BASKET' => $basket,
+					));
+					$event->send();
 
-							$result->addError($errorMsg);
+					if ($event->getResults())
+					{
+						/** @var Main\EventResult $eventResult */
+						foreach($event->getResults() as $eventResult)
+						{
+							if($eventResult->getType() == Main\EventResult::ERROR)
+							{
+								$errorMsg = new ResultError(Main\Localization\Loc::getMessage('SALE_EVENT_ON_BEFORE_'.strtoupper(self::$eventClassName).'_FINAL_ACTION_ERROR'), 'SALE_EVENT_ON_BEFORE_'.strtoupper(self::$eventClassName).'_FINAL_ACTION_ERROR');
+								$eventResultData = $eventResult->getParameters();
+								if ($eventResultData)
+								{
+									if (isset($eventResultData) && $eventResultData instanceof ResultError)
+									{
+										/** @var ResultError $errorMsg */
+										$errorMsg = $eventResultData;
+									}
+								}
+
+								$result->addError($errorMsg);
+							}
 						}
 					}
 				}
@@ -3096,7 +3259,7 @@ class Order
 			/** @var Tax $tax */
 			$tax = $this->getTax();
 			/** @var Result $r */
-			$r = $tax->calculate();
+			$r = $tax->refreshData();
 			if (!$r->isSuccess())
 			{
 				$result->addErrors($r->getErrors());
@@ -3105,26 +3268,17 @@ class Order
 
 			$taxResult = $r->getData();
 
-			$r = $tax->calculateDelivery();
-			if (!$r->isSuccess())
-			{
-				$result->addErrors($r->getErrors());
-				return $result;
-			}
-
 			$taxChanged = false;
-			$taxResult = array_merge($taxResult, $r->getData());
 			if (isset($taxResult['TAX_PRICE']) && floatval($taxResult['TAX_PRICE']) >= 0)
 			{
 				if (!$this->isUsedVat())
 				{
-					$taxChanged = true;
-					$this->setField('TAX_PRICE', $taxResult['TAX_PRICE']);
-
-					$this->setFieldNoDemand(
-						"PRICE",
-						$this->getBasket()->getPrice() + $this->getShipmentCollection()->getPriceDelivery() + $taxResult['TAX_PRICE']
-					);
+					$taxChanged = $this->getField('TAX_PRICE') !== $taxResult['TAX_PRICE'];
+					if ($taxChanged)
+					{
+						$this->setField('TAX_PRICE', $taxResult['TAX_PRICE']);
+						$this->refreshOrderPrice();
+					}
 				}
 
 			}
@@ -3155,12 +3309,16 @@ class Order
 
 		$this->clearStartField();
 
-		if ($eventName = static::getEntityEventName())
+		if (self::$eventClassName)
 		{
-			$event = new Main\Event('sale', 'OnAfter'.$eventName.'FinalAction', array(
-				'ENTITY' => $this,
-			));
-			$event->send();
+			$eventManager = Main\EventManager::getInstance();
+			if ($eventsList = $eventManager->findEventHandlers('sale', 'OnAfter'.self::$eventClassName.'FinalAction'))
+			{
+				$event = new Main\Event('sale', 'OnAfter'.self::$eventClassName.'FinalAction', array(
+					'ENTITY' => $this,
+				));
+				$event->send();
+			}
 		}
 
 		return $result;
@@ -3169,7 +3327,6 @@ class Order
 	/**
 	 * @internal
 	 * @param bool $value
-	 * @return bool
 	 */
 	public function setMathActionOnly($value = false)
 	{
@@ -3330,7 +3487,7 @@ class Order
 	}
 
 	/**
-	 * @return OrderBase
+	 * @return Order
 	 */
 	public function createClone()
 	{
@@ -3493,5 +3650,27 @@ class Order
 			$this->getUserId().
 			$this->getField('ACCOUNT_NUMBER')
 		);
+	}
+
+	/**
+	 * @param string $reasonMarked
+	 * @return Result
+	 */
+	public function addMarker($reasonMarked)
+	{
+		$result = new Result();
+
+		$orderId = $this->getId();
+		if ($orderId > 0)
+		{
+			$updateResult = Internals\OrderTable::update($orderId, array(
+				"MARKED" => "Y",
+				"REASON_MARKED" => $reasonMarked
+			));
+			if (!$updateResult->isSuccess())
+				$result->addErrors($updateResult->getErrors());
+		}
+
+		return $result;
 	}
 }

@@ -50,6 +50,12 @@ use Bitrix\Main\Entity\Query\Filter\Expression\Column;
  * @method Query whereNotExists($query)
  * @see Filter::whereNotExists()
  *
+ * @method Query whereMatch($column, $value)
+ * @see Filter::whereMatch()
+ *
+ * @method Query whereNotMatch($column, $value)
+ * @see Filter::whereNotMatch()
+ *
  * Virtual HAVING methods (proxy to Filter):
  *
  * @method Query having(...$filter)
@@ -2419,12 +2425,15 @@ class Query
 
 	protected function prepareJoinFilterReference(Filter $reference, $alias_this, $alias_ref, $baseDefinition, $refDefinition, $isBackReference)
 	{
+		// do not make an impact on original reference object
+		$reference = clone $reference;
+
 		foreach ($reference->getConditions() as $condition)
 		{
 			if ($condition instanceof Filter)
 			{
 				// subfilter, recursive call
-				$this->prepareJoinReference($condition, $alias_this, $alias_ref, $baseDefinition, $refDefinition, $isBackReference);
+				$this->prepareJoinFilterReference($condition, $alias_this, $alias_ref, $baseDefinition, $refDefinition, $isBackReference);
 			}
 			else
 			{

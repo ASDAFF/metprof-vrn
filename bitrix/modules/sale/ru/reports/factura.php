@@ -478,8 +478,12 @@ width:86pt'>
 	}
 	else
 	{
+		if(strlen($arParams["BUYER_COMPANY_NAME"]) > 0)
+			$buyerName = $arParams["BUYER_COMPANY_NAME"];
+	    else
+			$buyerName = $arParams["BUYER_LAST_NAME"]." ".$arParams["BUYER_FIRST_NAME"]." ".$arParams["BUYER_SECOND_NAME"];
 		?>
-		<?=$arParams["BUYER_COMPANY_NAME"]?>, <?=$arParams["BUYER_COUNTRY"]?>, <?=$arParams["BUYER_INDEX"]?>, г. <?=$arParams["BUYER_CITY"]?>, <?=$arParams["BUYER_ADDRESS"]?>
+		<?=$buyerName;?>, <?=$arParams["BUYER_COUNTRY"]?>, <?=$arParams["BUYER_INDEX"]?>, г. <?=$arParams["BUYER_CITY"]?>, <?=$arParams["BUYER_ADDRESS"]?>
 		<?
 	}
 	?>
@@ -724,7 +728,7 @@ foreach ($arBasketOrder as $arBasket):
 $mi++;
 endforeach;
 
-if (DoubleVal($arOrder["PRICE_DELIVERY"])>0):
+if ($arOrder["DELIVERY_ID"]):
 	$basket_tax = CSaleOrderTax::CountTaxes(DoubleVal($arOrder["PRICE_DELIVERY"]), $arTaxList, $arOrder["CURRENCY"]);
 	//определяем начальную цену
 	$nds_val = 0;

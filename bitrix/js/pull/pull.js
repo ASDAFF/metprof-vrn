@@ -14,7 +14,7 @@
 	}
 
 	var BX = window.BX,
-	_revision = 16, // api revision - check include.php
+	_revision = 17, // api revision - check include.php
 	_updateStateVeryFastCount = 0,
 	_updateStateFastCount = 0,
 	_updateStateStep = 60,
@@ -381,9 +381,9 @@
 			return false;
 
 		code = typeof(code) == 'undefined'? '': code;
-		
+
 		var supportWebsocket = _wsSupport && !BX.localStorage.get('pbws');
-		
+
 		if (_channelID == null || _pullPath == null || supportWebsocket && _wsPath === null)
 		{
 			clearTimeout(_updateStateTimeout);
@@ -430,7 +430,7 @@
 			}
 			_wsPath = null;
 			_updateStateSend = false;
-			
+
 			BX.onCustomEvent(window, 'onPullError', ['RECONNECT', 1006]);
 			if (_wsError1006Count >= 5)
 			{
@@ -438,12 +438,12 @@
 				_wsError1006Count = 0;
 			}
 			_wsError1006Count++;
-			
+
 			clearTimeout(_updateStateTimeout);
 			_updateStateTimeout = setTimeout(function(){
 				BX.PULL.updateState('33');
 			}, BX.PULL.tryConnectTimeout());
-			
+
 			return false;
 		}
 
@@ -579,7 +579,7 @@
 						continue;
 
 					var message = BX.parseJSON(dataArray[i]);
-					
+
 					if (message.id)
 					{
 						message.id = parseInt(message.id);
@@ -747,7 +747,7 @@
 										continue;
 
 									var message = BX.parseJSON(dataArray[i]);
-									
+
 									if (message.id)
 									{
 										message.id = parseInt(message.id);
@@ -755,7 +755,7 @@
 										if (!_channelStack[''+message.channel+message.id])
 										{
 											_channelStack[''+message.channel+message.id] = message.id;
-				
+
 											if (_channelLastID < message.id)
 											{
 												_channelLastID = message.id;
@@ -1038,9 +1038,8 @@
 		{
 			if (message[i].extra.revision && !BX.PULL.checkRevision(message[i].extra.revision))
 				return false;
-			
-			message[i].extra.server_time_unix = parseInt((new Date(message[i].extra.server_time)).getTime()/1000);
-			message[i].extra.server_time_ago = parseInt(((new Date()).getTime()-(new Date(message[i].extra.server_time)).getTime())/1000);
+
+			message[i].extra.server_time_ago = (((new Date()).getTime()-(message[i].extra.server_time_unix*1000))/1000);
 
 			if (message[i].module_id == 'pull')
 			{
@@ -1060,7 +1059,7 @@
 								'PATH_WS': _wsPath? _wsPath.replace(message[i].params.channel.id, message[i].params.new_channel.id): _wsPath
 							});
 						}
-						else 
+						else
 						{
 							_channelClearReason = 14;
 							_channelID = null;
@@ -1089,7 +1088,7 @@
 				{
 					if (message[i].module_id == 'online')
 					{
-						if (message[i].extra.server_time_ago < 120)
+						if (message[i].extra.server_time_ago < 240)
 							BX.onCustomEvent(window, 'onPullOnlineEvent', [message[i].command, message[i].params, message[i].extra], true);
 					}
 					else
@@ -1292,6 +1291,7 @@
 				if (_pullGetPullEventFunctionStatus)
 				{
 					console.info('BX.onCustomEvent(window, "onPullEvent-'+module_id+'", ["'+command+'", '+JSON.stringify(params)+', '+JSON.stringify(extra)+']);');
+					console.info('BX.onCustomEvent(window, "onPullEvent", ["'+module_id+'", "'+command+'", '+JSON.stringify(params)+', '+JSON.stringify(extra)+']);');
 				}
 			});
 			return 'Capture "Pull Event" started.';
@@ -1302,12 +1302,12 @@
 			return 'Capture "Pull Event" is '+(status? 'ON': 'OFF');
 		}
 	}
-	
-	BX.PULL.getPullEventFunction = function(status)
+
+	BX.PULL.capturePullEventFunction = function(status)
 	{
 		_pullGetPullEventFunctionStatus = typeof(status) == 'boolean'? status: true;
 		BX.PULL.capturePullEvent(_pullGetPullEventFunctionStatus);
-		
+
 		return 'Get "Pull Event" function is '+(_pullGetPullEventFunctionStatus? 'ON': 'OFF');
 	}
 
@@ -1415,7 +1415,7 @@
 			_pullTryConnect = false;
 			if (_WS) _WS.close(1000, "check_revision");
 
-			BX.onCustomEvent(window, 'onPullRevisionUp', [revision, this.revision]);
+			BX.onCustomEvent(window, 'onPullRevisionUp', [revision, _revision]);
 
 			return false;
 		}
@@ -1441,7 +1441,7 @@
 		if (typeof(buttons) == "undefined" || typeof(buttons) == "object" && buttons.length <= 0)
 		{
 			buttons = [new BX.PopupWindowButton({
-				text : BX.message('IM_NOTIFY_CONFIRM_CLOSE'),
+				text : BX.message('JS_CORE_WINDOW_CLOSE'),
 				className : "popup-window-button-decline",
 				events : { click : function(e) { this.popupWindow.close(); BX.PreventDefault(e) } }
 			})];

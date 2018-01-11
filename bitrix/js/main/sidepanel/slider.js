@@ -138,9 +138,8 @@ BX.SidePanel.Slider.prototype =
 		this.createLayout();
 		this.adjustLayout();
 
-		this.animateOpening();
-
 		this.opened = true;
+		this.animateOpening();
 
 		return true;
 	},
@@ -1080,11 +1079,6 @@ BX.SidePanel.Slider.prototype =
 	 */
 	animateOpening: function()
 	{
-		if (this.isOpen())
-		{
-			return;
-		}
-
 		BX.addClass(this.getOverlay(), "side-panel-overlay-open");
 		BX.addClass(this.getContainer(), "side-panel-container-open");
 

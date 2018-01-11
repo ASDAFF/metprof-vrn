@@ -199,7 +199,7 @@ $tabControl->BeginNextTab();
 					<select name="EBAY_SETTINGS[MAPS][SHIPMENT][<?=$service?>]">
 						<option value=""><?=Loc::getMessage("SALE_EBAY_NOT_MAPPED")?></option>
 						<?foreach($arDeliveryList as $deliveryId => $deliveryName):?>
-							<option value="<?=$deliveryId?>"<?=(isset($siteSettings["MAPS"]["SHIPMENT"][$service]) && $siteSettings["MAPS"]["SHIPMENT"][$service] ==  $deliveryId ? " selected" : "")?>><?=$deliveryName?></option>
+							<option value="<?=$deliveryId?>"<?=(isset($siteSettings["MAPS"]["SHIPMENT"][$service]) && $siteSettings["MAPS"]["SHIPMENT"][$service] ==  $deliveryId ? " selected" : "")?>><?=htmlspecialcharsbx($deliveryName)?></option>
 						<?endforeach;?>
 					</select>
 				</td>

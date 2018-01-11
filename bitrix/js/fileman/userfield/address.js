@@ -84,22 +84,13 @@
 		var inputContainer = BX.create('DIV', {props: {className: "field-item"}});
 		this.inputListNode.insertBefore(inputContainer, this.inputListNode.lastChild);
 
-		var input = BX.create('input', {attrs: {type: 'text'}, props: {className: 'uf-address-search-input'}});
+		var input = BX.create('input', {attrs: {type: 'text', tabindex: '0'}, props: {className: 'uf-address-search-input'}});
 		inputContainer.appendChild(input);
 
 		var searchField = new BX.Fileman.UserField.AddressSearchField(this, input, value);
 
 		var index = this.inputObjects.length;
 		this.inputObjects.push(searchField);
-
-/*
-		if(index === 0 && searchField.hasCoordinates())
-		{
-			BX.Fileman.Google.Loader.init(BX.defer(function(){
-				searchField.display();
-			}, this));
-		}
-*/
 
 		if(this.multiple)
 		{

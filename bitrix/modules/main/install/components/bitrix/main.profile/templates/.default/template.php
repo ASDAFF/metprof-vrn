@@ -1,8 +1,8 @@
 <?
 /**
  * @global CMain $APPLICATION
- * @param array $arParams
- * @param array $arResult
+ * @var array $arParams
+ * @var array $arResult
  */
 if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true)
 	die();
@@ -376,7 +376,7 @@ document.getElementById('bx_auth_secure').style.display = 'inline-block';
 	<tbody>
 		<tr>
 			<td><?=GetMessage("forum_SHOW_NAME")?></td>
-			<td><input type="checkbox" name="forum_SHOW_NAME" value="Y" <?if ($arResult["arForumUser"]["SHOW_NAME"]=="Y") echo "checked=\"checked\"";?> /></td>
+			<td><input type="hidden" name="forum_SHOW_NAME" value="N" /><input type="checkbox" name="forum_SHOW_NAME" value="Y" <?if ($arResult["arForumUser"]["SHOW_NAME"]=="Y") echo "checked=\"checked\"";?> /></td>
 		</tr>
 		<tr>
 			<td><?=GetMessage('forum_DESCRIPTION')?></td>
@@ -464,7 +464,7 @@ document.getElementById('bx_auth_secure').style.display = 'inline-block';
 		<tbody>
 			<tr>
 				<td><?=GetMessage("learning_PUBLIC_PROFILE");?>:</td>
-				<td><input type="checkbox" name="student_PUBLIC_PROFILE" value="Y" <?if ($arResult["arStudent"]["PUBLIC_PROFILE"]=="Y") echo "checked=\"checked\"";?> /></td>
+				<td><input type="hidden" name="student_PUBLIC_PROFILE" value="N" /><input type="checkbox" name="student_PUBLIC_PROFILE" value="Y" <?if ($arResult["arStudent"]["PUBLIC_PROFILE"]=="Y") echo "checked=\"checked\"";?> /></td>
 			</tr>
 			<tr>
 				<td><?=GetMessage("learning_RESUME");?>:</td>

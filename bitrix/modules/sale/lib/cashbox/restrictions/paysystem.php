@@ -69,25 +69,6 @@ class PaySystem extends Restriction
 					$result[] = $item->getPaymentSystemId();
 			}
 		}
-		elseif ($entity instanceof Sale\Shipment)
-		{
-			/** @var Sale\ShipmentCollection $shipmentCollection */
-			$shipmentCollection = $entity->getCollection();
-			if (!$shipmentCollection)
-				return $result;
-
-			$order = $shipmentCollection->getOrder();
-			if (!$order)
-				return $result;
-
-			$paymentCollection = $order->getPaymentCollection();
-			if (!$paymentCollection)
-				return $result;
-
-			/** @var Payment $item */
-			foreach ($paymentCollection as $item)
-				$result[] = $item->getPaymentSystemId();
-		}
 		elseif ($entity instanceof Payment)
 		{
 			$result[] = $entity->getPaymentSystemId();

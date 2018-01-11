@@ -67,15 +67,18 @@ class FormFacebook extends Form
 			'url' => $data['PRIVACY_POLICY_URL']
 		);
 
-		$content = array();
+		$content = array($data['DESCRIPTION']);
+		/*
+		// max 80 chars each
 		for ($pos = 0, $len = 80; $contentItem = substr($data['DESCRIPTION'], $pos, $len); $pos = $pos + $len)
 		{
 			$content[] = $contentItem;
 		}
+		*/
 		$contextCard = array(
 			'title' => $data['TITLE'],
-			'style' => 'LIST_STYLE',
-			'content' => $content, // max 80 chars each
+			'style' => 'PARAGRAPH_STYLE',
+			'content' => $content,
 			'button_text' => $data['BUTTON_CAPTION']
 		);
 

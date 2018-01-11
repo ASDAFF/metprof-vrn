@@ -18,7 +18,9 @@ class Calculation
 {
 	protected static $config = array(
 		'CURRENCY' => null,
-		'PRECISION' => null
+		'PRECISION' => null,
+		'USE_DISCOUNTS' => true,
+		'RESULT_WITH_VAT' => true
 	);
 
 	private static $stack = array();
@@ -31,6 +33,8 @@ class Calculation
 	 *		<ul>
 	 * 		<li>string CURRENCY				Result currency (can be null - use base currency (compatibility only)).
 	 *		<li>int PRECISION				Calculation precision (can be null - use default catalog precision - CATALOG_VALUE_PRECISION).
+	 *		<li>bool USE_DISCOUNTS			Use discounts for calculation (by default use discounts is allowed).
+	 *		<li>bool RESULT_WITH_VAT		Returns result price without/with VAT (by default return price with VAT).
 	 *		</ul>
 	 * @return void
 	 */
@@ -44,7 +48,7 @@ class Calculation
 	}
 
 	/**
-	 * Return current calculation settings.
+	 * Returns current calculation settings.
 	 *
 	 * @return array
 	 */
@@ -76,7 +80,7 @@ class Calculation
 	}
 
 	/**
-	 * Return result calculation currency.
+	 * Returns result calculation currency.
 	 *
 	 * @return string
 	 */
@@ -86,13 +90,33 @@ class Calculation
 	}
 
 	/**
-	 * Return calculation precision.
+	 * Returns calculation precision.
 	 *
 	 * @return int
 	 */
 	public static function getPrecision()
 	{
 		return (self::$config['PRECISION'] !== null ? self::$config['PRECISION'] : CATALOG_VALUE_PRECISION);
+	}
+
+	/**
+	 * Returns true if allowed use discounts.
+	 *
+	 * @return bool
+	 */
+	public static function isAllowedUseDiscounts()
+	{
+		return self::$config['USE_DISCOUNTS'];
+	}
+
+	/**
+	 * Returns true if result price with VAT.
+	 *
+	 * @return bool
+	 */
+	public static function isIncludingVat()
+	{
+		return self::$config['RESULT_WITH_VAT'];
 	}
 
 	/**
@@ -104,6 +128,44 @@ class Calculation
 	public static function roundPrecision($value)
 	{
 		return roundEx($value, static::getPrecision());
+	}
+
+	/**
+	 * Returns the result of comparing two values with the precision of rounding.
+	 *
+	 * @param float|int $firstValue         First value.
+	 * @param float|int $secondValue        Second value.
+	 * @param string $operator              Compare operator ( >, >=, <, <=, ==, !=).
+	 * @return bool
+	 */
+	public static function compare($firstValue, $secondValue, $operator)
+	{
+		$firstValue = static::roundPrecision($firstValue);
+		$secondValue = static::roundPrecision($secondValue);
+
+		$result = false;
+		switch ($operator)
+		{
+			case '>':
+				$result = ($firstValue > $secondValue);
+				break;
+			case '>=':
+				$result = ($firstValue >= $secondValue);
+				break;
+			case '<':
+				$result = ($firstValue < $secondValue);
+				break;
+			case '<=':
+				$result = ($firstValue <= $secondValue);
+				break;
+			case '==':
+				$result = ($firstValue == $secondValue);
+				break;
+			case '!=':
+				$result = ($firstValue != $secondValue);
+				break;
+		}
+		return $result;
 	}
 
 	/**
@@ -139,15 +201,18 @@ class Calculation
 							$checked = ($value > 0);
 						}
 						break;
+					case 'USE_DISCOUNTS':
+					case 'RESULT_WITH_VAT':
+						$checked = is_bool($value);
+						break;
 					default:
 						break;
 				}
 				if ($checked)
 					$result[$field] = $value;
 			}
-			unset($field);
+			unset($field, $value);
 		}
-		unset($fieldList);
 
 		return $result;
 	}

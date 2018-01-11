@@ -2351,7 +2351,9 @@
 			var Preset = this.getPreset();
 			var currentPresetId = Preset.getCurrentPresetId();
 
-			if (currentPresetId !== 'tmp_filter' && !Preset.isPresetValuesModified(currentPresetId))
+			if (currentPresetId !== 'tmp_filter' &&
+				currentPresetId !== 'default_filter' &&
+				!Preset.isPresetValuesModified(currentPresetId))
 			{
 				var preset = Preset.getPreset(currentPresetId);
 				var additional = Preset.getAdditionalValues(currentPresetId);

@@ -164,6 +164,11 @@ class OrderCompatibility
 			unset($orderFields['STATUS_ID']);
 		}
 
+		if (isset($orderFields['USE_VAT']) && $orderFields['USE_VAT'] === true)
+		{
+			$orderFields['USE_VAT'] = 'Y';
+		}
+
 		$order->setFieldsNoDemand($orderFields);
 
 		$orderCompatibility->order = $order;
@@ -1574,7 +1579,36 @@ class OrderCompatibility
 	 */
 	public static function add(array $fields)
 	{
-		/** @var Sale\Result $r */
+		if (!empty($fields['ORDER_PROP']) && is_array($fields['ORDER_PROP']))
+		{
+			$fields['PROPERTIES'] = $fields['ORDER_PROP'];
+			unset($fields['ORDER_PROP']);
+		}
+
+		if (!isset($fields['PROPERTIES']) || !is_array($fields['PROPERTIES']))
+		{
+			$fields['PROPERTIES'] = array();
+		}
+
+		/** @var Sale\Compatible\OrderCompatibility $orderCompatibility */
+		$orderCompatibility = Sale\Compatible\OrderCompatibility::create($fields);
+
+		/** @var Sale\PropertyValueCollection $propCollection */
+		$propCollection = $orderCompatibility->getOrder()->getPropertyCollection();
+
+		// compatibility to prevent setting default values for empty properties
+		/** @var Sale\PropertyValue $property */
+		foreach ($propCollection as $property)
+		{
+			$propertyFields = $property->getProperty();
+			$key = isset($propertyFields['ID']) ? $propertyFields['ID'] : 'n'.$property->getId();
+
+			if (!array_key_exists($key, $fields['PROPERTIES']))
+			{
+				$fields['PROPERTIES'][$key] = null;
+			}
+		}
+
 		return static::modifyOrder(static::ORDER_COMPAT_ACTION_ADD, $fields);
 	}
 
@@ -1623,7 +1657,6 @@ class OrderCompatibility
 
 		try
 		{
-
 			$adminSection = (defined('ADMIN_SECTION') && ADMIN_SECTION === true);
 
 			/** @var Sale\Compatible\OrderCompatibility $orderCompatibility */
@@ -1638,6 +1671,11 @@ class OrderCompatibility
 			if (!empty($fields['ORDER_PROP']) && is_array($fields['ORDER_PROP']))
 			{
 				$fields['PROPERTIES'] = $fields['ORDER_PROP'];
+			}
+
+			if (!isset($fields['PROPERTIES']) || !is_array($fields['PROPERTIES']))
+			{
+				$fields['PROPERTIES'] = array();
 			}
 
 			/** @var Sale\Result $r */
@@ -1757,22 +1795,6 @@ class OrderCompatibility
 				return $result;
 			}
 
-
-			if ($isStartField)
-			{
-				$hasMeaningfulFields = $order->hasMeaningfulField();
-
-				/** @var Sale\Result $r */
-				$r = $order->doFinalAction($hasMeaningfulFields);
-				if (!$r->isSuccess())
-				{
-					$result->addErrors($r->getErrors());
-					return $result;
-				}
-			}
-
-
-
 			/** @var Sale\Result $r */
 			$r = $orderCompatibility->fillShipmentCollectionFromRequest( $order->getShipmentCollection(), $fields);
 			if (!$r->isSuccess())
@@ -1791,7 +1813,18 @@ class OrderCompatibility
 				return $result;
 			}
 
+			if ($isStartField)
+			{
+				$hasMeaningfulFields = $order->hasMeaningfulField();
 
+				/** @var Sale\Result $r */
+				$r = $order->doFinalAction($hasMeaningfulFields);
+				if (!$r->isSuccess())
+				{
+					$result->addErrors($r->getErrors());
+					return $result;
+				}
+			}
 
 			/** @var Sale\Result $r */
 			$r = Sale\Compatible\OrderCompatibility::fillOrderFromRequest($order, $fields);

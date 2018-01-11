@@ -541,8 +541,10 @@ class CSaleGiftBasketComponent extends CCatalogViewedProductsComponent
 			(
 				$item->getProvider() &&
 				(
-					$item->getProvider() === "CCatalogProductProvider" ||
-					array_key_exists("CCatalogProductProvider", class_parents($item->getProvider()))
+					$item->getProvider() === "CCatalogProductProvider"
+					|| $item->getProvider() === "\Bitrix\Catalog\Product\CatalogProvider"
+					|| array_key_exists("CCatalogProductProvider", class_parents($item->getProvider()))
+					|| array_key_exists("\Bitrix\Catalog\Product\CatalogProvider", class_parents($item->getProvider()))
 				)
 			);
 	}

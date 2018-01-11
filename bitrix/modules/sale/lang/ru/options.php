@@ -156,6 +156,7 @@ $MESS["SALE_LOCATION_SELECTOR_APPEARANCE"] = "Внешний вид селект
 $MESS["SALE_LOCATION_SELECTOR_APPEARANCE_SEARCH"] = "Строка поиска";
 $MESS["SALE_LOCATION_SELECTOR_APPEARANCE_STEPS"] = "Выпадающие списки";
 $MESS["SALE_P2P"] = "Настройки также продаваемых продуктов";
+$MESS["SALE_P2P_COLLECT_DATA"] = "Включить сбор информации о также продаваемых продуктах";
 $MESS["SALE_P2P_STATUS_LIST"] = "Список статусов, при переводе заказа в которые, товары попадают в сбор:";
 $MESS["SALE_P2P_STATUS_PERIOD"] = "Как часто удалять старые товары - каждые (дней):";
 $MESS["SALE_P2P_EXP_DATE"] = "Число дней, в течение которых товар считается актуальным: ";
@@ -237,4 +238,8 @@ $MESS["SALE_ALLOW_GUEST_ORDER_VIEW_PATH"] = "Шаблон пути к стран
 $MESS["SALE_ALLOW_GUEST_ORDER_VIEW_EXAMPLE"] = "Пример шаблона пути";
 $MESS["SALE_ORDER_GUEST_VIEW"] = "Публичная ссылка";
 $MESS["SALE_ORDER_GUEST_VIEW_STATUS"] = "Статусы, при которых разрешен просмотр заказа без авторизации";
+$MESS["SALE_BASKET_PUBLIC_BEHAVIOR_TITLE"] = "Настройки поведения корзины в публичной части";
+$MESS["SALE_BLOCK_CHECK_TITLE"] = "Настройки печати чеков";
+$MESS["SALE_USE_ADVANCE_CHECK_BY_DEFAULT"] = "Печатать авансовый чек при получении оплаты";
+$MESS["SALE_BASKET_REFRESH_GAP"] = "Время актуальности корзины, сек";
 ?>

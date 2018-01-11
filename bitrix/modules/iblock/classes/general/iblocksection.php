@@ -1031,7 +1031,11 @@ class CAllIBlockSection
 		$ipropTemplates = new \Bitrix\Iblock\InheritedProperty\SectionTemplates($db_record["IBLOCK_ID"], $db_record["ID"]);
 		if(is_set($arFields, "PICTURE"))
 		{
-			if(strlen($arFields["PICTURE"]["name"])<=0 && strlen($arFields["PICTURE"]["del"])<=0)
+			if (
+				(!isset($arFields["PICTURE"]["name"]) || $arFields["PICTURE"]["name"] === '')
+				&& (!isset($arFields["PICTURE"]["del"]) || $arFields["PICTURE"]["del"] === '')
+				&& !array_key_exists("description", $arFields["PICTURE"])
+			)
 			{
 				unset($arFields["PICTURE"]);
 			}
@@ -1050,7 +1054,11 @@ class CAllIBlockSection
 
 		if(is_set($arFields, "DETAIL_PICTURE"))
 		{
-			if(strlen($arFields["DETAIL_PICTURE"]["name"])<=0 && strlen($arFields["DETAIL_PICTURE"]["del"])<=0)
+			if (
+				(!isset($arFields["DETAIL_PICTURE"]["name"]) || $arFields["DETAIL_PICTURE"]["name"] === '')
+				&& (!isset($arFields["DETAIL_PICTURE"]["del"]) || $arFields["DETAIL_PICTURE"]["del"] === '')
+				&& !array_key_exists("description", $arFields["DETAIL_PICTURE"])
+			)
 			{
 				unset($arFields["DETAIL_PICTURE"]);
 			}

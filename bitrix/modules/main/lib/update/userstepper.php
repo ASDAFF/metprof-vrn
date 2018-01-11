@@ -26,9 +26,7 @@ final class UserStepper extends Stepper
 			$params = array(
 				"lastId" => 0,
 				"number" => 0,
-				"count" => \Bitrix\Main\UserTable::getCount(Array(
-					'=IS_REAL_USER' => 'Y'
-				)),
+				"count" => \Bitrix\Main\UserTable::getCount(),
 			);
 		}
 
@@ -43,7 +41,6 @@ final class UserStepper extends Stepper
 				'order' => array('ID' => 'ASC'),
 				'filter' => array(
 					'>ID' => $params["lastId"],
-					'=IS_REAL_USER' => 'Y',
 				),
 				'select' => array('ID'),
 				'offset' => 0,

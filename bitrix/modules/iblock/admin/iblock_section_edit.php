@@ -138,19 +138,24 @@ if(
 	$DB->StartTransaction();
 	$bs = new CIBlockSection;
 
+	$useFileUpload = array_key_exists("PICTURE", $_FILES);
 	$arPICTURE = CIBlock::makeFileArray(
-		array_key_exists("PICTURE", $_FILES)? $_FILES["PICTURE"]: $_REQUEST["PICTURE"],
-		${"PICTURE_del"} === "Y"
+		$useFileUpload? $_FILES["PICTURE"]: $_REQUEST["PICTURE"],
+		${"PICTURE_del"} === "Y",
+		$useFileUpload ? null : $_REQUEST['PICTURE_descr']
 	);
 	if ($arPICTURE["error"] == 0)
 		$arPICTURE["COPY_FILE"] = "Y";
 
+	$useFileUpload = array_key_exists('DETAIL_PICTURE', $_FILES);
 	$arDETAIL_PICTURE = CIBlock::makeFileArray(
-		array_key_exists("DETAIL_PICTURE", $_FILES)? $_FILES["DETAIL_PICTURE"]: $_REQUEST["DETAIL_PICTURE"],
-		${"DETAIL_PICTURE_del"} === "Y"
+		$useFileUpload? $_FILES["DETAIL_PICTURE"]: $_REQUEST["DETAIL_PICTURE"],
+		${"DETAIL_PICTURE_del"} === "Y",
+		$useFileUpload ? null : $_REQUEST['DETAIL_PICTURE_descr']
 	);
 	if ($arDETAIL_PICTURE["error"] == 0)
 		$arDETAIL_PICTURE["COPY_FILE"] = "Y";
+	unset($useFileUpload);
 
 	$arFields = array(
 		"ACTIVE" => $_POST["ACTIVE"],

@@ -195,6 +195,15 @@ else
 		$arFilter = Array();
 		$nTopCount = false;
 
+		if(CModule::IncludeModule('CRM'))
+		{
+			$export = new ExportOneCCRM();
+		}
+		else
+		{
+			$export =  new CSaleExport();
+		}
+
 		if (!$bCrmMode)
 		{
 			$arFilter["UPDATED_1C"] = "N";
@@ -250,7 +259,7 @@ else
 			if(strlen($_SESSION["BX_CML2_EXPORT"]["version"]) > 0 && IntVal($arParams["INTERVAL"]) <= 0)
 				$arParams["INTERVAL"] = 30;
 
-			CSaleExport::setLanguage('en');
+			$export::setLanguage('en');
 		}
 
 		if(strlen($_SESSION["BX_CML2_EXPORT"]["version"]) <= 0)
@@ -269,7 +278,7 @@ else
 		}
 
 		CTimeZone::Disable();
-		$arResultStat = CSaleExport::ExportOrders2Xml(
+		$arResultStat = $export::ExportOrders2Xml(
 			$arFilter, $nTopCount, $arParams["REPLACE_CURRENCY"], $bCrmMode, $arParams["INTERVAL"],
 			$_SESSION["BX_CML2_EXPORT"]["version"], $options
 		);
@@ -277,7 +286,7 @@ else
 
 		if (!$bCrmMode)
 		{
-			$time = intval($_SESSION["BX_CML2_EXPORT"][CSaleExport::getOrderPrefix()]);
+			$time = intval($_SESSION["BX_CML2_EXPORT"][$export::getOrderPrefix()]);
 			if($time>0)
 				COption::SetOptionString("sale", "last_export_time_".$curPage, $time);
 		}
@@ -529,9 +538,20 @@ else
 
 					switch($class)
 					{
-						case 'ImportOneCPackage':
-							\Bitrix\Sale\Exchange\ImportOneCPackage::configuration();
-							$loader->importer = \Bitrix\Sale\Exchange\ImportOneCPackage::getInstance();
+						case 'ImportOneCPackageSale':
+							if(CModule::IncludeModule('CRM'))
+							{
+								\Bitrix\Sale\Exchange\ImportOneCPackageCRM::configuration();
+								$loader->importer = \Bitrix\Sale\Exchange\ImportOneCPackageCRM::getInstance();
+							}
+							else
+							{
+								\Bitrix\Sale\Exchange\ImportOneCPackageSale::configuration();
+								$loader->importer = \Bitrix\Sale\Exchange\ImportOneCPackageSale::getInstance();
+							}
+							break;
+                        case 'ImportOneCContragent':
+							$loader->importerContragent = new \Bitrix\Sale\Exchange\ImportOneCContragent();
 							break;
 						default;
 							$loader->bNewVersion = true;
@@ -546,8 +566,8 @@ else
 
 			$o->registerElementHandler("/".GetMessage("CC_BSC1_COM_INFO"), array(getImporter($loader, array('PARAMS'=>$arParams,'CRM_COMPATIBLE_MODE'=>$bExportFromCrm)), "elementHandler"));
 			$o->registerNodeHandler("/".GetMessage("CC_BSC1_COM_INFO")."/".GetMessage("CC_BSC1_DOCUMENT"), array(getImporter($loader, array('PARAMS'=>$arParams,'CRM_COMPATIBLE_MODE'=>$bExportFromCrm)), "nodeHandler"));
-			$o->registerNodeHandler("/".GetMessage("CC_BSC1_COM_INFO")."/".GetMessage("CC_BSC1_CONTAINER"), array(getImporter($loader, array('CLASS'=>'ImportOneCPackage', 'PARAMS'=>$arParams)), "nodeHandler"));
-			$o->registerNodeHandler("/".GetMessage("CC_BSC1_COM_INFO")."/".GetMessage("CC_BSC1_AGENTS")."/".GetMessage("CC_BSC1_AGENT"), array(getImporter($loader, array('PARAMS'=>$arParams,'CRM_COMPATIBLE_MODE'=>$bExportFromCrm)), "nodeHandler"));
+			$o->registerNodeHandler("/".GetMessage("CC_BSC1_COM_INFO")."/".GetMessage("CC_BSC1_CONTAINER"), array(getImporter($loader, array('CLASS'=>'ImportOneCPackageSale', 'PARAMS'=>$arParams)), "nodeHandler"));
+			$o->registerNodeHandler("/".GetMessage("CC_BSC1_COM_INFO")."/".GetMessage("CC_BSC1_AGENTS")."/".GetMessage("CC_BSC1_AGENT"), array(getImporter($loader, array('CLASS'=>'ImportOneCContragent','PARAMS'=>$arParams,'CRM_COMPATIBLE_MODE'=>$bExportFromCrm)), "nodeHandler"));
 
 			$o->setPosition($_SESSION["BX_CML2_EXPORT"]["last_xml_entry"]);
 			if ($o->openFile($ABS_FILE_NAME))

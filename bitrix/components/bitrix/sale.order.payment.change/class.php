@@ -23,7 +23,8 @@ class SaleOrderPaymentChange extends \CBitrixComponent
 
 	/** @var \Bitrix\Sale\Order $order */
 	protected $order = null;
-	
+	protected $isRefreshPrice = false;
+
 	/**
 	 * Function checks and prepares all the parameters passed. Everything about $arParam modification is here.
 	 * @param mixed[] $params List of unchecked parameters
@@ -80,7 +81,16 @@ class SaleOrderPaymentChange extends \CBitrixComponent
 		{
 			$params['ALLOW_INNER'] = "N";
 		}
-		
+
+		if ($params['REFRESH_PRICES'] === "Y")
+		{
+			$this->isRefreshPrice = true;
+		}
+		else
+		{
+			$params['REFRESH_PRICES'] = "N";
+		}
+
 		return $params;
 	}
 
@@ -295,7 +305,7 @@ class SaleOrderPaymentChange extends \CBitrixComponent
 
 	/**
 	 * Initiate inner payment
-	 * @return Sale\Result
+	 * @return Main\Result
 	 * @throws Main\ArgumentNullException
 	 * @throws Main\ObjectNotFoundException
 	 */
@@ -444,6 +454,18 @@ class SaleOrderPaymentChange extends \CBitrixComponent
 		{
 			$this->errorCollection->add($paymentResult->getErrors());
 			return;
+		}
+
+		if ($this->isRefreshPrice)
+		{
+			$oldOrderPrice = $this->order->getPrice();
+			$this->order->refreshData(array('PRICE', 'PRICE_DELIVERY'));
+			if (count($this->order->getPaymentCollection()) > 1)
+			{
+				$newOrderPrice = $this->order->getPrice();
+				$paymentSum = $payment->getSum();
+				$payment->setFieldNoDemand('SUM', $paymentSum + ($newOrderPrice - $oldOrderPrice));
+			}
 		}
 
 		$resultSaving = $this->order->save();

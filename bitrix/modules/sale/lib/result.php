@@ -52,6 +52,16 @@ class Result extends Entity\Result
 		}
 	}
 
+	public function get($offset)
+	{
+		if (isset($this->data[$offset]) || array_key_exists($offset, $this->data))
+		{
+			return $this->data[$offset];
+		}
+
+		return null;
+	}
+
 	/**
 	 * @param Error[] $errors
 	 *

@@ -144,4 +144,8 @@ $MESS["CC_BSC1_CASHBOX_PRINT_CHECK"] = "PRINT_CHECK";
 $MESS["CC_BSC1_CASHBOX_URL"] = "URL";
 $MESS["CC_BSC1_CASHBOX_FISCAL_SIGN"] = "FISCAL_SIGN";
 $MESS["CC_BSC1_CASHBOX_REG_NUMBER_KKT"] = "REG_NUMBER_KKT";
+$MESS["CC_BSC1_ORDER_ERROR_5"] = "Документ з Ід - #XML_1C_DOCUMENT_ID#. Валюта замовлення #CURRENCY_FROM# відрізняється від валюти сайта #CURRENCY_TO#";
+$MESS["CC_BSC1_PAY_SYSTEM_ID"] = "Метод оплати ВД";
+$MESS["CC_BSC1_DELIVERY_SYSTEM_ID"] = "Метод доставки ВД";
+$MESS["CC_BSC1_DI_DS"] = "СлужбиДоставки";
 ?>

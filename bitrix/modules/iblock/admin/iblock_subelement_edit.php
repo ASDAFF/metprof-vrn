@@ -1459,15 +1459,17 @@ $tabControl->AddEditField("SUB_SORT", GetMessage("IBLOCK_FIELD_SORT").":", $arIB
 if(!empty($PROP)):
 	$tabControl->AddSection("IBLOCK_ELEMENT_PROP_VALUE", GetMessage("IBLOCK_ELEMENT_PROP_VALUE"));
 	foreach($PROP as $prop_code=>$prop_fields):
-			$prop_values = $prop_fields["VALUE"];
-			$tabControl->BeginCustomField("PROPERTY_".$prop_fields["ID"], $prop_fields["NAME"], $prop_fields["IS_REQUIRED"]==="Y");
+		$prop_values = $prop_fields["VALUE"];
+		$tabControl->BeginCustomField("PROPERTY_".$prop_fields["ID"], $prop_fields["NAME"], $prop_fields["IS_REQUIRED"]==="Y");
 		if ($arSubCatalog['SKU_PROPERTY_ID'] != $prop_fields['ID'])
 		{
 
 			?>
-			<tr id="tr_PROPERTY_<?echo $prop_fields["ID"];?>">
-				<td><?echo $tabControl->GetCustomLabelHTML();?>:</td>
-				<td><?_ShowPropertyField('PROP['.$prop_fields["ID"].']', $prop_fields, $prop_fields["VALUE"], (($historyId <= 0) && (!$bVarsFromForm) && ($ID<=0)), $bVarsFromForm, 50000, $tabControl->GetFormName());?></td>
+			<tr id="tr_PROPERTY_<?echo $prop_fields["ID"];?>"<?if ($prop_fields["PROPERTY_TYPE"]=="F"):?> class="adm-detail-file-row"<?endif?>>
+				<td class="adm-detail-valign-top" width="40%"><?if($prop_fields["HINT"]!=""):
+					?><span id="hint_<?=$ID.'_'.$prop_fields["ID"];?>"></span><script type="text/javascript">BX.hint_replace(BX('hint_<?=$ID.'_'.$prop_fields["ID"];?>'), '<?echo CUtil::JSEscape(htmlspecialcharsbx($prop_fields["HINT"]))?>');</script>&nbsp;<?
+					endif;?><?echo $tabControl->GetCustomLabelHTML();?>:</td>
+				<td width="60%"><?_ShowPropertyField('PROP['.$prop_fields["ID"].']', $prop_fields, $prop_fields["VALUE"], (($historyId <= 0) && (!$bVarsFromForm) && ($ID<=0)), $bVarsFromForm, 50000, $tabControl->GetFormName());?></td>
 			</tr>
 			<?
 			$hidden = "";
@@ -1641,11 +1643,17 @@ $tabControl->BeginCustomField("SUB_PREVIEW_TEXT", GetMessage("IBLOCK_FIELD_PREVI
 	<?else:?>
 	<tr id="tr_SUB_PREVIEW_TEXT_TYPE">
 		<td><?echo GetMessage("IBLOCK_DESC_TYPE")?></td>
-		<td><input type="radio" name="SUB_PREVIEW_TEXT_TYPE_<? echo $ID; ?>" id="SUB_PREVIEW_TEXT_TYPE_<? echo $ID; ?>_text" value="text"<?if($str_PREVIEW_TEXT_TYPE!="html")echo " checked"?>> <label for="SUB_PREVIEW_TEXT_TYPE_<? echo $ID; ?>_text"><?echo GetMessage("IBLOCK_DESC_TYPE_TEXT")?></label> / <input type="radio" name="SUB_PREVIEW_TEXT_TYPE" id="SUB_PREVIEW_TEXT_TYPE_html" value="html"<?if($str_PREVIEW_TEXT_TYPE=="html")echo " checked"?>> <label for="SUB_PREVIEW_TEXT_TYPE_html"><?echo GetMessage("IBLOCK_DESC_TYPE_HTML")?></label></td>
+		<td>
+			<?if($arIBlock["FIELDS"]["PREVIEW_TEXT_TYPE_ALLOW_CHANGE"]["DEFAULT_VALUE"] === "N"):?>
+				<input type="hidden" name="SUB_PREVIEW_TEXT_TYPE_<?=$ID; ?>" value="<?echo $str_PREVIEW_TEXT_TYPE?>"><?echo $str_PREVIEW_TEXT_TYPE!="html"? GetMessage("IBLOCK_DESC_TYPE_TEXT"): GetMessage("IBLOCK_DESC_TYPE_HTML")?>
+			<?else:?>
+				<input type="radio" name="SUB_PREVIEW_TEXT_TYPE_<?=$ID; ?>" id="SUB_PREVIEW_TEXT_TYPE_<?=$ID; ?>_text" value="text"<?if($str_PREVIEW_TEXT_TYPE!="html")echo " checked"?>> <label for="SUB_PREVIEW_TEXT_TYPE_<?=$ID; ?>_text"><?echo GetMessage("IBLOCK_DESC_TYPE_TEXT")?></label> / <input type="radio" name="SUB_PREVIEW_TEXT_TYPE_<?=$ID; ?>" id="SUB_PREVIEW_TEXT_TYPE_<?=$ID; ?>_html" value="html"<?if($str_PREVIEW_TEXT_TYPE=="html")echo " checked"?>> <label for="SUB_PREVIEW_TEXT_TYPE_<?=$ID; ?>_html"><?echo GetMessage("IBLOCK_DESC_TYPE_HTML")?></label>
+			<?endif?>
+		</td>
 	</tr>
 	<tr id="tr_SUB_PREVIEW_TEXT">
 		<td colspan="2" align="center">
-			<textarea cols="60" rows="10" name="SUB_PREVIEW_TEXT_<? echo $ID; ?>" style="width:100%"><?echo $str_PREVIEW_TEXT?></textarea>
+			<textarea cols="60" rows="10" name="SUB_PREVIEW_TEXT_<?=$ID; ?>" style="width:100%"><?echo $str_PREVIEW_TEXT?></textarea>
 		</td>
 	</tr>
 	<?endif;
@@ -1764,11 +1772,17 @@ $tabControl->BeginCustomField("SUB_DETAIL_TEXT", GetMessage("IBLOCK_FIELD_DETAIL
 	<?else:?>
 	<tr id="tr_SUB_DETAIL_TEXT_TYPE">
 		<td><?echo GetMessage("IBLOCK_DESC_TYPE")?></td>
-		<td><input type="radio" name="SUB_DETAIL_TEXT_TYPE_<? echo $ID; ?>" id="SUB_DETAIL_TEXT_TYPE_<? echo $ID; ?>_text" value="text"<?if($str_DETAIL_TEXT_TYPE!="html")echo " checked"?>> <label for="SUB_DETAIL_TEXT_TYPE_text"><?echo GetMessage("IBLOCK_DESC_TYPE_TEXT")?></label> / <input type="radio" name="SUB_DETAIL_TEXT_TYPE" id="SUB_DETAIL_TEXT_TYPE_html" value="html"<?if($str_DETAIL_TEXT_TYPE=="html")echo " checked"?>> <label for="SUB_DETAIL_TEXT_TYPE_<? echo $ID; ?>_html"><?echo GetMessage("IBLOCK_DESC_TYPE_HTML")?></label></td>
+		<td>
+			<?if($arIBlock["FIELDS"]["DETAIL_TEXT_TYPE_ALLOW_CHANGE"]["DEFAULT_VALUE"] === "N"):?>
+				<input type="hidden" name="SUB_DETAIL_TEXT_TYPE_<?=$ID; ?>" value="<?echo $str_DETAIL_TEXT_TYPE?>"><?echo $str_DETAIL_TEXT_TYPE!="html"? GetMessage("IBLOCK_DESC_TYPE_TEXT"): GetMessage("IBLOCK_DESC_TYPE_HTML")?>
+			<?else:?>
+				<input type="radio" name="SUB_DETAIL_TEXT_TYPE_<?=$ID; ?>" id="SUB_DETAIL_TEXT_TYPE_<?=$ID; ?>_text" value="text"<?if($str_DETAIL_TEXT_TYPE!="html")echo " checked"?>> <label for="SUB_DETAIL_TEXT_TYPE_<?=$ID; ?>_text"><?echo GetMessage("IBLOCK_DESC_TYPE_TEXT")?></label> / <input type="radio" name="SUB_DETAIL_TEXT_TYPE_<?=$ID; ?>" id="SUB_DETAIL_TEXT_TYPE_<?=$ID; ?>_html" value="html"<?if($str_DETAIL_TEXT_TYPE=="html")echo " checked"?>> <label for="SUB_DETAIL_TEXT_TYPE_<?=$ID; ?>_html"><?echo GetMessage("IBLOCK_DESC_TYPE_HTML")?></label>
+			<?endif?>
+		</td>
 	</tr>
 	<tr id="tr_SUB_DETAIL_TEXT">
 		<td colspan="2" align="center">
-			<textarea cols="60" rows="20" name="SUB_DETAIL_TEXT_<? echo $ID; ?>" style="width:100%"><?echo $str_DETAIL_TEXT?></textarea>
+			<textarea cols="60" rows="20" name="SUB_DETAIL_TEXT_<?=$ID; ?>" style="width:100%"><?echo $str_DETAIL_TEXT?></textarea>
 		</td>
 	</tr>
 	<?endif?>

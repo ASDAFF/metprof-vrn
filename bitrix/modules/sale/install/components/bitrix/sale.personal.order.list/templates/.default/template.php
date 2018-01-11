@@ -174,6 +174,7 @@ else
 									"order" => htmlspecialcharsbx($order['ORDER']['ACCOUNT_NUMBER']),
 									"payment" => htmlspecialcharsbx($payment['ACCOUNT_NUMBER']),
 									"allow_inner" => $arParams['ALLOW_INNER'],
+									"refresh_prices" => $arParams['REFRESH_PRICES'],
 									"only_inner_full" => $arParams['ONLY_INNER_FULL']
 								);
 							}

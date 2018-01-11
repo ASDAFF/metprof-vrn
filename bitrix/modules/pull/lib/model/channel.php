@@ -7,7 +7,7 @@ Loc::loadMessages(__FILE__);
 
 /**
  * Class ChannelTable
- * 
+ *
  * Fields:
  * <ul>
  * <li> ID int mandatory
@@ -69,8 +69,9 @@ class ChannelTable extends Main\Entity\DataManager
 				'default_value' => array(__CLASS__, 'getCurrentDate'),
 			),
 			'USER' => array(
-				'data_type' => 'Bitrix\User\User',
+				'data_type' => 'Bitrix\Main\UserTable',
 				'reference' => array('=this.USER_ID' => 'ref.ID'),
+				'join_type' => 'INNER',
 			),
 		);
 	}
@@ -96,7 +97,7 @@ class ChannelTable extends Main\Entity\DataManager
 			new Main\Entity\Validator\Length(null, 50),
 		);
 	}
-	
+
 	/**
 	 * Return current date for DATE_CREATE field.
 	 *
@@ -105,7 +106,7 @@ class ChannelTable extends Main\Entity\DataManager
 	public static function getCurrentDate()
 	{
 		return new \Bitrix\Main\Type\DateTime();
-	}	
+	}
 }
 
 class_alias("Bitrix\\Pull\\Model\\ChannelTable", "Bitrix\\Pull\\ChannelTable", false);

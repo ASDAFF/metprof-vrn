@@ -220,4 +220,11 @@ $MESS["SALE_F_COMPANY_ID"] = "Офис";
 $MESS["SALE_F_RESPONSIBLE_ID"] = "Ответственный";
 $MESS["SOAN_MARKETPLACE_ADD_NEW"] = "Установить из Маркетплейс";
 $MESS["SOAN_MARKETPLACE_ADD_NEW_TITLE"] = "Установить из Маркетплейс";
+$MESS["SALE_SEND_DELIVERY_REQUEST"] = "Отправить транспортные заявки";
+$MESS["SALE_O_CONTEXT_B_DELIVERY_REQUESTS"] = "Транспортные заявки";
+$MESS["SALE_O_CONTEXT_B_DELIVERY_REQUESTS_TITLE"] = "Отправить транспортные заявки для заказов из списка";
+$MESS["SALE_O_CONTEXT_B_DELIVERY_REQUESTS_SL"] = "Добавлена возможность отправлять транспортные заявки в Почту России и получать печатные формы";
+$MESS["SALE_O_CONTEXT_B_DELIVERY_REQUESTS_SELECTED"] = "Отправить выделенные";
+$MESS["SALE_O_CONTEXT_B_DELIVERY_REQUESTS_ALL"] = "Отправить все показанные на странице";
+$MESS["SALE_O_CONTEXT_B_DELIVERY_REQUESTS_SELECTION_NEEDED"] = "Необходимо выделить хотя бы один заказ";
 ?>

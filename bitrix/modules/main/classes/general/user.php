@@ -2343,8 +2343,11 @@ abstract class CAllUser extends CDBResult
 
 			if(defined("BX_COMP_MANAGED_CACHE"))
 			{
+				$userData = \Bitrix\Main\UserTable::getById($ID)->fetch();
+				$isRealUser = !$userData['EXTERNAL_AUTH_ID'] || !in_array($userData['EXTERNAL_AUTH_ID'], \Bitrix\Main\UserTable::getExternalUserTypes());
+
 				$CACHE_MANAGER->ClearByTag("USER_CARD_".intval($ID / TAGGED_user_card_size));
-				$CACHE_MANAGER->ClearByTag("USER_CARD");
+				$CACHE_MANAGER->ClearByTag($isRealUser? "USER_CARD": "EXTERNAL_USER_CARD");
 
 				static $arNameFields = array("NAME", "LAST_NAME", "SECOND_NAME", "LOGIN", "EMAIL", "PERSONAL_GENDER", "PERSONAL_PHOTO", "WORK_POSITION", "PERSONAL_PROFESSION", "PERSONAL_WWW", "PERSONAL_BIRTHDAY", "TITLE", "EXTERNAL_AUTH_ID", "UF_DEPARTMENT");
 				$bClear = false;
@@ -2359,11 +2362,11 @@ abstract class CAllUser extends CDBResult
 				if ($bClear)
 				{
 					$CACHE_MANAGER->ClearByTag("USER_NAME_".$ID);
-					$CACHE_MANAGER->ClearByTag("USER_NAME");
+					$CACHE_MANAGER->ClearByTag($isRealUser? "USER_NAME": "EXTERNAL_USER_NAME");
 				}
 			}
 		}
-		
+
 		return $result;
 	}
 
@@ -2538,7 +2541,7 @@ abstract class CAllUser extends CDBResult
 
 		@set_time_limit(600);
 
-		$rsUser = $DB->Query("SELECT ID, LOGIN, NAME, LAST_NAME FROM b_user WHERE ID=".$ID." AND ID<>1");
+		$rsUser = $DB->Query("SELECT ID, LOGIN, NAME, LAST_NAME, EXTERNAL_AUTH_ID FROM b_user WHERE ID=".$ID." AND ID<>1");
 		$arUser = $rsUser->Fetch();
 		if(!$arUser)
 			return false;
@@ -2612,11 +2615,15 @@ abstract class CAllUser extends CDBResult
 
 		if(defined("BX_COMP_MANAGED_CACHE"))
 		{
+			$isRealUser = !$arUser['EXTERNAL_AUTH_ID'] || !in_array($arUser['EXTERNAL_AUTH_ID'], \Bitrix\Main\UserTable::getExternalUserTypes());
+
 			$CACHE_MANAGER->ClearByTag("USER_CARD_".intval($ID / TAGGED_user_card_size));
-			$CACHE_MANAGER->ClearByTag("USER_CARD");
+			$CACHE_MANAGER->ClearByTag($isRealUser? "USER_CARD": "EXTERNAL_USER_CARD");
+
 			$CACHE_MANAGER->ClearByTag("USER_NAME_".$ID);
-			$CACHE_MANAGER->ClearByTag("USER_NAME");
+			$CACHE_MANAGER->ClearByTag($isRealUser? "USER_NAME": "EXTERNAL_USER_CARD");
 		}
+
 		self::clearUserGroupCache($ID);
 
 		Main\UserAuthActionTable::add(array(
@@ -3051,7 +3058,7 @@ abstract class CAllUser extends CDBResult
 	public static function SetLastActivityDate($userId = null, $cache = false)
 	{
 		global $USER;
-		
+
 		if (is_null($userId))
 		{
 			$userId = $USER->GetId();
@@ -3062,11 +3069,11 @@ abstract class CAllUser extends CDBResult
 		{
 			return false;
 		}
-		
+
 		if ($cache && $userId == $USER->GetId())
 		{
 			if (
-				isset($_SESSION['SESS_AUTH']['SET_LAST_ACTIVITY']) 
+				isset($_SESSION['SESS_AUTH']['SET_LAST_ACTIVITY'])
 				&& intval($_SESSION['SESS_AUTH']['SET_LAST_ACTIVITY'])+60 > time()
 			)
 			{
@@ -3075,9 +3082,9 @@ abstract class CAllUser extends CDBResult
 
 			$_SESSION['SESS_AUTH']['SET_LAST_ACTIVITY'] = time();
 		}
-		
+
 		self::SetLastActivityDateByArray(array($userId));
-		
+
 		return true;
 	}
 
@@ -3116,7 +3123,7 @@ abstract class CAllUser extends CDBResult
 
 		return true;
 	}
-	
+
 	public static function GetSecondsForLimitOnline()
 	{
 		return \Bitrix\Main\UserTable::getSecondsForLimitOnline();
@@ -3126,11 +3133,11 @@ abstract class CAllUser extends CDBResult
 	{
 		return Main\UserTable::getExternalUserTypes();
 	}
-	
+
 	public static function GetOnlineStatus($userId, $lastseen, $now = false)
 	{
 		$userId = intval($userId);
-		
+
 		if ($lastseen instanceof \Bitrix\Main\Type\DateTime)
 		{
 			$lastseen = $lastseen->getTimestamp();
@@ -3143,7 +3150,7 @@ abstract class CAllUser extends CDBResult
 		{
 			$lastseen = 0;
 		}
-		
+
 		if ($now === false)
 		{
 			$now = time();
@@ -3156,7 +3163,7 @@ abstract class CAllUser extends CDBResult
 		{
 			$now = intval($now);
 		}
-		
+
 		$result = Array(
 			'IS_ONLINE' => false,
 			'STATUS' => self::STATUS_OFFLINE,
@@ -3165,21 +3172,21 @@ abstract class CAllUser extends CDBResult
 			'LAST_SEEN_TEXT' => "",
 			'NOW' => $now,
 		);
-		
+
 		if ($lastseen === false)
 		{
 			return $result;
 		}
-		
+
 		$result['IS_ONLINE'] = $now - $lastseen <= self::GetSecondsForLimitOnline();
-		$result['STATUS'] = $result['IS_ONLINE']? self::STATUS_ONLINE: self::STATUS_OFFLINE; 
+		$result['STATUS'] = $result['IS_ONLINE']? self::STATUS_ONLINE: self::STATUS_OFFLINE;
 		$result['STATUS_TEXT'] = GetMessage('USER_STATUS_'.strtoupper($result['STATUS']));
-		
+
 		if ($lastseen && $now - $lastseen > 300)
 		{
 			$result['LAST_SEEN_TEXT'] = self::FormatLastActivityDate($lastseen, $now);
 		}
-		
+
 		if ($userId > 0)
 		{
 			if ($result['IS_ONLINE'])
@@ -3229,20 +3236,20 @@ abstract class CAllUser extends CDBResult
 				}
 			}
 		}
-		
+
 		return $result;
 	}
-	
+
 	/**
 	 * @param int|bool|\Bitrix\Main\Type\DateTime $timestamp
 	 * @param int|bool|\Bitrix\Main\Type\DateTime $now
-	 * 
+	 *
 	 * @return string
 	 */
 	public static function FormatLastActivityDate($timestamp, $now = false)
 	{
 		global $DB;
-		
+
 		if ($timestamp instanceof \Bitrix\Main\Type\DateTime)
 		{
 			$timestamp = $timestamp->getTimestamp();
@@ -3255,7 +3262,7 @@ abstract class CAllUser extends CDBResult
 		{
 			return "";
 		}
-		
+
 		if ($now === false)
 		{
 			$now = time();
@@ -3268,10 +3275,10 @@ abstract class CAllUser extends CDBResult
 		{
 			$now = intval($now);
 		}
-		
+
 		$ampm = IsAmPmMode(true);
 		$timeFormat = ($ampm === AM_PM_LOWER? "g:i a" : ($ampm === AM_PM_UPPER? "g:i A" : "H:i"));
-		
+
 		$formattedDate = FormatDate(array(
 			"tomorrow" => "#01#{$timeFormat}",
 			"now" => "#02#",
@@ -3287,7 +3294,7 @@ abstract class CAllUser extends CDBResult
 			"m12>0" => "dago",
 			"" => "#05#",
 		), $timestamp, $now);
-		
+
 		if (preg_match('/^#(\d+)#(.*)/', $formattedDate, $match))
 		{
 			switch($match[1])
@@ -3309,13 +3316,13 @@ abstract class CAllUser extends CDBResult
 				break;
 				default:
 					$formattedDate = $match[2];
-				break;	
+				break;
 			}
 		}
-		
+
 		return $formattedDate;
 	}
-	
+
 	public static function SearchUserByName($arName, $email = "", $bLoginMode = false)
 	{
 		global $DB;
@@ -3638,10 +3645,24 @@ abstract class CAllUser extends CDBResult
 			"cache" => array("ttl" => 3600),
 		));
 
-		$wasAction = false;
+		$deleted = false;
 		while($action = $actions->fetch())
 		{
-			$wasAction = true;
+			if($deleted == false)
+			{
+				//clear expired records for the user
+				Main\UserAuthActionTable::deleteByFilter(array(
+					"=USER_ID" => $user_id,
+					"<=ACTION_DATE" => $now,
+				));
+				$deleted = true;
+			}
+
+			if($this->IsJustAuthorized())
+			{
+				//no need to update the session
+				break;
+			}
 
 			/** @var Main\Type\DateTime() $actionDate */
 			$actionDate = $action["ACTION_DATE"];
@@ -3657,6 +3678,7 @@ abstract class CAllUser extends CDBResult
 							$this->SetParam("SELF_CHANGED_PASSWORD", false);
 							break;
 						}
+						//redirect is possible
 						$this->Logout();
 						break;
 
@@ -3668,15 +3690,6 @@ abstract class CAllUser extends CDBResult
 				//we need to process only the first action by proirity
 				break;
 			}
-		}
-
-		if($wasAction)
-		{
-			//clear expired records for the user
-			Main\UserAuthActionTable::deleteByFilter(array(
-				"=USER_ID" => $user_id,
-				"<=ACTION_DATE" => $now,
-			));
 		}
 	}
 

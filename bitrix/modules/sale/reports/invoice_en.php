@@ -307,7 +307,7 @@ array(
 									</tr>
 								<?endif?>
 
-								<?if (DoubleVal($arOrder["PRICE_DELIVERY"])>0):?>
+								<?if ($arOrder["DELIVERY_ID"]):?>
 									<tr>
 										<td align="right" class="smallText">
 											Delivery 

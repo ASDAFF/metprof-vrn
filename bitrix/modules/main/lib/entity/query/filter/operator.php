@@ -31,7 +31,8 @@ class Operator
 		'in' => 'in',
 		'between' => 'between',
 		'like' => 'like',
-		'exists' => 'exists'
+		'exists' => 'exists',
+		'match' => 'match'
 	);
 
 	/**
@@ -100,5 +101,10 @@ class Operator
 	public static function exists($columnSql, $valueSql)
 	{
 		return "EXISTS ({$valueSql})";
+	}
+
+	public static function match($columnSql, $valueSql)
+	{
+		return "MATCH ({$columnSql}) AGAINST ({$valueSql} IN BOOLEAN MODE)";
 	}
 }

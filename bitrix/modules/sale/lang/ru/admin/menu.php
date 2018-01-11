@@ -193,4 +193,5 @@ $MESS["SALE_MENU_YM_LOG_TITLE"] = "Журнал событий Покупки н
 $MESS["SALE_MENU_MARKETPLACE_READY_SHOPS"] = "Установить готовый магазин из Маркетплейс";
 $MESS["SALE_MENU_MARKETING_MARKETPLACE_ADD"] = "Установить из Маркетплейс";
 $MESS["SALE_MENU_TRADING_PLATFORMS_MARKETPLACE_ADD"] = "Установить из Маркетплейс";
+$MESS["SALE_MENU_DELIVERY_REQUESTS"] = "Транспортные заявки";
 ?>

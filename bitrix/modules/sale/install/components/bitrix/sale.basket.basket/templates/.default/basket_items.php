@@ -198,7 +198,18 @@ if ($normalCount > 0):
 												unset($counter);
 											}
 											$countValues = count($arProp["VALUES"]);
-											$full = ($countValues > 5) ? "full" : "";
+											if ($countValues > 5)
+											{
+												$full = "full";
+												$fullWidth = ($countValues*20).'%';
+												$itemWidth = (100/$countValues).'%';
+											}
+											else
+											{
+												$full = "";
+												$fullWidth = '100%';
+												$itemWidth = '20%';
+											}
 
 											$marginLeft = 0;
 											if ($countValues > 5 && $selectedIndex > 5)
@@ -214,7 +225,7 @@ if ($normalCount > 0):
 
 														<div class="bx_scu">
 															<ul id="prop_<?=$arProp["CODE"]?>_<?=$arItem["ID"]?>"
-																style="width: 200%; margin-left: <?=$marginLeft; ?>"
+																style="width: <?=$fullWidth; ?>; margin-left: <?=$marginLeft; ?>"
 																class="sku_prop_list"
 																>
 																<?
@@ -223,7 +234,7 @@ if ($normalCount > 0):
 																	$counter++;
 																	$selected = ($selectedIndex == $counter ? ' bx_active' : '');
 																?>
-																	<li style="width:10%;"
+																	<li style="width: <?=$itemWidth; ?>; padding-top: <?=$itemWidth; ?>;"
 																		class="sku_prop<?=$selected?>"
 																		data-sku-selector="Y"
 																		data-value-id="<?=$arSkuValue["XML_ID"]?>"
@@ -255,7 +266,7 @@ if ($normalCount > 0):
 													<div class="bx_size_scroller_container">
 														<div class="bx_size">
 															<ul id="prop_<?=$arProp["CODE"]?>_<?=$arItem["ID"]?>"
-																style="width: 200%; margin-left: <?=$marginLeft; ?>;"
+																style="width: <?=$fullWidth; ?>; margin-left: <?=$marginLeft; ?>;"
 																class="sku_prop_list"
 																>
 																<?
@@ -267,7 +278,7 @@ if ($normalCount > 0):
 																		$selected = ($selectedIndex == $counter ? ' bx_active' : '');
 																		$skuValueName = htmlspecialcharsbx($arSkuValue['NAME']);
 																	?>
-																		<li style="width:10%;"
+																		<li style="width: <?=$itemWidth; ?>;"
 																			class="sku_prop<?=$selected?>"
 																			data-sku-selector="Y"
 																			data-value-id="<?=($arProp['TYPE'] == 'S' && $arProp['USER_TYPE'] == 'directory' ? $arSkuValue['XML_ID'] : $skuValueName); ?>"

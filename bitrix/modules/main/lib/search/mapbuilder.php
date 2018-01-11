@@ -68,6 +68,9 @@ class MapBuilder
 		if($value == '')
 			return $this;
 
+		$altPhone = str_replace(' ', '', $phone);
+		$this->tokens[$altPhone] = true;
+
 		$length = strlen($value);
 		if($length >= 10 && substr($value, 0, 1) === '7')
 		{
@@ -98,7 +101,7 @@ class MapBuilder
 	{
 		if($email === '')
 		{
-			return;
+			return $this;
 		}
 
 		$keys = preg_split('/\W+/', $email, -1, PREG_SPLIT_NO_EMPTY);
@@ -110,6 +113,11 @@ class MapBuilder
 				$this->tokens[$key] = true;
 			}
 		}
+
+		$key = Content::prepareStringToken($email);
+		$this->tokens[$key] = true;
+
+		return $this;
 	}
 
 	/**
@@ -157,6 +165,16 @@ class MapBuilder
 	 */
 	public function build()
 	{
-		return implode(" ", array_keys($this->tokens));
+		$tokens = Array();
+
+		foreach ($this->tokens as $token => $result)
+		{
+			if (strlen($token) >= \CSQLWhere::GetMinTokenSize())
+			{
+				$tokens[$token] = $result;
+			}
+		}
+
+		return implode(" ", array_keys($tokens));
 	}
 }

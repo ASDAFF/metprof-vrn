@@ -9,7 +9,7 @@ Loc::loadMessages(__FILE__);
 
 /**
  * Class SessionIndexTable
- * 
+ *
  * Fields:
  * <ul>
  * <li> SESSION_ID int mandatory
@@ -36,7 +36,7 @@ class UserIndexTable extends Main\Entity\DataManager
 	 *
 	 * @return array
 	 */
-	
+
 	public static function getMap()
 	{
 		return array(
@@ -45,6 +45,9 @@ class UserIndexTable extends Main\Entity\DataManager
 				'primary' => true,
 			),
 			'SEARCH_USER_CONTENT' => array(
+				'data_type' => 'text',
+			),
+			'SEARCH_ADMIN_CONTENT' => array(
 				'data_type' => 'text',
 			),
 			'SEARCH_DEPARTMENT_CONTENT' => array(
@@ -67,12 +70,12 @@ class UserIndexTable extends Main\Entity\DataManager
 			),
 		);
 	}
-	
-	protected function getMergeFields()
+
+	protected static function getMergeFields()
 	{
 		return array('USER_ID');
 	}
-	
+
 	public static function merge(array $data)
     {
         $result = new Entity\AddResult();
@@ -81,12 +84,12 @@ class UserIndexTable extends Main\Entity\DataManager
         $insertData = $data;
         $updateData = $data;
         $mergeFields = static::getMergeFields();
-       
+
         foreach ($mergeFields as $field)
         {
             unset($updateData[$field]);
         }
-       
+
         $merge = $helper->prepareMerge(
             static::getTableName(),
             static::getMergeFields(),

@@ -386,6 +386,39 @@ class ConditionTree
 	}
 
 	/**
+	 * Fulltext search condition.
+	 * @see Helper::matchAgainstWildcard() for preparing $value for AGAINST.
+	 *
+	 * @param $column
+	 * @param $value
+	 *
+	 * @return $this
+	 */
+	public function whereMatch($column, $value)
+	{
+		$this->conditions[] = new Condition($column, 'match', $value);
+
+		return $this;
+	}
+
+	/**
+	 * Negative fulltext search condition.
+	 * @see Helper::matchAgainstWildcard() for preparing $value for AGAINST.
+	 *
+	 * @param $column
+	 * @param $value
+	 *
+	 * @return $this
+	 */
+	public function whereNotMatch($column, $value)
+	{
+		$subFilter = new static();
+		$this->conditions[] = $subFilter->whereMatch($column, $value)->negative();
+
+		return $this;
+	}
+
+	/**
 	 * Returns SQL for all conditions and subfilters.
 	 *
 	 * @param QueryChain[] $chains
@@ -566,5 +599,17 @@ class ConditionTree
 		}
 
 		return $values;
+	}
+
+	public function __clone()
+	{
+		$newConditions = array();
+
+		foreach ($this->conditions as $condition)
+		{
+			$newConditions[] = clone $condition;
+		}
+
+		$this->conditions = $newConditions;
 	}
 }

@@ -177,7 +177,18 @@ $bPropsColumn  = false;
 												unset($counter);
 											}
 											$countValues = count($arProp["VALUES"]);
-											$full = ($countValues > 5) ? "full" : "";
+											if ($countValues > 5)
+											{
+												$full = "full";
+												$fullWidth = ($countValues*20).'%';
+												$itemWidth = (100/$countValues).'%';
+											}
+											else
+											{
+												$full = "";
+												$fullWidth = '100%';
+												$itemWidth = '20%';
+											}
 
 											$marginLeft = 0;
 											if ($countValues > 5 && $selectedIndex > 5)
@@ -191,14 +202,14 @@ $bPropsColumn  = false;
 													</span>
 													<div class="bx_scu_scroller_container">
 														<div class="bx_scu">
-															<ul id="prop_<?=$arProp["CODE"]?>_<?=$arItem["ID"]?>" style="width: 200%; margin-left: <?=$marginLeft; ?>">
+															<ul id="prop_<?=$arProp["CODE"]?>_<?=$arItem["ID"]?>" style="width: <?=$fullWidth; ?>; margin-left: <?=$marginLeft; ?>">
 															<?
 															$counter = 0;
 															foreach ($arProp["VALUES"] as $valueId => $arSkuValue):
 																$counter++;
 																$selected = ($selectedIndex == $counter ? ' class="bx_active"' : '');
 															?>
-																<li style="width:10%;"<?=$selected?>>
+																<li style="width: <?=$itemWidth; ?>; padding-top: <?=$itemWidth; ?>;"<?=$selected?>>
 																	<a href="javascript:void(0)" class="cnt"><span class="cnt_item" style="background-image:url(<?=$arSkuValue["PICT"]["SRC"]; ?>)"></span></a>
 																</li>
 															<?
@@ -221,14 +232,14 @@ $bPropsColumn  = false;
 													</span>
 													<div class="bx_size_scroller_container">
 														<div class="bx_size">
-															<ul id="prop_<?=$arProp["CODE"]?>_<?=$arItem["ID"]?>" style="width: 200%; margin-left: <?=$marginLeft; ?>;">
+															<ul id="prop_<?=$arProp["CODE"]?>_<?=$arItem["ID"]?>" style="width: <?=$fullWidth; ?>; margin-left: <?=$marginLeft; ?>;">
 																<?
 																$counter = 0;
 																foreach ($arProp["VALUES"] as $valueId => $arSkuValue):
 																	$counter++;
 																	$selected = ($selectedIndex == $counter ? ' class="bx_active"' : '');
 																?>
-																	<li style="width:10%;"<?=$selected?>>
+																	<li style="width: <?=$itemWidth; ?>;"<?=$selected?>>
 																		<a href="javascript:void(0);" class="cnt"><?=htmlspecialcharsbx($arSkuValue["NAME"]); ?></a>
 																	</li>
 																<?

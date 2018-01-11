@@ -25,15 +25,31 @@ class UserUtils
 			if (array_key_exists('FIND', $fields))
 			{
 				$find = trim($fields['FIND']);
+
+				if (\Bitrix\Main\Search\Content::isIntegerToken($find))
+				{
+					$find = \Bitrix\Main\Search\Content::prepareIntegerToken($find);
+				}
+				else
+				{
+					$find = \Bitrix\Main\Search\Content::prepareStringToken($find);
+				}
 			}
 			else
 			{
-				$validFields = Array('NAME' => 1, 'LAST_NAME' => 1, 'SECOND_NAME' => 1, 'WORK_POSITION' => 1);
+				$validFields = Array('ID' => 1, 'NAME' => 1, 'LAST_NAME' => 1, 'SECOND_NAME' => 1, 'WORK_POSITION' => 1);
 				foreach ($fields as $key => $value)
 				{
 					if (isset($validFields[$key]) && $validFields[$key])
 					{
-						$find .= ' '.$value;
+						if (\Bitrix\Main\Search\Content::isIntegerToken($value))
+						{
+							$find .= ' '.\Bitrix\Main\Search\Content::prepareIntegerToken($value);
+						}
+						else
+						{
+							$find .= ' '.\Bitrix\Main\Search\Content::prepareStringToken($value);
+						}
 						$find = trim($find);
 					}
 				}
@@ -44,7 +60,14 @@ class UserUtils
 					{
 						$findDepartmentOnly = true;
 					}
-					$find .= ' '.$fields['UF_DEPARTMENT_NAME'];
+					if (\Bitrix\Main\Search\Content::isIntegerToken($fields['UF_DEPARTMENT_NAME']))
+					{
+						$find .= ' '.\Bitrix\Main\Search\Content::prepareIntegerToken($fields['UF_DEPARTMENT_NAME']);
+					}
+					else
+					{
+						$find .= ' '.\Bitrix\Main\Search\Content::prepareStringToken($fields['UF_DEPARTMENT_NAME']);
+					}
 					$find = trim($find);
 				}
 			}
@@ -52,14 +75,7 @@ class UserUtils
 			if (\Bitrix\Main\Search\Content::canUseFulltextSearch($find, \Bitrix\Main\Search\Content::TYPE_MIXED))
 			{
 				$fiendField = $findDepartmentOnly? '*INDEX.SEARCH_DEPARTMENT_CONTENT': '*INDEX.SEARCH_USER_CONTENT';
-				if (\Bitrix\Main\Search\Content::isIntegerToken($find))
-				{
-					$result[$fiendField] = \Bitrix\Main\Search\Content::prepareIntegerToken($find);
-				}
-				else
-				{
-					$result[$fiendField] = \Bitrix\Main\Search\Content::prepareStringToken($find);
-				}
+				$result[$fiendField] = $find;
 			}
 		}
 		else
@@ -77,10 +93,17 @@ class UserUtils
 					}
 
 					$intResult = Array('LOGIC' => 'OR');
-					$validFields = Array('NAME', 'LAST_NAME', 'SECOND_NAME', 'WORK_POSITION', 'UF_DEPARTMENT_NAME');
+					$validFields = Array('ID', 'NAME', 'LAST_NAME', 'SECOND_NAME', 'WORK_POSITION', 'UF_DEPARTMENT_NAME');
 					foreach ($validFields as $key)
 					{
-						$intResult['%=INDEX.'.$key] = $helper->forSql($findWord).'%';
+						if ($key == 'ID')
+						{
+							$intResult['=ID'] = intval($findWord);
+						}
+						else
+						{
+							$intResult['%=INDEX.'.$key] = $helper->forSql($findWord).'%';
+						}
 					}
 					$result[] = $intResult;
 				}
@@ -92,7 +115,7 @@ class UserUtils
 			}
 			else
 			{
-				$validFields = Array('NAME' => 1, 'LAST_NAME' => 1, 'SECOND_NAME' => 1, 'WORK_POSITION' => 1, 'UF_DEPARTMENT_NAME' => 1);
+				$validFields = Array('ID' => 1, 'NAME' => 1, 'LAST_NAME' => 1, 'SECOND_NAME' => 1, 'WORK_POSITION' => 1, 'UF_DEPARTMENT_NAME' => 1);
 				foreach ($fields as $key => $value)
 				{
 					if (!$value)
@@ -101,7 +124,133 @@ class UserUtils
 					}
 					if (isset($validFields[$key]))
 					{
-						$result['%=INDEX.'.$key] = $helper->forSql($value).'%';
+						if ($key == 'ID')
+						{
+							$result['=ID'] = intval($value);
+						}
+						else
+						{
+							$result['%=INDEX.'.$key] = $helper->forSql($value).'%';
+						}
+					}
+				}
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * @param array $fields
+	 * @return array
+	 */
+	public static function getAdminSearchFilter(array $fields)
+	{
+		$result = array();
+
+		if (UserTable::getEntity()->fullTextIndexEnabled('SEARCH_ADMIN_CONTENT'))
+		{
+			$find = '';
+			if (array_key_exists('FIND', $fields))
+			{
+				$find = trim($fields['FIND']);
+
+				if (\Bitrix\Main\Search\Content::isIntegerToken($find))
+				{
+					$find = \Bitrix\Main\Search\Content::prepareIntegerToken($find);
+				}
+				else
+				{
+					$find = \Bitrix\Main\Search\Content::prepareStringToken($find);
+				}
+			}
+			else
+			{
+				$validFields = Array('ID' => 1, 'NAME' => 1, 'LAST_NAME' => 1, 'SECOND_NAME' => 1, 'WORK_POSITION' => 1, 'EMAIL' => 1, 'LOGIN' => 1);
+				foreach ($fields as $key => $value)
+				{
+					if (isset($validFields[$key]) && $validFields[$key])
+					{
+						if (\Bitrix\Main\Search\Content::isIntegerToken($value))
+						{
+							$find .= ' '.\Bitrix\Main\Search\Content::prepareIntegerToken($value);
+						}
+						else
+						{
+							$find .= ' '.\Bitrix\Main\Search\Content::prepareStringToken($value);
+						}
+						$find = trim($find);
+					}
+				}
+			}
+
+			if (\Bitrix\Main\Search\Content::canUseFulltextSearch($find, \Bitrix\Main\Search\Content::TYPE_MIXED))
+			{
+				$result['*INDEX.SEARCH_ADMIN_CONTENT'] = $find;
+			}
+		}
+		else
+		{
+			$helper = Application::getConnection()->getSqlHelper();
+			if (array_key_exists('FIND', $fields))
+			{
+				$find = trim($fields['FIND']);
+				$find = explode(' ', $find);
+				foreach ($find as $findWord)
+				{
+					if (!$findWord)
+					{
+						continue;
+					}
+
+					$intResult = Array('LOGIC' => 'OR');
+					$validFields = Array('ID', 'NAME', 'LAST_NAME', 'SECOND_NAME', 'WORK_POSITION', 'LOGIN', 'EMAIL');
+					foreach ($validFields as $key)
+					{
+						if ($key == 'ID')
+						{
+							$intResult['=ID'] = intval($findWord);
+						}
+						else if ($key == 'LOGIN' || $key == 'EMAIL')
+						{
+							$intResult['%='.$key] = $helper->forSql($findWord).'%';
+						}
+						else
+						{
+							$intResult['%=INDEX.'.$key] = $helper->forSql($findWord).'%';
+						}
+					}
+					$result[] = $intResult;
+				}
+				if (!empty($result))
+				{
+					$result['LOGIC'] = 'AND';
+					$result = Array($result);
+				}
+			}
+			else
+			{
+				$validFields = Array('ID' => 1, 'NAME' => 1, 'LAST_NAME' => 1, 'SECOND_NAME' => 1, 'WORK_POSITION' => 1, 'LOGIN' => 1, 'EMAIL' => 1);
+				foreach ($fields as $key => $value)
+				{
+					if (!$value)
+					{
+						continue;
+					}
+					if (isset($validFields[$key]))
+					{
+						if ($key == 'ID')
+						{
+							$result['=ID'] = intval($value);
+						}
+						else if ($key == 'LOGIN' || $key == 'EMAIL')
+						{
+							$result['%='.$key] = $helper->forSql($value).'%';
+						}
+						else
+						{
+							$result['%=INDEX.'.$key] = $helper->forSql($value).'%';
+						}
 					}
 				}
 			}

@@ -949,7 +949,7 @@ $n++;
 endforeach;
 ?>
 <?
-if (DoubleVal($arOrder["PRICE_DELIVERY"])>0)
+if ($arOrder["DELIVERY_ID"])
 {
 	$nds_val = 0.00;
 	$nds_pr = 0;

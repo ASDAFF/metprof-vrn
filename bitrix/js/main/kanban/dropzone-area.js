@@ -71,6 +71,11 @@ BX.Kanban.DropZoneArea.prototype =
 			this.dropZonesOrder.push(dropZone);
 		}
 
+		if (this.getGrid().isRendered())
+		{
+			this.render();
+		}
+
 		return dropZone;
 	},
 
@@ -95,7 +100,7 @@ BX.Kanban.DropZoneArea.prototype =
 	 */
 	removeDropZone: function(dropZoneId)
 	{
-		var dropZone = this.getDropZone(itemId);
+		var dropZone = this.getDropZone(dropZoneId);
 		if (dropZone)
 		{
 			this.dropZonesOrder = this.dropZonesOrder.filter(function(element) {
@@ -103,11 +108,28 @@ BX.Kanban.DropZoneArea.prototype =
 			});
 
 			delete this.dropZones[dropZone.getId()];
+
+			if (this.getGrid().isRendered())
+			{
+				this.render();
+			}
 		}
 
 		return dropZone;
 	},
 
+	render: function()
+	{
+		var dropZoneItems = document.createDocumentFragment();
+		var dropZones = this.getDropZones();
+		for (var i = 0; i < dropZones.length; i++)
+		{
+			dropZoneItems.appendChild(dropZones[i].render());
+		}
+
+		BX.cleanNode(this.getContainer());
+		this.getContainer().appendChild(dropZoneItems);
+	},
 
 	/**
 	 *

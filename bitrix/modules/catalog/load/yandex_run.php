@@ -1078,11 +1078,11 @@ else
 if (empty($arRunErrors))
 {
 	//*****************************************//
-	\CCatalogProduct::setPriceVatIncludeMode(true);
 	Catalog\Product\Price\Calculation::setConfig(array(
-		'CURRENCY' => $BASE_CURRENCY
+		'CURRENCY' => $BASE_CURRENCY,
+		'USE_DISCOUNTS' => true,
+		'RESULT_WITH_VAT' => true
 	));
-	\CCatalogProduct::setUseDiscount(true);
 
 	if ($selectedPriceType > 0)
 	{

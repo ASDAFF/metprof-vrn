@@ -81,8 +81,6 @@
 	<<?=$tag_name;?> id="<?=$arResult["ID"];?>" class="video-js <?=$arResult['SKIN_NAME'];?> vjs-big-play-centered" width="<?=$arParams["WIDTH"];?>" height="<?=$arParams["HEIGHT"];?>"<?
 	if ($arParams["MUTE"] === "Y")
 		echo " muted";
-	/*if ($arParams["SHOW_CONTROLS"] != "N")
-		echo " controls";*/
 	?>>
 
 	<?if($arParams["USE_PLAYLIST"] != 'Y' && !$arResult['YOUTUBE'])
@@ -95,23 +93,23 @@
 		{
 			var init_player_<?=$arResult["ID"];?> = function ()
 			{
-				if (videojs.players['<?=$arResult["ID"];?>'])
+				var params = <?=\CUtil::PhpToJSObject($arResult["VIDEOJS_PARAMS"]);?>;
+				params.onInit = function (player)
 				{
-					delete videojs.players['<?=$arResult["ID"];?>'];
+					player.vjsPlayer.controlBar.removeChild('timeDivider');
+					player.vjsPlayer.controlBar.removeChild('durationDisplay');
+					player.vjsPlayer.controlBar.removeChild('fullscreenToggle');
+					player.vjsPlayer.controlBar.addChild('timeDivider');
+					player.vjsPlayer.controlBar.addChild('durationDisplay');
+					player.vjsPlayer.volume(<?=floatval($arResult["VOLUME"]);?>);
+				};
+				var player = new BX.Fileman.Player('<?=$arResult['ID'];?>', params);
+				if(!player.lazyload)
+				{
+					player.init();
 				}
-				player_<?=$arResult["ID"];?> = videojs("<?=$arResult["ID"];?>", <?=\CUtil::PhpToJSObject($arResult["VIDEOJS_PARAMS"]);?>);
-				player_<?=$arResult["ID"];?>.ready (function()
-				{
-					player_<?=$arResult["ID"];?>.controlBar.removeChild('timeDivider');
-					player_<?=$arResult["ID"];?>.controlBar.removeChild('durationDisplay');
-					player_<?=$arResult["ID"];?>.controlBar.removeChild('fullscreenToggle');
-					player_<?=$arResult["ID"];?>.controlBar.addChild('timeDivider');
-					player_<?=$arResult["ID"];?>.controlBar.addChild('durationDisplay');
-					player_<?=$arResult["ID"];?>.volume (<?=floatval($arResult["VOLUME"]);?>);
-					player_<?=$arResult["ID"];?>.hasStarted(true);
-				});
 			};
-			if (typeof videojs == 'undefined')
+			if (typeof videojs == 'undefined' || !BX.getClass('BX.Fileman.Player'))
 			{
 				window.videojs_player_timout = true;
 				<?if (!empty($arResult['CSS_FILES']))

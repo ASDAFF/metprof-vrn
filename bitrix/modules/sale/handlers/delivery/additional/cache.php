@@ -51,6 +51,16 @@ class Cache
 		return $result;
 	}
 
+	public function getAll()
+	{
+		$result = array();
+
+		if(static::$cacheManager->read($this->ttl, $this->cacheIdBase))
+			$result = static::$cacheManager->get($this->cacheIdBase);
+
+		return $result;
+	}
+
 	/**
 	 * @param mixed $value
 	 * @param string[] $ids
@@ -213,5 +223,27 @@ class CacheManager
 		}
 
 		return self::$items[$type];
+	}
+
+	public static function cleanAll()
+	{
+		foreach(self::$types as $typeId => $params)
+		{
+			$cache = self::getItem($typeId);
+			$cache->clean();
+		}
+	}
+
+	public static function getAll()
+	{
+		$result = array();
+
+		foreach(self::$types as $typeId => $params)
+		{
+			$cache = self::getItem($typeId);
+			$result[$typeId] = $cache->getAll();
+		}
+
+		return $result;
 	}
 }

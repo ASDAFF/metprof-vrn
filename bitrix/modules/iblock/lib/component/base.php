@@ -377,6 +377,10 @@ abstract class Base extends \CBitrixComponent
 			$params['CACHE_GROUPS'] = 'Y';
 		}
 
+		if (isset($params['~PRICE_CODE']))
+		{
+			$params['PRICE_CODE'] = $params['~PRICE_CODE'];
+		}
 		if (!isset($params['PRICE_CODE']) || !is_array($params['PRICE_CODE']))
 		{
 			$params['PRICE_CODE'] = array();

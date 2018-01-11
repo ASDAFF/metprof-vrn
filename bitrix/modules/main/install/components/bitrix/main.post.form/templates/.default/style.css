@@ -760,19 +760,18 @@
 	background-color: #86e2ff;
 }
 
-.feed-add-post-destination-sonetgroups {
-	background-color: #ffd5d5;
-	color: #b54827 !important;
+.feed-add-post-destination-wrap .feed-add-post-destination-sonetgroups {
+	background-color: #ADE7E4;
+	color: #116F6B !important;
 }
 
 .feed-add-post-destination-sonetgroups .feed-add-post-del-but {
 	background-position: -47px -61px;
 }
 
-.feed-add-post-destination-hover.feed-add-post-destination-sonetgroups {
-	background-color: #ffb0af;
+.feed-add-post-destination-wrap .feed-add-post-destination-hover.feed-add-post-destination-sonetgroups {
+	background-color: #8CDDDA;
 }
-
 
 .feed-add-post-destination-department,
 .feed-add-post-destination-crm {

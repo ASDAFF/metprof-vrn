@@ -205,6 +205,11 @@ class CBitrixPersonalOrderListComponent extends CBitrixComponent
 
 		$this->tryParseBoolean($arParams['AUTH_FORM_IN_TEMPLATE']);
 
+		if (empty($arParams['REFRESH_PRICES']))
+		{
+			$arParams['REFRESH_PRICES'] = "N";
+		}
+
 		if (empty($arParams['ALLOW_INNER']))
 		{
 			$arParams['ALLOW_INNER'] = "N";
@@ -839,8 +844,7 @@ class CBitrixPersonalOrderListComponent extends CBitrixComponent
 
 		$getListParams = array(
 			'filter' => $this->filter,
-			'select' => $select,
-			'group' => array("STATUS_ID")
+			'select' => $select
 		);
 
 		if ($this->sortBy == 'STATUS')

@@ -10,7 +10,7 @@ abstract class ImportPattern
      * @param array $rawData
      * @return mixed
      */
-    abstract protected function parse(array $rawData);
+    abstract public function parse(array $rawData);
 
     /**
      * @param array $items

@@ -171,7 +171,11 @@ Loader::registerAutoLoadClasses(
 		'\Bitrix\Catalog\Helpers\Admin\Tools' => 'lib/helpers/admin/tools.php',
 		'\Bitrix\Catalog\Helpers\Tools' => 'lib/helpers/tools.php',
 		'\Bitrix\Catalog\Product\Price\Calculation' => 'lib/product/price/calculation.php',
+		'\Bitrix\Catalog\Product\Basket' =>  'lib/product/basket.php',
+		'\Bitrix\Catalog\Product\CatalogProvider' =>  'lib/product/catalogprovider.php',
+		'\Bitrix\Catalog\Product\CatalogProviderCompatibility' =>  'lib/product/catalogprovidercompatibility.php',
 		'\Bitrix\Catalog\Product\Price' => 'lib/product/price.php',
+		'\Bitrix\Catalog\Product\QuantityControl' =>  'lib/product/quantitycontrol.php',
 		'\Bitrix\Catalog\Product\Search' => 'lib/product/search.php',
 		'\Bitrix\Catalog\Product\Sku' => 'lib/product/sku.php',
 		'\Bitrix\Catalog\Product\SubscribeManager' => 'lib/product/subscribemanager.php',
@@ -355,9 +359,9 @@ function GetCatalogProductPriceList($PRODUCT_ID, $by = "SORT", $order = "ASC")
 	$PRODUCT_ID = intval($PRODUCT_ID);
 
 	$db_res = CPrice::GetList(
-			array($by => $order),
-			array("PRODUCT_ID" => $PRODUCT_ID)
-		);
+		array($by => $order),
+		array("PRODUCT_ID" => $PRODUCT_ID)
+	);
 
 	$arPrice = array();
 	while ($res = $db_res->Fetch())
@@ -486,15 +490,15 @@ function CatalogViewedProductCallback($productID, $UserID, $strSiteID = SITE_ID)
 		$dbIBlockElement = CIBlockElement::GetList(
 			array(),
 			array(
-					"ID" => $productID,
-					"ACTIVE" => "Y",
-					"ACTIVE_DATE" => "Y",
-					"CHECK_PERMISSIONS" => "N",
-				),
+				"ID" => $productID,
+				"ACTIVE" => "Y",
+				"ACTIVE_DATE" => "Y",
+				"CHECK_PERMISSIONS" => "N",
+			),
 			false,
 			false,
 			array('ID', 'IBLOCK_ID', 'NAME', 'DETAIL_PAGE_URL', 'TIMESTAMP_X', 'PREVIEW_PICTURE', 'DETAIL_PICTURE')
-			);
+		);
 		if(!($arProduct = $dbIBlockElement->GetNext()))
 			return false;
 
@@ -517,16 +521,16 @@ function CatalogViewedProductCallback($productID, $UserID, $strSiteID = SITE_ID)
 		$dbIBlockElement = CIBlockElement::GetList(
 			array(),
 			array(
-					"ID" => $productID,
-					"ACTIVE" => "Y",
-					"ACTIVE_DATE" => "Y",
-					"CHECK_PERMISSIONS" => "Y",
-					"MIN_PERMISSION" => "R",
-				),
+				"ID" => $productID,
+				"ACTIVE" => "Y",
+				"ACTIVE_DATE" => "Y",
+				"CHECK_PERMISSIONS" => "Y",
+				"MIN_PERMISSION" => "R",
+			),
 			false,
 			false,
 			array('ID', 'IBLOCK_ID', 'NAME', 'DETAIL_PAGE_URL', 'TIMESTAMP_X', 'PREVIEW_PICTURE', 'DETAIL_PICTURE')
-			);
+		);
 		if(!($arProduct = $dbIBlockElement->GetNext()))
 			return false;
 	}
@@ -625,16 +629,16 @@ function CatalogViewedProductCallback($productID, $UserID, $strSiteID = SITE_ID)
 	}
 
 	$arResult = array(
-			"PREVIEW_PICTURE" => $arProduct['PREVIEW_PICTURE'],
-			"DETAIL_PICTURE" => $arProduct['DETAIL_PICTURE'],
-			"PRODUCT_PRICE_ID" => $arPrice["PRICE"]["ID"],
-			"PRICE" => $currentPrice,
-			"VAT_RATE" => $arPrice['PRICE']['VAT_RATE'],
-			"CURRENCY" => $arPrice["PRICE"]["CURRENCY"],
-			"DISCOUNT_PRICE" => $currentDiscount,
-			"NAME" => $arProduct["~NAME"],
-			"DETAIL_PAGE_URL" => $arProduct['~DETAIL_PAGE_URL'],
-			"NOTES" => $arPrice["PRICE"]["CATALOG_GROUP_NAME"]
+		"PREVIEW_PICTURE" => $arProduct['PREVIEW_PICTURE'],
+		"DETAIL_PICTURE" => $arProduct['DETAIL_PICTURE'],
+		"PRODUCT_PRICE_ID" => $arPrice["PRICE"]["ID"],
+		"PRICE" => $currentPrice,
+		"VAT_RATE" => $arPrice['PRICE']['VAT_RATE'],
+		"CURRENCY" => $arPrice["PRICE"]["CURRENCY"],
+		"DISCOUNT_PRICE" => $currentDiscount,
+		"NAME" => $arProduct["~NAME"],
+		"DETAIL_PAGE_URL" => $arProduct['~DETAIL_PAGE_URL'],
+		"NOTES" => $arPrice["PRICE"]["CATALOG_GROUP_NAME"]
 	);
 
 	if ($UserID > 0)
@@ -711,12 +715,12 @@ function CatalogPayOrderCallback($productID, $userID, $bPaid, $orderID)
 				$ind = -1;
 				$curTime = time();
 				$dbProductGroups = CCatalogProductGroups::GetList(
-						array(),
-						array("PRODUCT_ID" => $productID),
-						false,
-						false,
-						array("GROUP_ID", "ACCESS_LENGTH", "ACCESS_LENGTH_TYPE")
-					);
+					array(),
+					array("PRODUCT_ID" => $productID),
+					false,
+					false,
+					array("GROUP_ID", "ACCESS_LENGTH", "ACCESS_LENGTH_TYPE")
+				);
 				while ($arProductGroups = $dbProductGroups->Fetch())
 				{
 					$ind++;
@@ -747,10 +751,10 @@ function CatalogPayOrderCallback($productID, $userID, $bPaid, $orderID)
 					}
 
 					$arUserGroups[$ind] = array(
-							"GROUP_ID" => $arProductGroups["GROUP_ID"],
-							"DATE_ACTIVE_FROM" => date($DB->DateFormatToPHP(CLang::GetDateFormat("FULL", SITE_ID)), $curTime),
-							"DATE_ACTIVE_TO" => (0 < $accessLength ? date($DB->DateFormatToPHP(CLang::GetDateFormat("FULL", SITE_ID)), $accessVal) : false)
-						);
+						"GROUP_ID" => $arProductGroups["GROUP_ID"],
+						"DATE_ACTIVE_FROM" => date($DB->DateFormatToPHP(CLang::GetDateFormat("FULL", SITE_ID)), $curTime),
+						"DATE_ACTIVE_TO" => (0 < $accessLength ? date($DB->DateFormatToPHP(CLang::GetDateFormat("FULL", SITE_ID)), $accessVal) : false)
+					);
 
 					$arTmp[$arProductGroups["GROUP_ID"]] = $ind;
 				}
@@ -792,10 +796,10 @@ function CatalogPayOrderCallback($productID, $userID, $bPaid, $orderID)
 							$ind++;
 
 							$arUserGroups[$ind] = array(
-									"GROUP_ID" => $arOldGroups["GROUP_ID"],
-									"DATE_ACTIVE_FROM" => $arOldGroups["DATE_ACTIVE_FROM"],
-									"DATE_ACTIVE_TO" => $arOldGroups["DATE_ACTIVE_TO"]
-								);
+								"GROUP_ID" => $arOldGroups["GROUP_ID"],
+								"DATE_ACTIVE_FROM" => $arOldGroups["DATE_ACTIVE_FROM"],
+								"DATE_ACTIVE_TO" => $arOldGroups["DATE_ACTIVE_TO"]
+							);
 						}
 					}
 
@@ -829,22 +833,22 @@ function CatalogPayOrderCallback($productID, $userID, $bPaid, $orderID)
 					$ind++;
 					$arOldGroups["GROUP_ID"] = intval($arOldGroups["GROUP_ID"]);
 					$arUserGroups[$ind] = array(
-							"GROUP_ID" => $arOldGroups["GROUP_ID"],
-							"DATE_ACTIVE_FROM" => $arOldGroups["DATE_ACTIVE_FROM"],
-							"DATE_ACTIVE_TO" => $arOldGroups["DATE_ACTIVE_FROM"]
-						);
+						"GROUP_ID" => $arOldGroups["GROUP_ID"],
+						"DATE_ACTIVE_FROM" => $arOldGroups["DATE_ACTIVE_FROM"],
+						"DATE_ACTIVE_TO" => $arOldGroups["DATE_ACTIVE_FROM"]
+					);
 
 					$arTmp[$arOldGroups["GROUP_ID"]] = $ind;
 				}
 
 				$bNeedUpdate = false;
 				$dbProductGroups = CCatalogProductGroups::GetList(
-						array(),
-						array("PRODUCT_ID" => $productID),
-						false,
-						false,
-						array("GROUP_ID")
-					);
+					array(),
+					array("PRODUCT_ID" => $productID),
+					false,
+					false,
+					array("GROUP_ID")
+				);
 				while ($arProductGroups = $dbProductGroups->Fetch())
 				{
 					$arProductGroups["GROUP_ID"] = intval($arProductGroups["GROUP_ID"]);
@@ -1062,34 +1066,34 @@ function CatalogRecurringCallback($productID, $userID)
 		{
 			switch ($arOneDiscount['VALUE_TYPE'])
 			{
-			case CCatalogDiscount::TYPE_FIX:
-				if ($arOneDiscount['CURRENCY'] == $arPrice["PRICE"]["CURRENCY"])
-					$currentDiscount = $arOneDiscount['VALUE'];
-				else
-					$currentDiscount = CCurrencyRates::ConvertCurrency($arOneDiscount["VALUE"], $arOneDiscount["CURRENCY"], $arPrice["PRICE"]["CURRENCY"]);
-				$currentPrice = $currentPrice - $currentDiscount;
-				unset($currentDiscount);
-				break;
-			case CCatalogDiscount::TYPE_PERCENT:
-				$currentDiscount = $currentPrice*$arOneDiscount["VALUE"]/100.0;
-				if (0 < $arOneDiscount['MAX_DISCOUNT'])
-				{
+				case CCatalogDiscount::TYPE_FIX:
 					if ($arOneDiscount['CURRENCY'] == $arPrice["PRICE"]["CURRENCY"])
-						$dblMaxDiscount = $arOneDiscount['MAX_DISCOUNT'];
+						$currentDiscount = $arOneDiscount['VALUE'];
 					else
-						$dblMaxDiscount = CCurrencyRates::ConvertCurrency($arOneDiscount['MAX_DISCOUNT'], $arOneDiscount["CURRENCY"], $arPrice["PRICE"]["CURRENCY"]);;
-					if ($currentDiscount > $dblMaxDiscount)
-						$currentDiscount = $dblMaxDiscount;
-				}
-				$currentPrice = $currentPrice - $currentDiscount;
-				unset($currentDiscount);
-				break;
-			case CCatalogDiscount::TYPE_SALE:
-				if ($arOneDiscount['CURRENCY'] == $arPrice["PRICE"]["CURRENCY"])
-					$currentPrice = $arOneDiscount['VALUE'];
-				else
-					$currentPrice = CCurrencyRates::ConvertCurrency($arOneDiscount['VALUE'], $arOneDiscount["CURRENCY"], $arPrice["PRICE"]["CURRENCY"]);
-				break;
+						$currentDiscount = CCurrencyRates::ConvertCurrency($arOneDiscount["VALUE"], $arOneDiscount["CURRENCY"], $arPrice["PRICE"]["CURRENCY"]);
+					$currentPrice = $currentPrice - $currentDiscount;
+					unset($currentDiscount);
+					break;
+				case CCatalogDiscount::TYPE_PERCENT:
+					$currentDiscount = $currentPrice*$arOneDiscount["VALUE"]/100.0;
+					if (0 < $arOneDiscount['MAX_DISCOUNT'])
+					{
+						if ($arOneDiscount['CURRENCY'] == $arPrice["PRICE"]["CURRENCY"])
+							$dblMaxDiscount = $arOneDiscount['MAX_DISCOUNT'];
+						else
+							$dblMaxDiscount = CCurrencyRates::ConvertCurrency($arOneDiscount['MAX_DISCOUNT'], $arOneDiscount["CURRENCY"], $arPrice["PRICE"]["CURRENCY"]);;
+						if ($currentDiscount > $dblMaxDiscount)
+							$currentDiscount = $dblMaxDiscount;
+					}
+					$currentPrice = $currentPrice - $currentDiscount;
+					unset($currentDiscount);
+					break;
+				case CCatalogDiscount::TYPE_SALE:
+					if ($arOneDiscount['CURRENCY'] == $arPrice["PRICE"]["CURRENCY"])
+						$currentPrice = $arOneDiscount['VALUE'];
+					else
+						$currentPrice = CCurrencyRates::ConvertCurrency($arOneDiscount['VALUE'], $arOneDiscount["CURRENCY"], $arPrice["PRICE"]["CURRENCY"]);
+					break;
 			}
 
 			$arOneList = array(
@@ -1484,348 +1488,89 @@ function Add2Basket($PRICE_ID, $QUANTITY = 1, $arRewriteFields = array(), $arPro
 }
 
 /**
- * @param int $PRODUCT_ID
- * @param float|int $QUANTITY
- * @param array $arRewriteFields
- * @param bool|array $arProductParams
+ * @param int $productId
+ * @param float|int $quantity
+ * @param array $rewriteFields
+ * @param bool|array $productParams
  * @return bool|int
  */
-function Add2BasketByProductID($PRODUCT_ID, $QUANTITY = 1, $arRewriteFields = array(), $arProductParams = false)
+function Add2BasketByProductID($productId, $quantity = 1, $rewriteFields = array(), $productParams = false)
 {
-	/** @global CMain $APPLICATION */
 	global $APPLICATION;
+	Main\Loader::includeModule('sale');
+	$basket = \Bitrix\Sale\Basket::loadItemsForFUser(\Bitrix\Sale\Fuser::getId(), SITE_ID);
+
+	$fields = array(
+		'PRODUCT_ID' => $productId,
+		'QUANTITY' => $quantity,
+		'MODULE' => 'catalog',
+		'PRODUCT_PROVIDER_CLASS' => \Bitrix\Catalog\Product\Basket::getDefaultProviderName()
+	);
 
 	/* for old use */
-	if ($arProductParams === false)
+	if ($productParams === false)
 	{
-		$arProductParams = $arRewriteFields;
-		$arRewriteFields = array();
+		$productParams = $rewriteFields;
+		$rewriteFields = array();
 	}
 
-	$boolRewrite = (!empty($arRewriteFields) && is_array($arRewriteFields));
-
-	if ($boolRewrite && isset($arRewriteFields['SUBSCRIBE']) && $arRewriteFields['SUBSCRIBE'] == 'Y')
+	if (!empty($rewriteFields))
 	{
-		return SubscribeProduct($PRODUCT_ID, $arRewriteFields, $arProductParams);
+		$fields = array_merge($fields, $rewriteFields);
 	}
 
-	$PRODUCT_ID = (int)$PRODUCT_ID;
-	if ($PRODUCT_ID <= 0)
+	if (!empty($productParams) && is_array($productParams))
 	{
-		$APPLICATION->ThrowException(Loc::getMessage('CATALOG_ERR_EMPTY_PRODUCT_ID'), "EMPTY_PRODUCT_ID");
-		return false;
+		$fields['PROPS'] = $productParams;
 	}
 
-	$QUANTITY = (float)$QUANTITY;
-	if ($QUANTITY <= 0)
-		$QUANTITY = 1;
-
-	if (!Loader::includeModule("sale"))
-	{
-		$APPLICATION->ThrowException(Loc::getMessage('CATALOG_ERR_NO_SALE_MODULE'), "NO_SALE_MODULE");
-		return false;
-	}
-
-	if (Loader::includeModule("statistic") && isset($_SESSION['SESS_SEARCHER_ID']) && (int)$_SESSION["SESS_SEARCHER_ID"] > 0)
-	{
-		$APPLICATION->ThrowException(Loc::getMessage('CATALOG_ERR_SESS_SEARCHER'), "SESS_SEARCHER");
-		return false;
-	}
-
-	$rsProducts = CCatalogProduct::GetList(
-		array(),
-		array('ID' => $PRODUCT_ID),
-		false,
-		false,
-		array(
-			'ID',
-			'CAN_BUY_ZERO',
-			'QUANTITY_TRACE',
-			'QUANTITY',
-			'WEIGHT',
-			'WIDTH',
-			'HEIGHT',
-			'LENGTH',
-			'TYPE',
-			'MEASURE'
-		)
+	$context = array(
+		'SITE_ID' => SITE_ID,
 	);
-	if (!($arCatalogProduct = $rsProducts->Fetch()))
-	{
-		$APPLICATION->ThrowException(Loc::getMessage('CATALOG_ERR_NO_PRODUCT'), "NO_PRODUCT");
-		return false;
-	}
-	if (
-		($arCatalogProduct['TYPE'] == Catalog\ProductTable::TYPE_SKU || $arCatalogProduct['TYPE'] == Catalog\ProductTable::TYPE_EMPTY_SKU)
-		&& (string)Main\Config\Option::get('catalog', 'show_catalog_tab_with_offers') != 'Y'
-	)
-	{
-		$APPLICATION->ThrowException(Loc::getMessage('CATALOG_ERR_CANNOT_ADD_SKU'), "NO_PRODUCT");
-		return false;
-	}
-	if ($arCatalogProduct['TYPE'] == Catalog\ProductTable::TYPE_SET)
-	{
-		$allSets = CCatalogProductSet::getAllSetsByProduct($PRODUCT_ID, CCatalogProductSet::TYPE_SET);
-		if (empty($allSets))
-		{
-			$APPLICATION->ThrowException(Loc::getMessage('CATALOG_ERR_NO_PRODUCT_SET'), "NO_PRODUCT");
-			return false;
-		}
-		$set = current($allSets);
-		unset($allSets);
-		$itemIds = array();
-		foreach ($set['ITEMS'] as $item)
-		{
-			if ($item['ITEM_ID'] != $item['OWNER_ID'])
-				$itemIds[$item['ITEM_ID']] = $item['ITEM_ID'];
-		}
-		if (empty($itemIds))
-		{
-			$APPLICATION->ThrowException(Loc::getMessage('CATALOG_ERR_NO_PRODUCT_SET'), "NO_PRODUCT");
-			return false;
-		}
-		$iterator = CIBlockElement::GetList(
-			array(),
-			array(
-				'ID' => $itemIds,
-				'ACTIVE' => 'Y',
-				'ACTIVE_DATE' => 'Y',
-				'CHECK_PERMISSIONS' => 'N'
-			),
-			false,
-			false,
-			array('ID', 'IBLOCK_ID')
-		);
-		while ($row = $iterator->Fetch())
-		{
-			if (isset($itemIds[$row['ID']]))
-				unset($itemIds[$row['ID']]);
-		}
-		unset($row, $iterator);
-		if (!empty($itemIds))
-		{
-			$APPLICATION->ThrowException(Loc::getMessage('CATALOG_ERR_NO_PRODUCT_SET_ITEM'), "NO_PRODUCT");
-			return false;
-		}
-	}
 
-	$arCatalogProduct['MEASURE'] = (int)$arCatalogProduct['MEASURE'];
-	$arCatalogProduct['MEASURE_NAME'] = '';
-	$arCatalogProduct['MEASURE_CODE'] = 0;
-	if ($arCatalogProduct['MEASURE'] <= 0)
+	$result = Catalog\Product\Basket::addProductToBasketWithPermissions($basket, $fields, $context);
+	if ($result->isSuccess())
 	{
-		$arMeasure = CCatalogMeasure::getDefaultMeasure(true, true);
-		$arCatalogProduct['MEASURE_NAME'] = $arMeasure['~SYMBOL_RUS'];
-		$arCatalogProduct['MEASURE_CODE'] = $arMeasure['CODE'];
-	}
-	else
-	{
-		$rsMeasures = CCatalogMeasure::getList(
-			array(),
-			array('ID' => $arCatalogProduct['MEASURE']),
-			false,
-			false,
-			array('ID', 'SYMBOL_RUS', 'CODE')
-		);
-		if ($arMeasure = $rsMeasures->GetNext())
+		$r = $basket->save();
+		if ($r->isSuccess())
 		{
-			$arCatalogProduct['MEASURE_NAME'] = $arMeasure['~SYMBOL_RUS'];
-			$arCatalogProduct['MEASURE_CODE'] = $arMeasure['CODE'];
-		}
-	}
+			$resultData = $result->getData();
+			if (Main\Loader::includeModule("statistic") && !empty($resultData['BASKET_ITEM']))
+			{
+				if ($resultData['BASKET_ITEM'] instanceof \Bitrix\Sale\BasketItemBase)
+				{
+					\CStatistic::Set_Event("sale2basket", "catalog", $resultData['BASKET_ITEM']->getField("DETAIL_PAGE_URL"));
+				}
+			}
+			
+			if (isset($resultData['BASKET_ITEM']) && $resultData['BASKET_ITEM'] instanceof \Bitrix\Sale\BasketItemBase)
+			{
+				return $resultData['BASKET_ITEM']->getId();
+			}
 
-	$dblQuantity = (float)$arCatalogProduct["QUANTITY"];
-	$boolQuantity = ($arCatalogProduct["CAN_BUY_ZERO"] != 'Y' && $arCatalogProduct["QUANTITY_TRACE"] == 'Y');
-	if ($boolQuantity && $dblQuantity <= 0)
-	{
-		$APPLICATION->ThrowException(Loc::getMessage('CATALOG_ERR_PRODUCT_RUN_OUT'), "PRODUCT_RUN_OUT");
-		return false;
-	}
-
-	$rsItems = CIBlockElement::GetList(
-		array(),
-		array(
-			"ID" => $PRODUCT_ID,
-			"ACTIVE" => "Y",
-			"ACTIVE_DATE" => "Y",
-			"CHECK_PERMISSIONS" => "Y",
-			"MIN_PERMISSION" => "R",
-		),
-		false,
-		false,
-		array(
-			"ID",
-			"IBLOCK_ID",
-			"XML_ID",
-			"NAME",
-			"DETAIL_PAGE_URL",
-		)
-	);
-	if (!($arProduct = $rsItems->GetNext()))
-	{
-		$APPLICATION->ThrowException(Loc::getMessage('CATALOG_ERR_NO_IBLOCK_ELEMENT'), "NO_IBLOCK_ELEMENT");
-		return false;
-	}
-
-	$strCallbackFunc = "";
-	$strProductProviderClass = "CCatalogProductProvider";
-
-	if ($boolRewrite)
-	{
-		if (isset($arRewriteFields['CALLBACK_FUNC']))
-			$strCallbackFunc = $arRewriteFields['CALLBACK_FUNC'];
-		if (isset($arRewriteFields['PRODUCT_PROVIDER_CLASS']))
-			$strProductProviderClass = $arRewriteFields['PRODUCT_PROVIDER_CLASS'];
-	}
-
-	$arCallbackPrice = false;
-	if (!empty($strProductProviderClass))
-	{
-		if ($productProvider = CSaleBasket::GetProductProvider(array(
-			'MODULE' => 'catalog',
-			'PRODUCT_PROVIDER_CLASS' => $strProductProviderClass))
-		)
-		{
-			$providerParams = array(
-				'PRODUCT_ID' => $PRODUCT_ID,
-				'QUANTITY' => $QUANTITY,
-				'RENEWAL' => 'N'
-			);
-			$arCallbackPrice = $productProvider::GetProductData($providerParams);
-			unset($providerParams);
-		}
-	}
-	elseif (!empty($strCallbackFunc))
-	{
-		$arCallbackPrice = CSaleBasket::ExecuteCallbackFunction(
-			$strCallbackFunc,
-			'catalog',
-			$PRODUCT_ID,
-			$QUANTITY,
-			'N'
-		);
-	}
-	if (empty($arCallbackPrice) || !is_array($arCallbackPrice))
-	{
-		$APPLICATION->ThrowException(Loc::getMessage('CATALOG_PRODUCT_PRICE_NOT_FOUND'), "NO_PRODUCT_PRICE");
-		return false;
-	}
-	else
-	{
-		if (isset($arCallbackPrice['RESULT_PRICE']))
-		{
-			$arCallbackPrice['BASE_PRICE'] = $arCallbackPrice['RESULT_PRICE']['BASE_PRICE'];
-			$arCallbackPrice['PRICE'] = $arCallbackPrice['RESULT_PRICE']['DISCOUNT_PRICE'];
-			$arCallbackPrice['DISCOUNT_PRICE'] = $arCallbackPrice['RESULT_PRICE']['DISCOUNT'];
-			$arCallbackPrice['CURRENCY'] = $arCallbackPrice['RESULT_PRICE']['CURRENCY'];
 		}
 		else
 		{
-			if (!isset($arCallbackPrice['BASE_PRICE']))
-				$arCallbackPrice['BASE_PRICE'] = $arCallbackPrice['PRICE'] + $arCallbackPrice['DISCOUNT_PRICE'];
-		}
-	}
-
-	$arProps = array();
-
-	$strIBlockXmlID = (string)CIBlock::GetArrayByID($arProduct['IBLOCK_ID'], 'XML_ID');
-	if ($strIBlockXmlID !== '')
-	{
-		$arProps[] = array(
-			'NAME' => 'Catalog XML_ID',
-			'CODE' => 'CATALOG.XML_ID',
-			'VALUE' => $strIBlockXmlID
-		);
-	}
-
-	// add sku props
-	$arParentSku = CCatalogSku::GetProductInfo($PRODUCT_ID, $arProduct['IBLOCK_ID']);
-	if (!empty($arParentSku))
-	{
-		if (strpos($arProduct["~XML_ID"], '#') === false)
-		{
-			$parentIterator = Iblock\ElementTable::getList(array(
-				'select' => array('ID', 'XML_ID'),
-				'filter' => array('ID' => $arParentSku['ID'])
-			));
-			if ($parent = $parentIterator->fetch())
+			/** @var Main\Error $error */
+			foreach ($r->getErrors() as $error)
 			{
-				$arProduct["~XML_ID"] = $parent['XML_ID'].'#'.$arProduct["~XML_ID"];
+				$APPLICATION->ThrowException($error->getMessage(), $error->getCode());
+				return false;
 			}
-			unset($parent, $parentIterator);
 		}
-	}
 
-	if (!empty($arProductParams) && is_array($arProductParams))
+	}
+	else
 	{
-		foreach ($arProductParams as &$arOneProductParams)
+		/** @var Main\Error $error */
+		foreach ($result->getErrors() as $error)
 		{
-			$arProps[] = array(
-				"NAME" => $arOneProductParams["NAME"],
-				"CODE" => $arOneProductParams["CODE"],
-				"VALUE" => $arOneProductParams["VALUE"],
-				"SORT" => $arOneProductParams["SORT"]
-			);
+			$APPLICATION->ThrowException($error->getMessage(), $error->getCode());
+			return false;
 		}
-		unset($arOneProductParams);
 	}
 
-	$arProps[] = array(
-		"NAME" => "Product XML_ID",
-		"CODE" => "PRODUCT.XML_ID",
-		"VALUE" => $arProduct["~XML_ID"]
-	);
-
-	$arFields = array(
-		"PRODUCT_ID" => $PRODUCT_ID,
-		"PRODUCT_PRICE_ID" => $arCallbackPrice["PRODUCT_PRICE_ID"],
-		"BASE_PRICE" => $arCallbackPrice["BASE_PRICE"],
-		"PRICE" => $arCallbackPrice["PRICE"],
-		"DISCOUNT_PRICE" => $arCallbackPrice["DISCOUNT_PRICE"],
-		"CURRENCY" => $arCallbackPrice["CURRENCY"],
-		"WEIGHT" => $arCatalogProduct["WEIGHT"],
-		"DIMENSIONS" => serialize(array(
-			"WIDTH" => $arCatalogProduct["WIDTH"],
-			"HEIGHT" => $arCatalogProduct["HEIGHT"],
-			"LENGTH" => $arCatalogProduct["LENGTH"]
-		)),
-		"QUANTITY" => ($boolQuantity && $dblQuantity < $QUANTITY ? $dblQuantity : $QUANTITY),
-		"LID" => SITE_ID,
-		"DELAY" => "N",
-		"CAN_BUY" => "Y",
-		"NAME" => $arProduct["~NAME"],
-		"MODULE" => "catalog",
-		"PRODUCT_PROVIDER_CLASS" => "CCatalogProductProvider",
-		"NOTES" => $arCallbackPrice["NOTES"],
-		"DETAIL_PAGE_URL" => $arProduct["~DETAIL_PAGE_URL"],
-		"CATALOG_XML_ID" => $strIBlockXmlID,
-		"PRODUCT_XML_ID" => $arProduct["~XML_ID"],
-		"VAT_INCLUDED" => $arCallbackPrice['VAT_INCLUDED'],
-		"VAT_RATE" => $arCallbackPrice['VAT_RATE'],
-		"PROPS" => $arProps,
-		"TYPE" => ($arCatalogProduct["TYPE"] == CCatalogProduct::TYPE_SET) ? CCatalogProductSet::TYPE_SET : NULL,
-		"MEASURE_NAME" => $arCatalogProduct['MEASURE_NAME'],
-		"MEASURE_CODE" => $arCatalogProduct['MEASURE_CODE'],
-		"MEASURE" => array(
-			'ID' => $arCatalogProduct['MEASURE'],
-			'NAME' => $arCatalogProduct['MEASURE_NAME'],
-			'CODE' => $arCatalogProduct['MEASURE_CODE']
-		)
-	);
-
-	if ($boolRewrite)
-	{
-		$arFields = array_merge($arFields, $arRewriteFields);
-	}
-
-	$result = CSaleBasket::Add($arFields);
-	if ($result)
-	{
-		if (Loader::includeModule("statistic"))
-			CStatistic::Set_Event("sale2basket", "catalog", $arFields["DETAIL_PAGE_URL"]);
-	}
-
-	return $result;
+	return true;
 }
 
 /**

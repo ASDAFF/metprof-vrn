@@ -353,10 +353,11 @@
 			{
 				case 'src':
 				case 'href':
-					if(!preg_match("#^(http://|https://|ftp://|file://|mailto:|callto:|skype:|\\#|/)#i".BX_UTF_PCRE_MODIFIER, $attrValue))
+				case 'data-url':
+					if(!preg_match("#^(http://|https://|ftp://|file://|mailto:|callto:|skype:|tel:|\\#|/)#i".BX_UTF_PCRE_MODIFIER, $attrValue))
 						$arAttr[3] = "http://".$arAttr[3];
 
-					$valid = (!preg_match("#javascript:|data:|[^\\w".$this->localAlph."a-zA-Z:/\\.=@;,!~\\*\\&\\#\\)(%\\s\\+\$\\?\\-]#i".BX_UTF_PCRE_MODIFIER, $attrValue)) ? true : false;
+					$valid = (!preg_match("#javascript:|data:|[^\\w".$this->localAlph."a-zA-Z:/\\.=@;,!~\\*\\&\\#\\)(%\\s\\+\$\\?\\-\\[\\]]#i".BX_UTF_PCRE_MODIFIER, $attrValue)) ? true : false;
 					break;
 
 				case 'height':

@@ -33,7 +33,8 @@ $params['PAYMENT_NUMBER'] = $orderData['paymentNumber'];
 $params['NEW_PAY_SYSTEM_ID'] = $orderData['paySystemId'];
 $params['ALLOW_INNER'] = $orderData['inner'];
 $params['ONLY_INNER_FULL'] = $orderData['onlyInnerFull'];
-if ((float)$orderData['paymentSum'] > 0) 
+$params['REFRESH_PRICES'] = ($orderData['refreshPrices'] === 'Y') ? 'Y' : 'N';
+if ((float)$orderData['paymentSum'] > 0)
 {
 	$params['INNER_PAYMENT_SUM'] = (float)$orderData['paymentSum'];
 }

@@ -23,6 +23,10 @@ if ($currentTemplateName == "grid")
 {
 	$arResult["GRID_ID"] = "event_list_grid";
 	$arResult["ELEMENTS_ROWS"] = array();
+
+	$grid = new CGridOptions($arResult["GRID_ID"]);
+	$nav = $grid->GetNavParams();
+	$arParams["PAGE_NUM"] = $nav["nPageSize"];
 }
 
 foreach(GetModuleEvents("main", "OnEventLogGetAuditHandlers", true) as $arEvent)
@@ -245,7 +249,6 @@ if (is_array($arResult["ActiveFeatures"]) && count($arResult["ActiveFeatures"]) 
 		$arSort = array('TIMESTAMP_X' => 'DESC');
 		if ($currentTemplateName == "grid")
 		{
-			$grid = new CGridOptions($arResult["GRID_ID"]);
 			$arSort = $grid->GetSorting(array('sort' => array('TIMESTAMP_X' => 'DESC')));
 			$arSort = $arSort['sort'];
 		}

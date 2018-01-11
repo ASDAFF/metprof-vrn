@@ -489,7 +489,7 @@ abstract class DataManager
 
 		/** @var Main\Authentication\Context $authContext */
 		$authContext = null;
-		if(is_array($data["fields"]))
+		if (isset($data["fields"]) && is_array($data["fields"]))
 		{
 			$fields = $data["fields"];
 			if(isset($data["auth_context"]))
@@ -690,7 +690,7 @@ abstract class DataManager
 
 		/** @var Main\Authentication\Context $authContext */
 		$authContext = null;
-		if(is_array($data["fields"]))
+		if (isset($data["fields"]) && is_array($data["fields"]))
 		{
 			$fields = $data["fields"];
 			if(isset($data["auth_context"]))

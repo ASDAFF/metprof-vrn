@@ -82,18 +82,12 @@
 		$tag_name = 'video';
 	}
 	?>
-	<?if($arParams['SIZE_TYPE'] == 'adjust')
-	{
-		?><div id="<?=$arResult["ID"];?>_container" class="videojs-player-container"><?
-	}?>
-	<<?=$tag_name;?> id="<?=$arResult["ID"];?>" class="video-js <?=$arResult['SKIN_NAME'];?> vjs-big-play-centered<?if($arParams['SIZE_TYPE'] == 'adjust'){?> videojs-adjusted<?}?>" width="<?=$arParams["WIDTH"];?>" height="<?=$arParams["HEIGHT"];?>"<?
+	<<?=$tag_name;?> id="<?=$arResult["ID"];?>" class="video-js <?=$arResult['SKIN_NAME'];?> vjs-big-play-centered" width="<?=$arParams["WIDTH"];?>" height="<?=$arParams["HEIGHT"];?>"<?
 	if($arParams["MUTE"] === "Y")
 	{
 		echo " muted";
 	}
 	?>>
-	<?if($arParams['SIZE_TYPE'] == 'adjust'){?></div><?}?>
-
 	<?if($arParams["USE_PLAYLIST"] != 'Y' && !$arResult['YOUTUBE'] && !$arResult['LAZYLOAD'])
 	{?>
 		<source src="<?=$arResult['PATH'];?>" type="<?=$arResult['FILE_TYPE'];?>">

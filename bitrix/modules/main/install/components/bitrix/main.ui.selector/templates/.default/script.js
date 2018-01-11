@@ -330,8 +330,12 @@
 				this.id,
 				openDialogParams
 			);
-
 			this.mainPopupWindow = BX.SocNetLogDestination.popupWindow;
+		},
+
+		closeDialog: function()
+		{
+			BX.SocNetLogDestination.closeDialog();
 		},
 
 		getData: function(callback)

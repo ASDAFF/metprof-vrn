@@ -115,12 +115,15 @@ class CUser extends CAllUser
 
 		if($ID > 0 && defined("BX_COMP_MANAGED_CACHE"))
 		{
+			$isRealUser = !$arFields['EXTERNAL_AUTH_ID'] || !in_array($arFields['EXTERNAL_AUTH_ID'], \Bitrix\Main\UserTable::getExternalUserTypes());
+
 			$CACHE_MANAGER->ClearByTag("USER_CARD_".intval($ID / TAGGED_user_card_size));
-			$CACHE_MANAGER->ClearByTag("USER_CARD");
+			$CACHE_MANAGER->ClearByTag($isRealUser? "USER_CARD": "EXTERNAL_USER_CARD");
+
 			$CACHE_MANAGER->ClearByTag("USER_NAME_".$ID);
-			$CACHE_MANAGER->ClearByTag("USER_NAME");
+			$CACHE_MANAGER->ClearByTag($isRealUser? "USER_NAME": "EXTERNAL_USER_NAME");
 		}
-		
+
 		\Bitrix\Main\UserTable::indexRecord($ID);
 
 		return $Result;

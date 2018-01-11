@@ -3,7 +3,16 @@
 
 	BX.namespace('BX.Currency');
 
-	var listCurrency = BX.message('CURRENCY');
+	var currencyList = null;
+	function getCurrencyList()
+	{
+		if(currencyList === null)
+		{
+			currencyList = BX.message('CURRENCY');
+		}
+
+		return currencyList;
+	}
 
 	BX.Currency.Editor = function(param)
 	{
@@ -88,6 +97,7 @@
 
 	BX.Currency.Editor.getBaseCurrencyId = function()
 	{
+		var listCurrency = getCurrencyList();
 		for(var key in listCurrency)
 		{
 			if(!listCurrency.hasOwnProperty(key))
@@ -105,17 +115,19 @@
 
 	BX.Currency.Editor.trimTrailingZeros = function(formattedValue, currency)
 	{
+		var listCurrency = getCurrencyList();
 		if(typeof listCurrency[currency] === 'undefined')
 		{
 			return formattedValue;
 		}
 
 		var ch = BX.prop.getString(listCurrency[currency], 'DEC_POINT', '');
-		return ch !== '' ? formattedValue.replace(new RegExp('\\' + ch + '00'), '') : formattedValue;
+		return ch !== '' ? formattedValue.replace(new RegExp('\\' + ch + '0+'), '') : formattedValue;
 	};
 
 	BX.Currency.Editor.getUnFormattedValue = function(formattedValue, currency)
 	{
+		var listCurrency = getCurrencyList();
 		return formattedValue
 			.replace(new RegExp('[' + listCurrency[currency]['SEPARATOR'] + ']', 'g'), '')
 			.replace(listCurrency[currency]['DEC_POINT'], '.');
@@ -125,6 +137,7 @@
 	{
 		var valueLength = baseValue.length;
 		var formatValue = "";
+		var listCurrency = getCurrencyList();
 
 		if(valueLength > 0)
 		{
@@ -144,7 +157,7 @@
 		var regExp;
 		if(listCurrency[currency]['SEPARATOR'] === ',' || listCurrency[currency]['SEPARATOR'] === '.')
 		{
-			regExp = new RegExp('[' + listCurrency[currency]['DEC_POINT'] + ']');
+			regExp = new RegExp('[.,]');
 		}
 		else
 		{

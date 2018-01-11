@@ -13,7 +13,7 @@ namespace Bitrix\Main\Entity\Query\Filter\Expression;
  * @package    bitrix
  * @subpackage main
  */
-class NullEx
+class NullEx extends Base
 {
 	public function __toString()
 	{

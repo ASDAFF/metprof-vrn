@@ -1161,6 +1161,22 @@ if(($arID = $lAdmin->GroupAction()) && $saleModulePermissions >= "P")
 
 					break;
 
+				case "delivery_requests":
+
+					$shipmentIds = array();
+					$dbRes = Sale\Internals\ShipmentTable::getList(array(
+						'filter' => array('=ORDER_ID' => $arID, '!=SYSTEM' => 'Y'),
+						'select' => array('ID')
+					));
+
+					while($row = $dbRes->fetch())
+						$shipmentIds[] = $row['ID'];
+
+					$_SESSION["SALE_DELIVERY_REQUEST_SHIPMENT_IDS"] = $shipmentIds;
+					echo '<script>window.parent.location = "sale_delivery_request.php?lang='.LANGUAGE_ID.'";</script>';
+					die();
+					break;
+
 				default:
 					if(substr($_REQUEST['action'], 0, strlen("status_")) == "status_")
 					{
@@ -1603,20 +1619,14 @@ if (!empty($orderList) && is_array($orderList))
 		{
 			$basketList[$item['ORDER_ID']][$item['ID']] = $item;
 
-			if (array_key_exists($item['ORDER_ID'], $recommendedList))
+			if (isset($recommendedList[$item['ORDER_ID']]) && $item['RECOMMENDATION'])
 			{
-				if($item['RECOMMENDATION'])
-				{
-					$recommendedList[$item['ORDER_ID']] = true;
-				}
+				$recommendedList[$item['ORDER_ID']] = true;
 			}
 
 			if ($bShowBasketProps)
 			{
-				if (!empty($basketList[$item['ORDER_ID']]) && is_array($basketList[$item['ORDER_ID']]))
-				{
-					$basketItemIds = array_merge($basketItemIds, array_keys($basketList[$item['ORDER_ID']]));
-				}
+				$basketItemIds[] = $item['ID'];
 			}
 		}
 	}
@@ -1669,12 +1679,12 @@ if (!empty($orderList) && is_array($orderList))
 		{
 			$arBasketItems = array();
 
-			if (array_key_exists($orderId, $basketList))
+			if (isset($basketList[$orderId]))
 			{
 				$arBasketItems = $basketList[$orderId];
 			}
 
-			if (array_key_exists($orderId, $recommendedList))
+			if (isset($recommendedList[$orderId]))
 			{
 				$isRecommended = $recommendedList[$orderId];
 			}
@@ -3094,7 +3104,8 @@ $arGroupActionsTmp = array(
 	"deducted_n" => Loc::getMessage("SALE_SHIPMENT_DEDUCTED_N"),
 	"update_payment_status" => Loc::getMessage("SALE_UPDATE_PAYMENT_STATUS"),
 	"paid" => Loc::getMessage("SALE_ORDER_PAID"),
-	"paid_n" => Loc::getMessage("SALE_ORDER_PAID_N")
+	"paid_n" => Loc::getMessage("SALE_ORDER_PAID_N"),
+	"delivery_requests" => Loc::getMessage("SALE_SEND_DELIVERY_REQUEST"),
 );
 	
 if($saleModulePermissions >= "W" || !empty($permDeleteOrderList))
@@ -3236,6 +3247,20 @@ if($saleModulePermissions == "W" || ($saleModulePermissions >= 'P' && !empty($al
 			"LINK" => "sale_order_create.php?lang=".LANGUAGE_ID.$siteLID,
 			"TITLE" => Loc::getMessage("SALE_A_NEWORDER_TITLE"),
 			"MENU" => $arSiteMenu
+		),
+		array(
+			"TEXT" => Loc::getMessage("SALE_O_CONTEXT_B_DELIVERY_REQUESTS"),
+			"TITLE" => Loc::getMessage("SALE_O_CONTEXT_B_DELIVERY_REQUESTS_TITLE"),
+			"MENU" => array(
+				array(
+					"TEXT" => Loc::getMessage('SALE_O_CONTEXT_B_DELIVERY_REQUESTS_SELECTED'),
+					"ONCLICK" =>"sendDeliveryRequestsForCurrentOrders(true)",
+				),
+				array(
+					"TEXT" => Loc::getMessage('SALE_O_CONTEXT_B_DELIVERY_REQUESTS_ALL'),
+					"ONCLICK" =>"sendDeliveryRequestsForCurrentOrders(false)",
+				)
+			)
 		)
 	);
 }
@@ -3979,7 +4004,78 @@ $lAdmin->DisplayList();
 echo BeginNote();
 ?>
 <span id="order_sum"><? echo $order_sum;?></span>
-<?
-echo EndNote();
 
+<script type="text/javascript">
+	function sendDeliveryRequestsForCurrentOrders(selectedOnly)
+	{
+		var ordersListForm = BX('form_tbl_sale_order');
+
+		if(BX('tbl_sale_order_check_all') && ordersListForm)
+		{
+			if(!selectedOnly)
+			{
+				BX.fireEvent(BX('tbl_sale_order_check_all'), 'click');
+			}
+			else
+			{
+				var selected = BX('tbl_sale_order_selected_count');
+
+				if(selected && !BX.hasClass(selected, 'adm-table-counter-visible'))
+				{
+					alert("<?=Loc::getMessage('SALE_O_CONTEXT_B_DELIVERY_REQUESTS_SELECTION_NEEDED')?>");
+					return;
+				}
+			}
+
+			if(ordersListForm.action)
+			{
+				ordersListForm.action.value='delivery_requests';
+				BX.fireEvent(ordersListForm.action, 'change');
+
+				if(ordersListForm.apply)
+					BX.fireEvent(ordersListForm.apply, 'click');
+			}
+		}
+	}
+</script>
+
+<?$spotlight = new \Bitrix\Main\UI\Spotlight("DELIVERY_REQUESTS_ADDED");?>
+<?if(!$spotlight->isViewed($USER->GetID())):?>
+	<?\CJSCore::init("spotlight");?>
+	<script type="text/javascript">
+		BX.ready(
+			function() {
+				var elem = document.getElementsByClassName('adm-list-table-top');
+
+				if(!elem[0] || !elem[0].nodeName || elem[0].nodeName !== 'DIV')
+					return;
+
+				var target = null;
+
+				for (var i = 0; i < elem[0].childNodes.length; i++)
+				{
+					if(elem[0].childNodes[i].innerHTML === "<?=Loc::getMessage("SALE_O_CONTEXT_B_DELIVERY_REQUESTS")?>")
+					{
+						target = elem[0].childNodes[i];
+						break;
+					}
+				}
+
+				if(target)
+				{
+					var deliveryRequestSpotlight = new BX.SpotLight({
+						targetElement: target,
+						targetVertex: "middle-center",
+						content: "<?=Loc::getMessage('SALE_O_CONTEXT_B_DELIVERY_REQUESTS_SL')?>",
+						id: "DELIVERY_REQUESTS_ADDED",
+						autoSave: true
+					});
+
+					deliveryRequestSpotlight.show();
+				}
+		});
+	</script>
+<?endif;?>
+
+<?echo EndNote();
 require($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/epilog_admin.php");

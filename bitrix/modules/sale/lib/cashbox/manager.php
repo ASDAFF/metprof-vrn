@@ -13,6 +13,10 @@ use Bitrix\Sale\Result;
 
 Loc::loadMessages(__FILE__);
 
+/**
+ * Class Manager
+ * @package Bitrix\Sale\Cashbox
+ */
 final class Manager
 {
 	/* ignored all errors, warnings */
@@ -36,7 +40,7 @@ final class Manager
 
 		$dbRes = CashboxTable::getList(array(
 			'select' => array('*'),
-			'filter' => array('ACTIVE' => 'Y', 'ENABLED' => 'Y'),
+			'filter' => array('ACTIVE' => 'Y'),
 			'order' => array('SORT' => 'ASC', 'NAME' => 'ASC')
 		));
 
@@ -268,6 +272,11 @@ final class Manager
 		$cacheManager = Main\Application::getInstance()->getManagedCache();
 		$cacheManager->clean(Manager::CACHE_ID);
 
+		if (is_subclass_of($data['HANDLER'], '\Bitrix\Sale\Cashbox\ICheckable'))
+		{
+			\CAgent::AddAgent('\Bitrix\Sale\Cashbox\Manager::updateChecksStatus();', "sale", "N", 120, "", "Y");
+		}
+
 		return $addResult;
 	}
 
@@ -338,4 +347,88 @@ final class Manager
 	{
 		return static::LEVEL_TRACE_E_ERROR;
 	}
+
+	/**
+	 * @return bool
+	 */
+	public static function isSupportedFFD105()
+	{
+		Cashbox::init();
+
+		$cashboxList = static::getListFromCache();
+		foreach ($cashboxList as $cashbox)
+		{
+			if ($cashbox['ACTIVE'] === 'N')
+				continue;
+			/** @var Cashbox $handler */
+			$handler = $cashbox['HANDLER'];
+			if (
+				!is_callable(array($handler, 'isSupportedFFD105')) ||
+				!$handler::isSupportedFFD105()
+			)
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * @return string
+	 */
+	public static function updateChecksStatus()
+	{
+		$cashboxList = static::getListFromCache();
+		if (!$cashboxList)
+			return '';
+
+		$availableCashboxList = array();
+		foreach ($cashboxList as $item)
+		{
+			$cashbox = Cashbox::create($item);
+			if ($cashbox instanceof ICheckable)
+			{
+				$availableCashboxList[$item['ID']] = $cashbox;
+			}
+		}
+
+		if (!$availableCashboxList)
+			return '';
+
+		$parameters = array(
+			'filter' => array(
+				'=STATUS' => 'P',
+				'CASHBOX_ID' => array_keys($availableCashboxList),
+				'=CASHBOX.ACTIVE' => 'Y'
+			),
+			'limit' => 5
+		);
+		$dbRes = CheckManager::getList($parameters);
+		while ($checkInfo = $dbRes->fetch())
+		{
+			/** @var Cashbox|ICheckable $cashbox */
+			$cashbox = $availableCashboxList[$checkInfo['CASHBOX_ID']];
+			if ($cashbox)
+			{
+				$checkTypeMap = CheckManager::getCheckTypeMap();
+				$check = Check::create($checkTypeMap[$checkInfo['TYPE']]);
+				if (!$check)
+					continue;
+
+				$check->init($checkInfo);
+				$result = $cashbox->check($check);
+				if (!$result->isSuccess())
+				{
+					foreach ($result->getErrors() as $error)
+					{
+						static::writeToLog($cashbox->getField('ID'), $error);
+					}
+				}
+			}
+		}
+
+		return '\Bitrix\Sale\Cashbox\Manager::updateChecksStatus();';
+	}
+
 }

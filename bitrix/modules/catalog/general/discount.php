@@ -929,7 +929,7 @@ class CAllCatalogDiscount
 			if(isset($calcResults['PRICES']['BASKET'][$basketItem->getBasketCode()]))
 			{
 				$priceData = $calcResults['PRICES']['BASKET'][$basketItem->getBasketCode()];
-				if($priceData['DISCOUNT'] > 0 && !empty($calcResults['RESULT']['BASKET'][$basketItem->getBasketCode()]))
+				if (!empty($calcResults['RESULT']['BASKET'][$basketItem->getBasketCode()]))
 				{
 					foreach($calcResults['RESULT']['BASKET'][$basketItem->getBasketCode()] as $resultRow)
 					{
@@ -1044,34 +1044,60 @@ class CAllCatalogDiscount
 
 	private static function getSaleDiscountsByProduct(array $product, $siteId, array $userGroups, array $priceRow = array(), $isRenewal = false)
 	{
-		\Bitrix\Sale\DiscountCouponsManager::freezeCouponStorage();
+		if (empty($priceRow))
+			return array();
 
-		$basket = \Bitrix\Sale\Basket::create($siteId);
+		Sale\DiscountCouponsManager::freezeCouponStorage();
 
-		$basketItem = $basket->createItem($product['MODULE'], $product['ID']);
-		$basketItem->setFields(array(
-			//'PRODUCT_PROVIDER_CLASS' => 'CCatalogProductProvider',
-			'QUANTITY' => 1,
-			'LID' => $siteId
-		));
+		/** @var \Bitrix\Sale\Basket $basket */
+		static $basket = null,
+			/** @var \Bitrix\Sale\BasketItem $basketItem */
+			$basketItem = null;
 
-		if($priceRow)
+		if ($basket !== null)
 		{
-			$basketItem->setFields(array(
-				'PRODUCT_PRICE_ID' => $priceRow['ID'],
-				'BASE_PRICE' => $priceRow['PRICE'],
-				'PRICE' => $priceRow['PRICE'],
-				'DISCOUNT_PRICE' => 0,
-				'CURRENCY' => $priceRow['CURRENCY'],
-				'CAN_BUY' => 'Y',
-				'DELAY' => 'N'
-			));
+			if ($basket->getSiteId() != $siteId)
+			{
+				$basket = null;
+				$basketItem = null;
+			}
 		}
+		if ($basket === null)
+		{
+			$basket = Sale\Basket::create($siteId);
+			$basketItem = $basket->createItem($product['MODULE'], $product['ID']);
+		}
+
+		$config = Catalog\Product\Price\Calculation::getConfig();
+		if ($config['CURRENCY'] !== null && $config['CURRENCY'] != $priceRow['CURRENCY'])
+		{
+			$priceRow['PRICE'] = \CCurrencyRates::ConvertCurrency(
+				$priceRow['PRICE'],
+				$priceRow['CURRENCY'],
+				$config['CURRENCY']
+			);
+			$priceRow['CURRENCY'] = $config['CURRENCY'];
+		}
+
+		$fields = array(
+			'PRODUCT_ID' => $product['ID'],
+			'QUANTITY' => 1,
+			'LID' => $siteId,
+			'PRODUCT_PRICE_ID' => $priceRow['ID'],
+			'PRICE' => $priceRow['PRICE'],
+			'BASE_PRICE' => $priceRow['PRICE'],
+			'DISCOUNT_PRICE' => 0,
+			'CURRENCY' => $priceRow['CURRENCY'],
+			'CAN_BUY' => 'Y',
+			'DELAY' => 'N'
+		);
+
+		$basketItem->setFieldsNoDemand($fields);
 
 		if($isRenewal)
 		{
 			/** @var \Bitrix\Sale\Order $order */
-			$order = Order::create($siteId);
+			$order = Sale\Order::create($siteId);
 			$order->setField('RECURRING_ID', 1);
 			$order->setBasket($basket);
 
@@ -1079,7 +1105,7 @@ class CAllCatalogDiscount
 		}
 		else
 		{
-			$discount = \Bitrix\Sale\Discount::buildFromBasket($basket, new Context\UserGroup($userGroups));
+			$discount = Sale\Discount::buildFromBasket($basket, new Context\UserGroup($userGroups));
 		}
 
 		$discount->setBasketItemData(
@@ -1093,7 +1119,7 @@ class CAllCatalogDiscount
 		$calcResults = $discount->getApplyResult(true);
 		$finalDiscountList = static::getDiscountsFromApplyResult($calcResults, $basketItem);
 
-		\Bitrix\Sale\DiscountCouponsManager::unFreezeCouponStorage();
+		Sale\DiscountCouponsManager::unFreezeCouponStorage();
 
 		return static::getReformattedDiscounts($finalDiscountList, $calcResults, $siteId, $isRenewal);
 	}
@@ -1201,42 +1227,30 @@ class CAllCatalogDiscount
 				'MODULE' => 'catalog',
 			);
 
-			$finalDiscounts = array();
-
-			if($arCatalogGroups && is_array($arCatalogGroups) && $arCatalogGroups === array(-1))
+			if ($arCatalogGroups !== array(-1))
 			{
-				return array();
-			}
+				$isCompatibilityUsed = Sale\Compatible\DiscountCompatibility::isUsed();
+				Sale\Compatible\DiscountCompatibility::stopUsageCompatible();
 
-			$isCompatibilityUsed = Sale\Compatible\DiscountCompatibility::isUsed();
-			Sale\Compatible\DiscountCompatibility::stopUsageCompatible();
-
-			foreach($arCatalogGroups as $catalogGroup)
-			{
-				$priceRow = \Bitrix\Catalog\Discount\DiscountManager::getPriceDataByProductId($intProductID, $catalogGroup);
-				if(!$priceRow)
+				foreach ($arCatalogGroups as $catalogGroup)
 				{
-					continue;
-				}
-
-				foreach(static::getSaleDiscountsByProduct($product, $siteID, $arUserGroups, $priceRow, $strRenewal === 'Y') as $discount)
-				{
-					if(isset($finalDiscounts[$discount['ID']]))
-					{
+					$priceRow = \Bitrix\Catalog\Discount\DiscountManager::getPriceDataByProductId($intProductID, $catalogGroup);
+					if (!$priceRow)
 						continue;
+
+					foreach (static::getSaleDiscountsByProduct($product, $siteID, $arUserGroups, $priceRow, $strRenewal === 'Y') as $discount)
+					{
+						if (isset($arResult[$discount['ID']]))
+							continue;
+						$arResult[$discount['ID']] = $discount;
+						$arResultID[$discount['ID']] = $discount['ID'];
 					}
-
-					$finalDiscounts[$discount['ID']] = $discount;
 				}
+
+				if ($isCompatibilityUsed)
+					Sale\Compatible\DiscountCompatibility::revertUsageCompatible();
+				unset($isCompatibilityUsed);
 			}
-
-			if($isCompatibilityUsed === true)
-			{
-				Sale\Compatible\DiscountCompatibility::revertUsageCompatible();
-			}
-
-
-			return $finalDiscounts;
 		}
 		else
 		{

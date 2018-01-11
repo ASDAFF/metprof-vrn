@@ -2,7 +2,6 @@
 namespace Bitrix\Sale\Exchange\Entity;
 
 
-use Bitrix\Main\ArgumentException;
 use Bitrix\Main\Error;
 use Bitrix\Main\UserTable;
 use Bitrix\Sale;

@@ -3148,7 +3148,7 @@ abstract class CAllMain
 			return true;
 		}
 	}
-	
+
 	public function AddBufferContent($callback)
 	{
 		$args = array();
@@ -3563,6 +3563,11 @@ abstract class CAllMain
 		global $DB;
 
 		self::EpilogActions();
+
+		if (!defined('BX_WITH_ON_AFTER_EPILOG'))
+		{
+			define('BX_WITH_ON_AFTER_EPILOG', true);
+		}
 
 		foreach(GetModuleEvents("main", "OnAfterEpilog", true) as $arEvent)
 		{
