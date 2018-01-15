@@ -9,6 +9,16 @@ function replaseBasketTop() {
     })
 }
 function addToBasket2(idel, quantity,el) {
+
+
+
+        if(quantity < 20){
+            alertify.error("Минимальный заказ 20м2");
+            return false;
+        }
+        quantity = parseFloat(quantity);
+
+
     $href = "/ajax/add.php?id="+idel;
     var _result = true;
     $.ajax({
@@ -157,6 +167,96 @@ function deleteBasket(){
     return false;
 }
 
+function number_format( number, decimals, dec_point, thousands_sep ) {	// Format a number with grouped thousands
+
+    var i, j, kw, kd, km;
+
+    // input sanitation & defaults
+    if( isNaN(decimals = Math.abs(decimals)) ){
+        decimals = 2;
+    }
+    if( dec_point == undefined ){
+        dec_point = ",";
+    }
+    if( thousands_sep == undefined ){
+        thousands_sep = ".";
+    }
+
+    i = parseInt(number = (+number || 0).toFixed(decimals)) + "";
+
+    if( (j = i.length) > 3 ){
+        j = j % 3;
+    } else{
+        j = 0;
+    }
+
+    km = (j ? i.substr(0, j) + thousands_sep : "");
+    kw = i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + thousands_sep);
+    kd = (decimals ? dec_point + Math.abs(number - i).toFixed(decimals).replace(/-/, 0).slice(2) : "");
+
+
+    return km + kw + kd;
+}
+
+
+//Удаление длины листа в детальной карте товара
+function delRow(El) {
+    $(El).parent().parent().remove();
+}
+
+
+
+function updatePrice(El, val) {
+    if (!val)
+    {
+        $(El).attr('value', 0);
+        val = 0;
+    }
+    if (val < 0) {
+        console.log(El);
+        $(El).attr('value', 0);
+        val = 0;
+        return false;
+    }
+
+    var sq_full = 0;
+
+            var _elements = $(".order-cnt");
+
+            _elements.each(function (i, _el) {
+                val = $(_el).find('input[name=_quantity]').val();
+                var dv = $(_el).find('.drop-value');
+                var length_part = (dv.length > 0) ? parseFloat($(_el).find('.drop-value').html()) : parseFloat($(_el).find('input[name=length]').val().replace(',', '.') * 1000);
+                var width_part = $("input[name=width]").val();
+                var sq = width_part * length_part * val / 1000000;
+                sq_full = sq_full + sq;
+            });
+
+            $('#count_product').val(sq_full);
+
+            _elements.each(function (i, _el) {
+
+                val = $(_el).find('input[name=_quantity]').val();
+                var dv = $(_el).find('.drop-value');
+                var length_part = (dv.length > 0) ? parseFloat($(_el).find('.drop-value').html()) : parseFloat($(_el).find('input[name=length]').val().replace(',', '.') * 1000);
+                var width_part = $("input[name=width]").val();
+                var sq = width_part * length_part * val / 1000000;
+
+                if (width_part) {
+                    var price = parseFloat(sq * parseFloat($("input[name=price]").val()));
+                } else {
+                    var price = parseFloat(((length_part * val) / 1000) * parseFloat($("input[name=price]").val()));
+                }
+
+
+
+                $(_el).find('.sq').empty().append(sq + ' м²');
+                $(_el).find('.price_in-table').empty().append(number_format(parseFloat(price), 2, '.', ' ') + '₽');
+
+            });
+}
+
+
 $(function(){
 
     $('.catalog-sections-text').readmore({
@@ -177,6 +277,74 @@ $(function(){
         than.parent().find('.toggle_product_no').slideToggle();
         return false;
     });
+
+
+    //РћРїСЂРµРґРµР»РµРЅРёРµ СЏС‡РµР№РєРё
+    $('#available-length').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget); // Button that triggered the modal
+        var item = button.data('item');
+        $(this).find('table').attr('data-td', item);
+        //alert(item);
+    });
+    //Выбор длины в карточке товара.
+    $("#available-length td").bind('click', function () {
+        if (!$(this).hasClass('disable')) {
+            var data_item = $("#av-length-table").attr('data-td');
+            $("td[data-item='" + data_item + "'] div.drop-value").empty().append($(this).html() + ' мм');
+            $("#available-length").modal('hide');
+
+            updatePrice($("td[data-item='" + data_item + "'] div.drop-value").parent().parent().parent().find('input[name=_quantity]'), $("td[data-item='" + data_item + "'] div.drop-value").parent().parent().parent().find('input[name=_quantity]').val());
+        }
+    });
+
+
+
+
+    //Добавление длины листа в детальной карте товара
+    $(".p-view__order-table-add").bind('click', function () {
+        var seconds = new Date().getTime();
+        if ($(this).attr('data-type') != 'p23') {
+            $("#order-table").append('<tr class="order-cnt">' +
+                '<td data-toggle="modal" data-target="#available-length" data-item="item-' + seconds + '">' +
+                '<div class="dropdown dropdown_double-icon dropdown-modal">' +
+                '<div class="drop-value">0 мм</div>' +
+                '</div>' +
+                '</td>' +
+                '<td>' +
+                '<div class="dropdown dropdown_double-icon">' +
+                '<input name="_quantity" type="number" max="50000" style="width: 60px;" placeholder="0 шт" onkeyup="updatePrice(this, $(this).val())" onchange="updatePrice(this, $(this).val())" onkeypress="return event.charCode >= 48 && event.charCode <= 57">' +
+                '</div>' +
+                '</td>' +
+                '<td class="sq">' +
+                '0 м²' +
+                '</td>' +
+                '<td>' +
+                '<span class="price_in-table">0 ₽</span>' +
+                '<button class="no-style p-view__order-table-del" onclick="delRow(this)">&times;' +
+                '</button>' +
+                '</td>' +
+                '</tr>');
+        } else {
+            $("#order-table").append('<tr class="order-cnt">' +
+                '<td data-toggle="modal" data-target="#available-length" data-item="item-' + seconds + '">' +
+                '<div class="dropdown dropdown_double-icon dropdown-modal">' +
+                '<div class="drop-value">0 мм</div>' +
+                '</div>' +
+                '</td>' +
+                '<td>' +
+                '<div class="dropdown dropdown_double-icon">' +
+                '<input name="_quantity" type="number" max="50000" style="width: 60px;" placeholder="0 шт" onkeyup="updatePrice(this, $(this).val())" onchange="updatePrice(this, $(this).val())" onkeypress="return event.charCode >= 48 && event.charCode <= 57">' +
+                '</div>' +
+                '</td>' +
+                '<td>' +
+                '<span class="price_in-table">0 ₽</span>' +
+                '<button class="no-style p-view__order-table-del" onclick="delRow(this)">&times;' +
+                '</button>' +
+                '</td>' +
+                '</tr>');
+        }
+    });
+
 
 
 

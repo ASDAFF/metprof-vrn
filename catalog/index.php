@@ -239,6 +239,7 @@ if($_REQUEST['ELEMENT_SORT_FIELD'] == "CATALOG_AVAILABLE" OR $_REQUEST['ELEMENT_
 		"PRICE_CODE" => array(
 			0 => "SITE",
 			1 => "РОЗНИЦА",
+			2 => "Продажная",
 		),
 		"PRICE_VAT_INCLUDE" => "Y",
 		"PRICE_VAT_SHOW_VALUE" => "N",
@@ -263,7 +264,7 @@ if($_REQUEST['ELEMENT_SORT_FIELD'] == "CATALOG_AVAILABLE" OR $_REQUEST['ELEMENT_
 		"SHOW_404" => "N",
 		"SHOW_DEACTIVATED" => "N",
 		"SHOW_DISCOUNT_PERCENT" => "N",
-		"SHOW_OLD_PRICE" => "Y",
+		"SHOW_OLD_PRICE" => "N",
 		"SHOW_PRICE_COUNT" => "1",
 		"SHOW_TOP_ELEMENTS" => "N",
 		"SIDEBAR_DETAIL_SHOW" => "Y",

@@ -52,6 +52,7 @@ $noh1    = $pages[1] == 'personal' || $pages[1] == 'price' || ($pages[1] == 'cat
 		Asset::getInstance()->addCss(SITE_TEMPLATE_PATH.'/css/jquery.fancybox.min.css');
 		Asset::getInstance()->addCss(SITE_TEMPLATE_PATH.'/css/social-likes_classic.css');
 		Asset::getInstance()->addCss(SITE_TEMPLATE_PATH.'/css/wickedpicker.min.css');
+		Asset::getInstance()->addCss(SITE_TEMPLATE_PATH.'/css/modal.css');
 
 
 		Asset::getInstance()->addJs(SITE_TEMPLATE_PATH.'/js/jquery.min.js');
@@ -69,8 +70,8 @@ $noh1    = $pages[1] == 'personal' || $pages[1] == 'price' || ($pages[1] == 'cat
 
 		Asset::getInstance()->addJs('/js/readmore.js');
 		Asset::getInstance()->addJs('/js/function.js');
+		Asset::getInstance()->addJs('/js/bootstrap.min.js');
 		?>
-
 
 		<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
 		<!--[if lt IE 9]>

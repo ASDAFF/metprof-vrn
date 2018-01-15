@@ -21,3 +21,203 @@ label {
     -o-background-size: 100%;
     background-size: 100%;
 }
+
+.p-view__param-col{
+    width: 370px;
+    float: left;
+    padding-left: 20px;
+}
+
+.p-view__param-box {
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #eeebe1;
+}
+
+.b-select_help_new_place {
+    text-align: center;
+    color: #333;
+    font-weight: 600;
+    float: left;
+    width: 100%;
+    padding-bottom: 10px;
+}
+
+.p-view__order-table-del{
+    color: red;
+    vertical-align: middle;
+}
+
+.b-select_help_new_upplace {
+    text-align: center;
+    color: red;
+    font-weight: 600;
+    padding-bottom: 10px;
+    float: left;
+    width: 100%;
+    font-size: 11px;
+}
+
+.p-view__order-table-wrap {
+    margin: -10px -10px 10px;
+}
+
+.p-view__order-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.prod_card_table_fr {
+    border-top: 1px solid #eeebe1 !important;
+}
+
+.p-view__order-table th {
+    font-size: 12px;
+    color: #5a5a5a;
+    font-weight: 500;
+    padding: 10px;
+    background: #f7f9fa;
+}
+
+.p-view__order-table th, .p-view__order-table td {
+    text-align: center;
+    border: 1px solid #eeebe1;
+}
+
+.p-view__order-table th:first-child, .p-view__order-table td:first-child{
+    border-left: none;
+}
+.p-view__order-table th:last-child, .p-view__order-table td:last-child{
+    border-right: none;
+}
+
+.p-view__order-table td {
+    font-size: 16px;
+    font-weight: 600;
+    padding: 4px 10px;
+}
+.p-view__order-table td.sq{
+    color: #5a5a5a;
+}
+
+.p-view__order-table td .price_in-table{
+    color: red;
+}
+
+.dropdown-modal {
+    background-color: #fff;
+    padding: 1px 5px 1px 0;
+    min-width: 86px;
+}
+
+.dropdown.dropdown_double-icon input[name="_quantity"]{
+    border: none;
+}
+
+.dropdown {
+    display: inline-block;
+    position: relative;
+    cursor: pointer;
+}
+
+.drop-value {
+    font-weight: 600;
+    padding: 2px 15px 2px 5px;
+    position: relative;
+    z-index: 0;
+    white-space: nowrap;
+}
+
+button.no-style {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: inline;
+}
+.p-view__order-table-add {
+    padding: 10px;
+    width: 100%;
+    text-align: center;
+    font-size: 12px;
+    color: #5a5a5a;
+    font-weight: bold;
+}
+
+.toShopBox {
+    display: block;
+    position: relative;
+    padding-left: 30px;
+    width: 100%;
+    height: 60px;
+    background: #0086d3;
+    border-radius: 3px;
+    font: 700 18px/63px 'Fira Sans',sans-serif;
+    color: #FFF;
+    cursor: pointer;
+}
+
+.toShopBox:before {
+    position: absolute;
+    display: block;
+    content: '';
+    width: 38px;
+    height: 32px;
+    left: 35px;
+    top: 50%;
+    margin-top: -16px;
+    background: url(/bitrix/templates/main/img/card/add2cart.png) no-repeat;
+    -webkit-background-size: 100%;
+    -o-background-size: 100%;
+    background-size: 100%;
+}
+
+.block-fast-buy {
+    padding: 10px 0 0 0;
+}
+.b-fast-buy-input {
+    padding: 10px 0 0 0;
+    float: left;
+}
+
+.b-fast-buy-button {
+    float: right;
+}
+#fast-buy-phone-number {
+    width: 130px;
+}
+.forminput {
+    box-sizing: border-box;
+    border: 1px solid #eeebe1;
+    padding: 5px 10px;
+    font-size: 12px;
+    color: #000;
+    height: 35px;
+}
+
+.fast-buy-visible {
+    margin-top: 10px;
+    box-sizing: border-box;
+    padding: 8px 15px;
+    font-weight: 400;
+    font-size: 13px;
+    border-radius: 3px;
+    background: #0086d3;
+    border: none;
+    cursor: pointer;
+    color: #ffffff;
+    text-decoration: none;
+    display: inline-block;
+    outline: none;
+    font-family: "Red Ring", "Open Sans", Arial, sans-serif;
+}
+
+.toShopBox:hover, .fast-buy-visible:hover{
+    text-decoration: none;
+    color: #FFF;
+}
+
+.weight-prod{
+    color: #5a5a5a;
+    margin-top: 20px;
+    font-size: 12px;
+}

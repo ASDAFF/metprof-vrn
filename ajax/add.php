@@ -4,9 +4,9 @@ if( !empty( $_GET["id"] ) )
     $id = (int)$_GET["id"];
 
 if( !empty( $_GET["quantity"] ) )
-    $quantity = (int)$_GET["quantity"];
+    $quantity = $_GET["quantity"];
 else
-    $quantity = 1;
+    $quantity = 0;
 
 if( !$id )
     die( 'Ошибка добавления товара в корзину' );
@@ -14,10 +14,12 @@ if( !$id )
 CModule::IncludeModule( 'catalog' );
 CModule::IncludeModule( 'sale' );
 
+if($quantity > 20){
+    if( Add2BasketByProductID( $id, $quantity ) )
+        print 'Товар успешно добавлен в корзину';
+    else
+        print 'Ошибка добавления товара в корзину';
+}
 
-if( Add2BasketByProductID( $id, $quantity ) )
-    print 'Товар успешно добавлен в корзину';
-else
-    print 'Ошибка добавления товара в корзину';
 
 ?>
