@@ -620,8 +620,8 @@ if($arResult['PROPERTIES']['MORE_PHOTO']['VALUE']){
 $arResult['NAME'] = preg_replace('#(~(.*?)~)#is', '', $arResult['NAME']);
 
 
-if($arResult['PROPERTIES']['TYPE_LENGTH']['VALUE']){
-	$property_enums = CIBlockPropertyEnum::GetList(Array("ID" => "ASC"), Array("IBLOCK_ID" => 28, "CODE" => $arResult['PROPERTIES']['TYPE_LENGTH']['VALUE']));
+if($arResult['PROPERTIES']['DLINA']['VALUE']){
+	$property_enums = CIBlockPropertyEnum::GetList(Array("ID" => "ASC"), Array("IBLOCK_ID" => 28, "CODE" => $arResult['PROPERTIES']['DLINA']['VALUE']));
 	while($enum_fields = $property_enums->GetNext())
 	{
 		$arResult['TYPE_LENGTH'][$enum_fields["XML_ID"]] = $enum_fields["VALUE"];
@@ -629,6 +629,7 @@ if($arResult['PROPERTIES']['TYPE_LENGTH']['VALUE']){
 }
 
 $arResult['TYPE_LENGTH'] = array_chunk($arResult['TYPE_LENGTH'],15,true);
+
 ?>
 
 
