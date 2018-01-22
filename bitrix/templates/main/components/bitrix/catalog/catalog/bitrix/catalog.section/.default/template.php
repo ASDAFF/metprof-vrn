@@ -108,8 +108,9 @@ if (!empty($arResult['ITEMS']))
 								}
 								?>
 
-
 								<? if($arItem['CATALOG_QUANTITY'] > 0 and (float)price($arItem['ID'])): ?>
+
+								<?if(!$arItem['PROPERTIES']['TYPE_LENGTH']['VALUE']):?>
 								<div class="quantity" id="count_<?=$arItem['ID']?>">
 									<a class="minus na" href="#"></a>
 									<input type="text" value="1"/>
@@ -153,11 +154,22 @@ if (!empty($arResult['ITEMS']))
 
 
 									</script>
+								<?endif;?>
+
+
 								<div class="cost_total"><span><?=price($arItem['ID'])?></span> &#8381;</div>
-								<a href="javascript:void(0)" class="add2cart">
-									<span class="txt1" onclick="if(document.body.clientWidth < 659){addToBasket2(<?=$arItem['ID']?>, $('#count_<?=$arItem['ID']?> input').val(),this)};">В корзину</span>
-									<span class="txt2" onclick="addToBasket2(<?=$arItem['ID']?>, $('#count_<?=$arItem['ID']?> input').val(),this);">Добавить в корзину</span>
+								<?if($arItem['PROPERTIES']['TYPE_LENGTH']['VALUE']):?>
+								<a href="<?=$arItem['DETAIL_PAGE_URL']?>" class="add2cart">
+									<span class="txt1">Подробнее</span>
+									<span class="txt2">Подробнее</span>
 								</a>
+								<?else:?>
+								<a href="javascript:void(0)" class="add2cart">
+									<span class="txt1" onclick="if(document.body.clientWidth < 659){addToBasket2(<?=$arItem['ID']?>, $('#count_<?=$arItem['ID']?> input').val(),this,<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>)};">В корзину</span>
+									<span class="txt2" onclick="addToBasket2(<?=$arItem['ID']?>, $('#count_<?=$arItem['ID']?> input').val(),this,<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);">Добавить в корзину</span>
+								</a>
+								<?endif;?>
+
 								<div class="instock">Товар в наличии</div>
 								<?else:?>
 								<div class="cost_total"><span></span></div>

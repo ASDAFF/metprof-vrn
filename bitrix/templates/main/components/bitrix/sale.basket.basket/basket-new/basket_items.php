@@ -27,7 +27,7 @@ if ($normalCount > 0)
 					<div class="l-cell quan">
 						<div class="txt qn">Кол-во</div>
 						<div class="quantity" id="<?=$arItem['ID']?>">
-							<?=$arItem['QUANTITY']?> м²
+							<?=$arItem['QUANTITY']?> <?=$arItem["MEASURE_TEXT"]?>
 						</div>
 					</div>
 					<div class="l-cell cost"><div class="txt ct">Стоимость</div><span><?=$arItem["QUANTITY"]*$arItem["PRICE"]?></span> &#8381;</div>

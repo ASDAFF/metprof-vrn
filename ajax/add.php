@@ -14,7 +14,7 @@ if( !$id )
 CModule::IncludeModule( 'catalog' );
 CModule::IncludeModule( 'sale' );
 
-if($quantity > 20){
+if($quantity > 20 OR (int)$_GET["type"] == 5){
     if( Add2BasketByProductID( $id, $quantity ) )
         print 'Товар успешно добавлен в корзину';
     else

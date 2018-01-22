@@ -86,14 +86,29 @@ $this->setFrameMode(true);
                           <? endforeach; ?>
                           <span>при заказе<br>с сайта</span>
                       </div>
-<!--                      <div class="quantity">-->
-<!--                          <a class="minus na" href="#"></a>-->
-<!--                          <input type="text" value="1" id="count_product"/>-->
-<!--                          <a class="plus" href="#"></a>-->
-<!--                      </div>-->
-                      <input type="hidden" name="count_product" id="count_product" value="0">
+
+                      <?if(!$arResult['PROPERTIES']['TYPE_LENGTH']['VALUE']):?>
+                          <div class="quantity">
+                              <a class="minus na" href="#"></a>
+                              <input type="text" value="1" id="count_product"/>
+                              <a class="plus" href="#"></a>
+                          </div>
+                      <?else:?>
+                          <input type="hidden" name="count_product" id="count_product" value="0">
+                      <?endif;?>
+
                   </div>
               <? endif; ?>
+
+              <?if(!$arResult['PROPERTIES']['TYPE_LENGTH']['VALUE']):?>
+
+                  <? if($arResult['CATALOG_QUANTITY'] > 0 and $arResult['ITEM_PRICES'][0]['BASE_PRICE']): ?>
+                      <a href="javascript:void(0)" class="add2cart" onclick="addToBasket2(<?=$arResult['ID']?>, $('#count_product').val(),this,<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);">Добавить в корзину</a>
+                  <?else:?>
+                      <a href="javascript:void(0)" class="add2cart show-popup" data-id="order-product">Товар под заказ</a>
+                  <?endif;?>
+
+              <?endif;?>
 
             <a href="#" class="bb_btn show-popup" data-id="oneclick"><span>Купить<br>в один клик</span></a>
             <a href="#" class="bb_btn spec_help show-popup" data-id="specialist"><span>Помощь<br>специалиста</span></a>
@@ -241,86 +256,141 @@ $this->setFrameMode(true);
 
 
 
+    <?if($arResult['PROPERTIES']['TYPE_LENGTH']['VALUE']):?>
 
- <div class="p-view__param-col p-view__param-col_restyled">
+     <div class="p-view__param-col p-view__param-col_restyled">
 
-    <div class="p-view__param-box prodcap data-square">
+        <div class="p-view__param-box prodcap data-square">
 
-        <div class="b-select_help_new_place">Выберите длину листа и количество штук</div>
-        <div class="b-select_help_new_upplace">Внимание! Минимальный заказ 20м2</div>
+            <div class="b-select_help_new_place">Выберите длину листа и количество штук</div>
+            <div class="b-select_help_new_upplace">Внимание! Минимальный заказ 20м2</div>
 
-        <div class="p-view__order-table-wrap">
-            <table class="p-view__order-table" id="order-table">
-                <tr class="prod_card_table_fr">
-                    <th>длина листа</th>
-                    <th>кол-во</th>
-                    <th>кол-во м²</th>
-                    <th>стоимость</th>
-                </tr>
-                <tr class="order-cnt">
+            <div class="p-view__order-table-wrap">
+                <table class="p-view__order-table" id="order-table">
+                    <tr class="prod_card_table_fr">
+                        <th>длина листа</th>
+                        <th>кол-во</th>
+                        <th>кол-во м²</th>
+                        <th>стоимость</th>
+                    </tr>
+                    <tr class="order-cnt">
 
-                    <td data-toggle="modal" data-target="#available-length" data-item="">
-                        <div class="dropdown dropdown_double-icon dropdown-modal">
-                            <div class="drop-value">500 мм</div>
+                        <td data-toggle="modal" data-target="#available-length" data-item="">
+                            <div class="dropdown dropdown_double-icon dropdown-modal">
+                                <div class="drop-value">500 мм</div>
+                            </div>
+                        </td>
+
+                        <td>
+                            <div class="dropdown dropdown_double-icon">
+                                <input name="_quantity" min="0" type="number" style="width: 60px;" placeholder="0 шт" onkeyup="updatePrice(this, $(this).val())" onchange="updatePrice(this, $(this).val())" >
+                            </div>
+                        </td>
+                        <td class="sq">
+                            0 м²
+                        </td>
+                        <td>
+                            <span class="price_in-table">0 ₽</span>
+                            <button class="no-style p-view__order-table-del" onclick="delRow(this)">&times;</i>
+                            </button>
+                        </td>
+                    </tr>
+                </table>
+
+                <button class="no-style button-block p-view__order-table-add">
+                    + добавить лист другой длины
+                </button>
+            </div>
+
+            <input type="hidden" name="width" value="<?=$arResult['PROPERTIES']['SHIRINA_LISTA']['VALUE']?>" >
+            <input type="hidden" name="product_id" size="2" value="<?=$arResult['ID']?>" />
+            <input type="hidden" name="price" value="<?=$arResult['ITEM_PRICES'][0]['UNROUND_PRICE']?>">
+
+            <? if($arResult['CATALOG_QUANTITY'] > 0 and $arResult['ITEM_PRICES'][0]['BASE_PRICE']): ?>
+                <a class="button button-primary button-block text-center toShopBox" id="button-cart" onclick="addToBasket2(<?=$arResult['ID']?>, $('#count_product').val(),this,<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);" data-toggle="tooltip" data-placement="top" title="необходимо ввести количество">Добавить в корзину</a>
+            <?else:?>
+                <a href="javascript:void(0)" class="add2cart show-popup" data-id="order-product">Товар под заказ</a>
+            <?endif;?>
+
+
+            <div class="block-fast-buy">
+                <p class="err_sucs_text"></p>
+                <div class="b-fast-buy">
+                    <div class="b-fast-buy-input">
+                        <div class="block-input-phone">
+
+                            <input class="forminput" type="text" id="fast-buy-phone-number" placeholder="+7 (___) ___-__-__"  name="fast-buy-phone-number">
                         </div>
-                    </td>
 
-                    <td>
-                        <div class="dropdown dropdown_double-icon">
-                            <input name="_quantity" min="0" type="number" style="width: 60px;" placeholder="0 шт" onkeyup="updatePrice(this, $(this).val())" onchange="updatePrice(this, $(this).val())" >
-                        </div>
-                    </td>
-                    <td class="sq">
-                        0 м²
-                    </td>
-                    <td>
-                        <span class="price_in-table">0 ₽</span>
-                        <button class="no-style p-view__order-table-del" onclick="delRow(this)">&times;</i>
-                        </button>
-                    </td>
-                </tr>
-            </table>
-
-            <button class="no-style button-block p-view__order-table-add">
-                + добавить лист другой длины
-            </button>
-        </div>
-
-        <input type="hidden" name="width" value="<?=$arResult['PROPERTIES']['SHIRINA_LISTA']['VALUE']?>" >
-        <input type="hidden" name="product_id" size="2" value="<?=$arResult['ID']?>" />
-        <input type="hidden" name="price" value="<?=$arResult['ITEM_PRICES'][0]['UNROUND_PRICE']?>">
-
-        <? if($arResult['CATALOG_QUANTITY'] > 0 and $arResult['ITEM_PRICES'][0]['BASE_PRICE']): ?>
-            <a class="button button-primary button-block text-center toShopBox" id="button-cart" onclick="addToBasket2(<?=$arResult['ID']?>, $('#count_product').val(),this);" data-toggle="tooltip" data-placement="top" title="необходимо ввести количество">Добавить в корзину</a>
-        <?else:?>
-            <a href="javascript:void(0)" class="add2cart show-popup" data-id="order-product">Товар под заказ</a>
-        <?endif;?>
-
-
-        <div class="block-fast-buy">
-            <p class="err_sucs_text"></p>
-            <div class="b-fast-buy">
-                <div class="b-fast-buy-input">
-                    <div class="block-input-phone">
-
-                        <input class="forminput" type="text" id="fast-buy-phone-number" placeholder="+7 (___) ___-__-__"  name="fast-buy-phone-number">
                     </div>
-
-                </div>
-                <div class="b-fast-buy-button">
-                    <a class="button button-primary button-block text-center fast-buy-visible" href="javascript://" id="phone-ord-send-button">Перезвоните мне сейчас!</a>
+                    <div class="b-fast-buy-button">
+                        <a class="button button-primary button-block text-center fast-buy-visible" href="javascript://" id="phone-ord-send-button">Перезвоните мне сейчас!</a>
+                    </div>
                 </div>
             </div>
+            <div class="clear"></div>
+
+            <div class="weight-prod">Вес единицы товара: <strong><?=$arResult['PROPERTIES']['VES_M2']['VALUE']?> кг</strong></div>
+
         </div>
-        <div class="clear"></div>
 
-        <div class="weight-prod">Вес единицы товара: <strong><?=$arResult['PROPERTIES']['VES_M2']['VALUE']?> кг</strong></div>
+     </div>
 
-    </div>
+    <?else:?>
 
- </div>
+        <? $APPLICATION->IncludeComponent(
+            "bitrix:sale.recommended.products",
+            "sale-recomm-product",
+            Array(
+                "ACTION_VARIABLE" => "action",
+                "ADDITIONAL_PICT_PROP_10" => "MORE_PHOTO",
+                "ADDITIONAL_PICT_PROP_11" => "MORE_PHOTO",
+                "ADDITIONAL_PICT_PROP_12" => "MORE_PHOTO",
+                "ADD_PROPERTIES_TO_BASKET" => "Y",
+                "BASKET_URL" => "/personal/basket.php",
+                "CACHE_TIME" => "86400",
+                "CACHE_TYPE" => "A",
+                "CART_PROPERTIES_10" => array("",""),
+                "CART_PROPERTIES_11" => array("",""),
+                "CART_PROPERTIES_12" => array("",""),
+                "CODE" => "",
+                "CONVERT_CURRENCY" => "N",
+                "DETAIL_URL" => "",
+                "HIDE_NOT_AVAILABLE" => "N",
+                "IBLOCK_ID" => $arParams['IBLOCK_ID'],
+                "IBLOCK_TYPE" => "1c_catalog",
+                "ID" => $arResult['ID'],
+                "LABEL_PROP_10" => "-",
+                "LABEL_PROP_11" => "-",
+                "LINE_ELEMENT_COUNT" => "3",
+                "MESS_BTN_BUY" => "РљСѓРїРёС‚СЊ",
+                "MESS_BTN_DETAIL" => "РџРѕРґСЂРѕР±РЅРµРµ",
+                "MESS_BTN_SUBSCRIBE" => "РџРѕРґРїРёСЃР°С‚СЊСЃСЏ",
+                "MESS_NOT_AVAILABLE" => "РќРµС‚ РІ РЅР°Р»РёС‡РёРё",
+                "MIN_BUYES" => "1",
+                "OFFER_TREE_PROPS_12" => array(),
+                "PAGE_ELEMENT_COUNT" => "30",
+                "PARTIAL_PRODUCT_PROPERTIES" => "N",
+                "PRICE_CODE" => array(),
+                "PRICE_VAT_INCLUDE" => "Y",
+                "PRODUCT_ID_VARIABLE" => "id",
+                "PRODUCT_PROPS_VARIABLE" => "prop",
+                "PRODUCT_QUANTITY_VARIABLE" => "quantity",
+                "PRODUCT_SUBSCRIPTION" => "N",
+                "PROPERTY_CODE_10" => array("",""),
+                "PROPERTY_CODE_11" => array("",""),
+                "PROPERTY_CODE_12" => array("",""),
+                "SHOW_DISCOUNT_PERCENT" => "N",
+                "SHOW_IMAGE" => "Y",
+                "SHOW_NAME" => "Y",
+                "SHOW_OLD_PRICE" => "N",
+                "SHOW_PRICE_COUNT" => "1",
+                "TEMPLATE_THEME" => "blue",
+                "USE_PRODUCT_QUANTITY" => "N"
+            )
+        );?>
 
-
+    <?endif;?>
 
 
    <div class="cl"></div>

@@ -8,23 +8,21 @@ function replaseBasketTop() {
         }
     })
 }
-function addToBasket2(idel, quantity,el) {
+function addToBasket2(idel, quantity,el,type) {
 
-
-
-        if(quantity < 20){
+        if(quantity < 20 && type == 6){
             alertify.error("Минимальный заказ 20м2");
             return false;
         }
         quantity = parseFloat(quantity);
 
-
     $href = "/ajax/add.php?id="+idel;
     var _result = true;
     $.ajax({
-        url: $href + '&quantity=' + quantity,
+        url: $href + '&quantity=' + quantity + '&type=' + type,
         type: 'get',
         success: function (data) {
+            console.log(data);
             if (data == 'Товар успешно добавлен в корзину') {
                 replaseBasketTop();
                 alertify.success(data);
