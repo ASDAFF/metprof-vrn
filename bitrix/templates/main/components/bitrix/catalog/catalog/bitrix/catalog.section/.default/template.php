@@ -110,7 +110,7 @@ if (!empty($arResult['ITEMS']))
 
 								<? if($arItem['CATALOG_QUANTITY'] > 0 and (float)price($arItem['ID'])): ?>
 
-								<?if(!$arItem['PROPERTIES']['TYPE_LENGTH']['VALUE']):?>
+								<?if(!$arItem['PROPERTIES']['DLINA']['VALUE']):?>
 								<div class="quantity" id="count_<?=$arItem['ID']?>">
 									<a class="minus na" href="#"></a>
 									<input type="text" value="1"/>
@@ -158,7 +158,7 @@ if (!empty($arResult['ITEMS']))
 
 
 								<div class="cost_total"><span><?=price($arItem['ID'])?></span> &#8381;</div>
-								<?if($arItem['PROPERTIES']['TYPE_LENGTH']['VALUE']):?>
+								<?if($arItem['PROPERTIES']['DLINA']['VALUE']):?>
 								<a href="<?=$arItem['DETAIL_PAGE_URL']?>" class="add2cart">
 									<span class="txt1">Подробнее</span>
 									<span class="txt2">Подробнее</span>

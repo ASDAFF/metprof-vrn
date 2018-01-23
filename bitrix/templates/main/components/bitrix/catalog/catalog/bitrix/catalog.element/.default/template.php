@@ -87,7 +87,7 @@ $this->setFrameMode(true);
                           <span>при заказе<br>с сайта</span>
                       </div>
 
-                      <?if(!$arResult['PROPERTIES']['TYPE_LENGTH']['VALUE']):?>
+                      <?if(!$arResult['PROPERTIES']['DLINA']['VALUE']):?>
                           <div class="quantity">
                               <a class="minus na" href="#"></a>
                               <input type="text" value="1" id="count_product"/>
@@ -100,7 +100,7 @@ $this->setFrameMode(true);
                   </div>
               <? endif; ?>
 
-              <?if(!$arResult['PROPERTIES']['TYPE_LENGTH']['VALUE']):?>
+              <?if(!$arResult['PROPERTIES']['DLINA']['VALUE']):?>
 
                   <? if($arResult['CATALOG_QUANTITY'] > 0 and $arResult['ITEM_PRICES'][0]['BASE_PRICE']): ?>
                       <a href="javascript:void(0)" class="add2cart" onclick="addToBasket2(<?=$arResult['ID']?>, $('#count_product').val(),this,<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);">Добавить в корзину</a>
@@ -256,7 +256,7 @@ $this->setFrameMode(true);
 
 
 
-    <?if($arResult['PROPERTIES']['TYPE_LENGTH']['VALUE']):?>
+    <?if($arResult['PROPERTIES']['DLINA']['VALUE']):?>
 
      <div class="p-view__param-col p-view__param-col_restyled">
 
@@ -554,7 +554,7 @@ $this->setFrameMode(true);
 
 </div><!--end::prod_card-->
 
-<?if($arResult['PROPERTIES']['TYPE_LENGTH']['VALUE']):?>
+<?if($arResult['PROPERTIES']['DLINA']['VALUE']):?>
 <!-- Modal -->
 <div class="modal fade  bs-example-modal-lg" id="available-length" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
     <div class="modal-dialog modal-lg" role="document">

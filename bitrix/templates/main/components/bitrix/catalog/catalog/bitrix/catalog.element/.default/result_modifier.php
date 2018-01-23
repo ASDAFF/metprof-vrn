@@ -627,7 +627,6 @@ if($arResult['PROPERTIES']['DLINA']['VALUE']){
 		$arResult['TYPE_LENGTH'][$enum_fields["XML_ID"]] = $enum_fields["VALUE"];
 	}
 }
-
 $arResult['TYPE_LENGTH'] = array_chunk($arResult['TYPE_LENGTH'],15,true);
 
 ?>
