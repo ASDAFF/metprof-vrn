@@ -21,8 +21,8 @@ function addToBasket2(idel, quantity,el,type) {
             success: function (quaMin) {
 
             if(quaMin){
-                if(quantity < parseFloat(quaMin)){
-                    alertify.error("Минимальный заказ "+quaMin+"шт.");
+                if(quantity != parseFloat(quaMin)){
+                    alertify.error("Заказ "+quaMin+"шт.");
                     return false;
                 }
             }
