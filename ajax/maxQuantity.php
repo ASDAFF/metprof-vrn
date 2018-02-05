@@ -12,7 +12,7 @@ if($ar_res = $res->GetNext()){
     if($code_section == 'krepezhnye_izdeliya'){
         return print 250;
     }else{
-        return print 0;
+        return false;
     }
 }
 

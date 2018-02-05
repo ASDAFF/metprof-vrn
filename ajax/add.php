@@ -18,7 +18,7 @@ if($quantity > 20 OR (int)$_GET["type"] == 5){
     if( Add2BasketByProductID( $id, $quantity ) )
         print 'Товар успешно добавлен в корзину';
     else
-        print 'Ошибка добавления товара в корзину';
+        print 'Товара нет в наличии';
 }
 
 

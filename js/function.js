@@ -21,10 +21,8 @@ function addToBasket2(idel, quantity,el,type) {
             success: function (quaMin) {
 
             if(quaMin){
-                if(quantity != parseFloat(quaMin)){
-                    alertify.error("Заказ "+quaMin+"шт.");
-                    return false;
-                }
+                var qu = quantity;
+                quantity *= parseFloat(quaMin);
             }
 
             if(quantity < 20 && type == 6){
@@ -35,30 +33,32 @@ function addToBasket2(idel, quantity,el,type) {
 
             $href = "/ajax/add.php?id="+idel;
             var _result = true;
+
                 $.ajax({
                     url: $href + '&quantity=' + quantity + '&type=' + type,
                     type: 'get',
                     success: function (data) {
-                        console.log(data);
                         if (data == 'Товар успешно добавлен в корзину') {
                             replaseBasketTop();
                             alertify.success(data);
+                            if(el){
+                                $(el).text('Перейти в корзину');
+                                $(el).attr('onclick','window.location.href="/personal/cart/"');
+                            }
                         } else {
                             alertify.error(data);
                             _result = false;
                         }
+
+                        if(quaMin && _result){
+                            alertify.success("Добавлено "+ qu +" упаковка(и) " +quaMin+ "шт.");
+                        }
+                        return _result;
+
                     }
                 });
-                return _result;
-
-                if(el){
-                    $(el).text('Перейти в корзину');
-                    $(el).attr('onclick','window.location.href="/personal/cart/"');
-                }
             }
         });
-
-
 
 
 
