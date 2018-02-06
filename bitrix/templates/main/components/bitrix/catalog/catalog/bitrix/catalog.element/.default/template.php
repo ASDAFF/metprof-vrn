@@ -100,6 +100,10 @@ $this->setFrameMode(true);
                   </div>
               <? endif; ?>
 
+              <?if(isRootFolder($arResult['ID'],"krepezhnye_izdeliya")):?>
+              <div class="buy-box-product">Продаётся упаковкой по 250 шт.</div>
+              <? endif; ?>
+
               <?if(!$arResult['PROPERTIES']['DLINA']['VALUE']):?>
 
                   <? if($arResult['CATALOG_QUANTITY'] > 0 and $arResult['ITEM_PRICES'][0]['BASE_PRICE']): ?>

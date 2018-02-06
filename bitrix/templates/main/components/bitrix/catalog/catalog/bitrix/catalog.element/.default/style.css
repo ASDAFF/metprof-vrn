@@ -221,3 +221,12 @@ button.no-style {
     margin-top: 20px;
     font-size: 12px;
 }
+
+.buy-box-product{
+    float: left;
+    width: 100%;
+    text-align: right;
+    margin-top: 25px;
+    font: 700 18px/20px 'Fira Sans',sans-serif;
+    color: #ff2a2a;
+}
