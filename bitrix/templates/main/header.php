@@ -168,6 +168,10 @@ $noh1    = $pages[1] == 'personal' || $pages[1] == 'price' || ($pages[1] == 'cat
 									<div class="hours"><?= tplvar('week', true);?></div>
 								</div>
 								<div class="line cl">
+									<div class="days">ПН-ПТ</div>
+									<div class="hours"><?= tplvar('week-two', true);?></div>
+								</div>
+								<div class="line cl">
 									<div class="days">CБ</div>
 									<div class="hours"><?= tplvar('saturday', true);?></div>
 								</div>
@@ -225,19 +229,9 @@ $noh1    = $pages[1] == 'personal' || $pages[1] == 'price' || ($pages[1] == 'cat
 							<img src="<?=SITE_TEMPLATE_PATH?>/img/h_logo.jpg" alt="Полимер" width="250" height="44">
 						</a>
 						<div class="header__phone">
-							<table style="display: table;border-collapse: separate;border-spacing: 5px;line-height: 17px;text-align: left;">
+							<table style="display: table;border-collapse: separate;border-spacing: 5px;line-height: 17px;text-align: center;margin-top: 25px;">
 								<tr>
-									<td style="padding: unset;"><?= tplvar('phone_top', true);?></td>
-									<td style="padding: unset;">
-
-										<table>
-											<tr><td style="padding: unset;"><?= tplvar('phone_top_one', true);?></td></tr>
-											<tr><td style="padding: unset;font-size: 12px;color: #000;">Инженерная сантехника</td></tr>
-											<tr><td style="padding: unset;"><?= tplvar('phone_top_two', true);?></td></tr>
-											<tr><td style="padding: unset;font-size: 12px;color: #000;">Строительные материалы</td></tr>
-										</table>
-
-									</td>
+									<td style="padding: unset;display: block;"><?= tplvar('phone_top', true);?> <?= tplvar('phone_top_one', true);?></td>
 								</tr>
 							</table>
 						</div>
@@ -245,6 +239,10 @@ $noh1    = $pages[1] == 'personal' || $pages[1] == 'price' || ($pages[1] == 'cat
 							<div class="line cl">
 								<div class="days">ПН-ПТ</div>
 								<div class="hours"><?= tplvar('week', true);?></div>
+							</div>
+							<div class="line cl">
+								<div class="days">ПН-ПТ</div>
+								<div class="hours"><?= tplvar('week-two', true);?></div>
 							</div>
 							<div class="line cl">
 								<div class="days">CБ</div>
