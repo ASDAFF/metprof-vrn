@@ -82,7 +82,18 @@ if (!empty($arResult['ITEMS']))
 
 			<div class="pr_box cl">
 
-				<? foreach ($arResult['ITEMS'] as $key => $arItem): ?>
+				<? foreach ($arResult['ITEMS'] as $key => $arItem):?>
+
+					<?
+					$arOffers = array();
+					foreach($arItem['OFFERS'] as $offer){
+						if($offer['MIN_PRICE']['DISCOUNT_VALUE']){
+							$arOffers['ID'] = $offer['ID'];
+							$arOffers['DISCOUNT_VALUE'] = $offer['MIN_PRICE']['DISCOUNT_VALUE'];
+							$arOffers['DISCOUNT_DIFF'] = $offer['MIN_PRICE']['DISCOUNT_DIFF'];
+						}
+					}
+					?>
 
 					<div class="item" id="product_<?=$arItem['ID']?>">
 						<div class="hover">
@@ -101,14 +112,14 @@ if (!empty($arResult['ITEMS']))
 								</a>
 								<a href="<?=$arItem['DETAIL_PAGE_URL']?>" class="title"><?=$arItem['NAME']?></a>
 								<div class="cost">
-									<span><?=price($arItem['ID']);?></span> &#8381;/<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['VALUE'];?>
+									<span><?=$arOffers['DISCOUNT_VALUE'];?></span> &#8381;/<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['VALUE'];?>
 								</div>
-								<?if(!price($arItem['ID'])){
+								<?if(!$arOffers['DISCOUNT_VALUE']){
 									print '<span class="noprice">Цену уточняйте у менеджера</span>';
 								}
 								?>
 
-								<? if($arItem['CATALOG_QUANTITY'] > 0 and (float)price($arItem['ID'])): ?>
+								<? if($arOffers['DISCOUNT_VALUE']): ?>
 
 								<?if(!$arItem['PROPERTIES']['DLINA']['VALUE']):?>
 								<div class="quantity" id="count_<?=$arItem['ID']?>">
@@ -157,7 +168,7 @@ if (!empty($arResult['ITEMS']))
 								<?endif;?>
 
 
-								<div class="cost_total"><span><?=price($arItem['ID'])?></span> &#8381;</div>
+								<div class="cost_total"><span><?=$arOffers['DISCOUNT_VALUE']?></span> &#8381;</div>
 								<?if($arItem['PROPERTIES']['DLINA']['VALUE']):?>
 								<a href="<?=$arItem['DETAIL_PAGE_URL']?>" class="add2cart">
 									<span class="txt1">Подробнее</span>
@@ -165,8 +176,8 @@ if (!empty($arResult['ITEMS']))
 								</a>
 								<?else:?>
 								<a href="javascript:void(0)" class="add2cart">
-									<span class="txt1" onclick="if(document.body.clientWidth < 659){addToBasket2(<?=$arItem['ID']?>, $('#count_<?=$arItem['ID']?> input').val(),this,<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>)};">В корзину</span>
-									<span class="txt2" onclick="addToBasket2(<?=$arItem['ID']?>, $('#count_<?=$arItem['ID']?> input').val(),this,<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);">Добавить в корзину</span>
+									<span class="txt1" onclick="if(document.body.clientWidth < 659){addToBasket2(<?=$arOffers['ID']?>, $('#count_<?=$arItem['ID']?> input').val(),this,<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>)};">В корзину</span>
+									<span class="txt2" onclick="addToBasket2(<?=$arOffers['ID']?>, $('#count_<?=$arItem['ID']?> input').val(),this,<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);">Добавить в корзину</span>
 								</a>
 								<?endif;?>
 

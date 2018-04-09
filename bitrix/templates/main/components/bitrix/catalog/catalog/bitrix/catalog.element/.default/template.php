@@ -34,6 +34,18 @@ $this->setFrameMode(true);
     );
 </script>
 
+<?
+$arOffers = array();
+foreach($arResult['OFFERS'] as $offer){
+    if($offer['MIN_PRICE']['DISCOUNT_VALUE']){
+        $arOffers['ID'] = $offer['ID'];
+        $arOffers['DISCOUNT_VALUE'] = $offer['MIN_PRICE']['DISCOUNT_VALUE'];
+        $arOffers['DISCOUNT_DIFF'] = $offer['MIN_PRICE']['DISCOUNT_DIFF'];
+    }
+}
+?>
+
+
 <div class="prod_card cl">
    <div class="pc__prod-info">
       <h1><?=$arResult['NAME']?></h1>
@@ -65,25 +77,21 @@ $this->setFrameMode(true);
                   <label for="icompare">Сравнить</label>
               </div>
 
-
-              <? if(empty($arResult['ITEM_PRICES'])): ?>
+              <? if(empty($arOffers['DISCOUNT_VALUE'])): ?>
                   <h1>Цену уточняйте у менеджера</h1>
               <? else: ?>
                   <div class="bb_col">
                       <div class="price">
-                          <? foreach($arResult['ITEM_PRICES'] as $name => $price):?>
-<!--                              <div class="price-old"><span>--><?//=$price['BASE_PRICE']?><!--</span> &#8381;/--><?//=$arResult['PROPERTIES']['CML2_BASE_UNIT']['VALUE'];?><!--</div>-->
-                              <div class="price-new"><span><?=$price['UNROUND_PRICE']?></span>  &#8381;/<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['VALUE'];?></div>
-                          <? endforeach; ?>
+                              <div class="price-new"><span><?=$arOffers['DISCOUNT_VALUE']?></span>  &#8381;/<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['VALUE'];?></div>
                       </div>
-                      <!--               <a href="#" class="cheaper">Нашли дешевле ?</a>-->
                   </div>
 
                   <div class="bb_col right">
+
                       <div class="sale">
-                          <? foreach($arResult['ITEM_PRICES'] as $name => $price):?>
-                              <span>СКИДКА <?=$price['PERCENT']?>%</span>
-                          <? endforeach; ?>
+                          <? if($arOffers['DISCOUNT_DIFF']): ?>
+                              <span>СКИДКА <?=$arOffers['DISCOUNT_DIFF'];?>%</span>
+                          <? endif;?>
                           <span>при заказе<br>с сайта</span>
                       </div>
 
@@ -106,8 +114,8 @@ $this->setFrameMode(true);
 
               <?if(!$arResult['PROPERTIES']['DLINA']['VALUE']):?>
 
-                  <? if($arResult['CATALOG_QUANTITY'] > 0 and $arResult['ITEM_PRICES'][0]['BASE_PRICE']): ?>
-                      <a href="javascript:void(0)" class="add2cart" onclick="addToBasket2(<?=$arResult['ID']?>, $('#count_product').val(),this,<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);">Добавить в корзину</a>
+                  <? if($arOffers['DISCOUNT_VALUE']): ?>
+                      <a href="javascript:void(0)" class="add2cart" onclick="addToBasket2(<?=$arOffers['ID']?>, $('#count_product').val(),this,<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);">Добавить в корзину</a>
                   <?else:?>
                       <a href="javascript:void(0)" class="add2cart show-popup" data-id="order-product">Товар под заказ</a>
                   <?endif;?>
@@ -199,59 +207,59 @@ $this->setFrameMode(true);
                <a href="#" class="mtb" onclick="return false">Наличие в магазинах</a>
                <div class="content">
                   <?$APPLICATION->IncludeComponent(
-	"nbrains:catalog.store.amount", 
-	"store", 
-	array(
-		"CACHE_TIME" => "36000",
-		"CACHE_TYPE" => "N",
-		"ELEMENT_CODE" => "",
-		"ELEMENT_ID" => $arResult["ID"],
-		"FIELDS" => array(
-			0 => "TITLE",
-			1 => "ADDRESS",
-			2 => "DESCRIPTION",
-			3 => "PHONE",
-			4 => "EMAIL",
-			5 => "IMAGE_ID",
-			6 => "COORDINATES",
-			7 => "SCHEDULE",
-			8 => "",
-		),
-		"IBLOCK_ID" => $arParams['IBLOCK_ID'],
-		"IBLOCK_TYPE" => "1c_catalog",
-		"MAIN_TITLE" => "",
-		"MIN_AMOUNT" => "0",
-		"OFFER_ID" => "",
-		"SHOW_EMPTY_STORE" => "N",
-		"SHOW_GENERAL_STORE_INFORMATION" => "N",
-		"STORES" => array(
-			0 => "3",
-			1 => "4",
-			2 => "5",
-			3 => "6",
-			4 => "7",
-			5 => "8",
-			6 => "9",
-			7 => "10",
-			8 => "11",
-			9 => "12",
-			10 => "13",
-			11 => "14",
-			12 => "15",
-			13 => "",
-		),
-		"STORE_PATH" => "",
-		"USER_FIELDS" => array(
-			0 => "",
-			1 => "",
-		),
-		"USE_MIN_AMOUNT" => "N",
-		"COMPONENT_TEMPLATE" => "store",
-		"COMPOSITE_FRAME_MODE" => "A",
-		"COMPOSITE_FRAME_TYPE" => "AUTO"
-	),
-	false
-);?>
+                    "nbrains:catalog.store.amount",
+                    "store",
+                    array(
+                        "CACHE_TIME" => "36000",
+                        "CACHE_TYPE" => "N",
+                        "ELEMENT_CODE" => "",
+                        "ELEMENT_ID" => $arResult["ID"],
+                        "FIELDS" => array(
+                            0 => "TITLE",
+                            1 => "ADDRESS",
+                            2 => "DESCRIPTION",
+                            3 => "PHONE",
+                            4 => "EMAIL",
+                            5 => "IMAGE_ID",
+                            6 => "COORDINATES",
+                            7 => "SCHEDULE",
+                            8 => "",
+                        ),
+                        "IBLOCK_ID" => $arParams['IBLOCK_ID'],
+                        "IBLOCK_TYPE" => "1c_catalog",
+                        "MAIN_TITLE" => "",
+                        "MIN_AMOUNT" => "0",
+                        "OFFER_ID" => "",
+                        "SHOW_EMPTY_STORE" => "N",
+                        "SHOW_GENERAL_STORE_INFORMATION" => "N",
+                        "STORES" => array(
+                            0 => "3",
+                            1 => "4",
+                            2 => "5",
+                            3 => "6",
+                            4 => "7",
+                            5 => "8",
+                            6 => "9",
+                            7 => "10",
+                            8 => "11",
+                            9 => "12",
+                            10 => "13",
+                            11 => "14",
+                            12 => "15",
+                            13 => "",
+                        ),
+                        "STORE_PATH" => "",
+                        "USER_FIELDS" => array(
+                            0 => "",
+                            1 => "",
+                        ),
+                        "USE_MIN_AMOUNT" => "N",
+                        "COMPONENT_TEMPLATE" => "store",
+                        "COMPOSITE_FRAME_MODE" => "A",
+                        "COMPOSITE_FRAME_TYPE" => "AUTO"
+                    ),
+                    false
+                );?>
                </div>
             </div>
          </div>
@@ -306,12 +314,14 @@ $this->setFrameMode(true);
                 </button>
             </div>
 
+
+
             <input type="hidden" name="width" value="<?=$arResult['PROPERTIES']['SHIRINA_LISTA']['VALUE']?>" >
             <input type="hidden" name="product_id" size="2" value="<?=$arResult['ID']?>" />
-            <input type="hidden" name="price" value="<?=$arResult['ITEM_PRICES'][0]['UNROUND_PRICE']?>">
+            <input type="hidden" name="price" value="<?=$arOffers['DISCOUNT_VALUE']?>">
 
-            <? if($arResult['CATALOG_QUANTITY'] > 0 and $arResult['ITEM_PRICES'][0]['BASE_PRICE']): ?>
-                <a class="button button-primary button-block text-center toShopBox" id="button-cart" onclick="addToBasket2(<?=$arResult['ID']?>, $('#count_product').val(),this,<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);" data-toggle="tooltip" data-placement="top" title="необходимо ввести количество">Добавить в корзину</a>
+            <? if($arOffers['DISCOUNT_VALUE']): ?>
+                <a class="button button-primary button-block text-center toShopBox" id="button-cart" onclick="addToBasket2(<?=$arOffers['ID']?>, $('#count_product').val(),this,<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);" data-toggle="tooltip" data-placement="top" title="необходимо ввести количество">Добавить в корзину</a>
             <?else:?>
                 <a href="javascript:void(0)" class="add2cart show-popup" data-id="order-product">Товар под заказ</a>
             <?endif;?>

@@ -1,12 +1,23 @@
 <?php
 
 function price($id){
-    $ar_res_price = CPrice::GetBasePrice($id, false, false);
+    $res = CCatalogSKU::getOffersList(
+        $id,
+        $iblockID = 24,
+        $skuFilter = array("ACTIVE" => "Y"),
+        $fields = array("CATALOG_PRICE_4"),
+        $propertyFilter = array()
+    );
+    $id_offer = array_keys($res[$id])[0];
+
+    $ar_res_price = CPrice::GetBasePrice($id_offer, false, false);
     if($ar_res_price['PRICE']){
         return $ar_res_price['PRICE'];
     }else{
         return false;
     }
+
+
 
 }
 function priceDiscount($id){

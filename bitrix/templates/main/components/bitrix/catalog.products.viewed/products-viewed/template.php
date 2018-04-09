@@ -142,14 +142,7 @@ $areaIds = array();
 					<div class="price">
 							<span><?=price($item['ID']);?></span> &#8381;/<?=$item['PROPERTIES']['CML2_BASE_UNIT']['VALUE'];?>
 					</div>
-					<?if(!price($item['ID'])){
-						print '<span class="noprice" style="font-size: 11px;margin: 17px 0">Цену уточняйте у менеджера</span>';
-					}?>
-					<? if((float)price($item['ID'])): ?>
-					<a href="javascript:void(0)" onclick="addToBasket2(<?=$item['ID']?>,1,this);" class="cart">В корзину</a>
-					<? else: ?>
-					<a href="javascript:void(0)" class="cart show-popup" data-id="order-product">под заказ</a>
-					<? endif; ?>
+					<a href="<?=$arItem["DETAIL_PAGE_URL"]?>" class="cart">Подробнее</a>
 				</div>
 			</div>
 		<?
