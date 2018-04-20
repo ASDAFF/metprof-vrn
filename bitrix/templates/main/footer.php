@@ -46,8 +46,8 @@
 							<div class="footer__title">Каталог</div>
 							<div class="cl">
 								<ul class="footer__list footer__list--50">
-									<li><a href="/catalog/inzhenernaya_santekhnika_otoplenie_vodoprovod_kanalizatsiya/">Инженерная сантехника</a></li>
-									<li><a href="/catalog/stroitelnye_materialy/">Строительные материалы</a></li>
+									<li><a href="/catalog/krovelnye_materialy/">Кровельные материалы</a></li>
+									<li><a href="/catalog/fasadnye_materialy/">Фасадные материалы</a></li>
 								</ul>
 							</div>
 							<?
