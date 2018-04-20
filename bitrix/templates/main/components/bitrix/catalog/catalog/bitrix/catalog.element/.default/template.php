@@ -42,6 +42,7 @@ foreach($arResult['OFFERS'] as $offer){
         $arOffers['DISCOUNT_VALUE'] = $offer['MIN_PRICE']['DISCOUNT_VALUE'];
         $arOffers['DISCOUNT_DIFF'] = $offer['MIN_PRICE']['DISCOUNT_DIFF'];
     }
+    $arOffers['QUANTITY'] = $offer['CATALOG_QUANTITY'];
 }
 ?>
 
@@ -98,9 +99,21 @@ foreach($arResult['OFFERS'] as $offer){
                       <?if(!$arResult['PROPERTIES']['DLINA']['VALUE']):?>
                           <div class="quantity">
                               <a class="minus na" href="#"></a>
-                              <input type="text" value="1" id="count_product"/>
+                              <input type="text" value="1" max="<?=$arOffers['QUANTITY']?>" id="count_product"/>
                               <a class="plus" href="#"></a>
                           </div>
+                          <script>
+                              $('.quantity > .plus').click(function(){
+                                  var count_val = $(this).parent().find('input').val();
+                                  if(count_val >= <?=$arOffers['QUANTITY']?>){
+                                      $(this).addClass('na');
+                                      return false;
+                                  }
+                              });
+                              $('.quantity > .minus').click(function(){
+                                  $('.quantity > .plus').removeClass('na');
+                              });
+                          </script>
                       <?else:?>
                           <input type="hidden" name="count_product" id="count_product" value="0">
                       <?endif;?>
@@ -114,7 +127,7 @@ foreach($arResult['OFFERS'] as $offer){
 
               <?if(!$arResult['PROPERTIES']['DLINA']['VALUE']):?>
 
-                  <? if($arOffers['DISCOUNT_VALUE']): ?>
+                  <? if($arOffers['DISCOUNT_VALUE'] and $arOffers['QUANTITY'] > 0): ?>
                       <a href="javascript:void(0)" class="add2cart" onclick="addToBasket2(<?=$arOffers['ID']?>, $('#count_product').val(),this,<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);">Добавить в корзину</a>
                   <?else:?>
                       <a href="javascript:void(0)" class="add2cart show-popup" data-id="order-product">Товар под заказ</a>

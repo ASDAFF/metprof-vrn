@@ -92,6 +92,7 @@ if (!empty($arResult['ITEMS']))
 							$arOffers['DISCOUNT_VALUE'] = $offer['MIN_PRICE']['DISCOUNT_VALUE'];
 							$arOffers['DISCOUNT_DIFF'] = $offer['MIN_PRICE']['DISCOUNT_DIFF'];
 						}
+						$arOffers['QUANTITY'] = $offer['CATALOG_QUANTITY'];
 					}
 					?>
 
@@ -121,71 +122,82 @@ if (!empty($arResult['ITEMS']))
 
 								<? if($arOffers['DISCOUNT_VALUE']): ?>
 
-								<?if(!$arItem['PROPERTIES']['DLINA']['VALUE']):?>
-								<div class="quantity" id="count_<?=$arItem['ID']?>">
-									<a class="minus na" href="#"></a>
-									<input type="text" value="1"/>
-									<a class="plus" href="#"></a>
-								</div>
-									<script>
+									<?if(!$arItem['PROPERTIES']['DLINA']['VALUE']):?>
+									<div class="quantity" id="count_<?=$arItem['ID']?>">
+										<a class="minus na" href="#"></a>
+										<input type="text" value="1"/>
+										<a class="plus" href="#"></a>
+									</div>
+										<script>
 
-											$('#count_<?=$arItem['ID']?> > .minus').click(function(){
-												var count_val = $(this).parent().find('input').val();
-												if(count_val < 2){
-													$(this).addClass('na');
-													$(this).parent().find('input').val(1);
-												}else{
-													var val = parseInt($(this).parent().find('input').val()) - 1;
-													var cost = parseFloat($('#product_<?=$arItem['ID']?> .cost > span').text());
-													var cost_total = cost*val;
-													$('#product_<?=$arItem['ID']?> .cost_total > span').text(cost_total.toFixed(2));
-													$(this).parent().find('input').val(val);
-													$(this).parent().find('.plus').removeClass('na');
+												$('#count_<?=$arItem['ID']?> > .minus').click(function(){
+													var count_val = $(this).parent().find('input').val();
+													if(count_val < 2){
+														$(this).addClass('na');
+														$(this).parent().find('input').val(1);
+													}else{
+														var val = parseInt($(this).parent().find('input').val()) - 1;
+														var cost = parseFloat($('#product_<?=$arItem['ID']?> .cost > span').text());
+														var cost_total = cost*val;
+														$('#product_<?=$arItem['ID']?> .cost_total > span').text(cost_total.toFixed(2));
+														$(this).parent().find('input').val(val);
+														$(this).parent().find('.plus').removeClass('na');
 
-												}
-												return false;
-											});
-											$('#count_<?=$arItem['ID']?> > .plus').click(function(){
-												var count_val = $(this).parent().find('input').val();
+													}
+													return false;
+												});
+												$('#count_<?=$arItem['ID']?> > .plus').click(function(){
+													var count_val = $(this).parent().find('input').val();
 
-												if(count_val < <?=$arItem['CATALOG_QUANTITY']?>){
-													var val = parseInt($(this).parent().find('input').val()) + 1;
-													var cost = parseFloat($('#product_<?=$arItem['ID']?> .cost > span').text());
-													var cost_total = cost*val;
-													$('#product_<?=$arItem['ID']?> .cost_total > span').text(cost_total.toFixed(2));
-													$(this).parent().find('input').val(val);
-													$(this).parent().find('.minus').removeClass('na');
-												}else{
-													$(this).addClass('na');
-													$(this).parent().find('input').val(<?=$arItem['CATALOG_QUANTITY']?>);
-												}
-												return false;
-											});
-
-
-
-									</script>
-								<?endif;?>
+													if(count_val < <?=$arOffers['QUANTITY']?>){
+														var val = parseInt($(this).parent().find('input').val()) + 1;
+														var cost = parseFloat($('#product_<?=$arItem['ID']?> .cost > span').text());
+														var cost_total = cost*val;
+														$('#product_<?=$arItem['ID']?> .cost_total > span').text(cost_total.toFixed(2));
+														$(this).parent().find('input').val(val);
+														$(this).parent().find('.minus').removeClass('na');
+													}else{
+														$(this).addClass('na');
+														$(this).parent().find('input').val(<?=$arOffers['QUANTITY']?>);
+													}
+													return false;
+												});
 
 
-								<div class="cost_total"><span><?=$arOffers['DISCOUNT_VALUE']?></span> &#8381;</div>
-								<?if($arItem['PROPERTIES']['DLINA']['VALUE']):?>
-								<a href="<?=$arItem['DETAIL_PAGE_URL']?>" class="add2cart">
-									<span class="txt1">Подробнее</span>
-									<span class="txt2">Подробнее</span>
-								</a>
+
+										</script>
+									<?endif;?>
+
+
+									<div class="cost_total"><span><?=$arOffers['DISCOUNT_VALUE']?></span> &#8381;</div>
+									<?if($arItem['PROPERTIES']['DLINA']['VALUE']):?>
+										<a href="<?=$arItem['DETAIL_PAGE_URL']?>" class="add2cart">
+											<span class="txt1">Подробнее</span>
+											<span class="txt2">Подробнее</span>
+										</a>
+									<?else:?>
+
+										<?if($arOffers['QUANTITY'] > 0):?>
+											<a href="javascript:void(0)" class="add2cart">
+												<span class="txt1" onclick="if(document.body.clientWidth < 659){addToBasket2(<?=$arOffers['ID']?>, $('#count_<?=$arItem['ID']?> input').val(),this,<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>)};">В корзину</span>
+												<span class="txt2" onclick="addToBasket2(<?=$arOffers['ID']?>, $('#count_<?=$arItem['ID']?> input').val(),this,<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);">Добавить в корзину</span>
+											</a>
+										<?else:?>
+											<div class="cost_total"><span></span></div>
+											<a href="javascript:void(0)" class="add2cartOrder show-popup" data-id="order-product">Товар под заказ</a>
+											<div class="outstock">Товар под заказ</div>
+										<?endif;?>
+
+									<?endif;?>
+
+										<?if($arOffers['QUANTITY'] > 0):?>
+											<div class="instock">Товар в наличии</div>
+										<?endif;?>
+
 								<?else:?>
-								<a href="javascript:void(0)" class="add2cart">
-									<span class="txt1" onclick="if(document.body.clientWidth < 659){addToBasket2(<?=$arOffers['ID']?>, $('#count_<?=$arItem['ID']?> input').val(),this,<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>)};">В корзину</span>
-									<span class="txt2" onclick="addToBasket2(<?=$arOffers['ID']?>, $('#count_<?=$arItem['ID']?> input').val(),this,<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);">Добавить в корзину</span>
-								</a>
-								<?endif;?>
-
-								<div class="instock">Товар в наличии</div>
-								<?else:?>
-								<div class="cost_total"><span></span></div>
-								<a href="javascript:void(0)" class="add2cartOrder show-popup" data-id="order-product">Товар под заказ</a>
-								<div class="outstock">Товар под заказ</div>
+									<div class="cost_total"><span></span></div>
+									<a href="javascript:void(0)" class="add2cartOrder show-popup" data-id="order-product">Товар под заказ</a>
+									<div class="outstock">Товар под заказ</div>
 								<? endif; ?>
 
 							</div>
