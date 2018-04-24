@@ -15,15 +15,10 @@ CModule::IncludeModule( 'catalog' );
 CModule::IncludeModule( 'sale' );
 
 if($_POST['props']){
-
     foreach($_POST['props'] as $props){
-        if( Add2BasketByProductID( $id, $props[1]['VALUE'], array(),$props)){
-            print 'Товар успешно добавлен в корзину';
-        }else{
-            print 'Товара нет в наличии';
-        }
+        Add2BasketByProductID( $id, $props[1]['VALUE'], array(),$props);
     }
-
+    print 'Товар успешно добавлен в корзину';
 }else{
 
     if($quantity > 20 OR (int)$_POST["type"] == 5){
