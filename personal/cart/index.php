@@ -47,6 +47,7 @@ $APPLICATION->SetTitle("Корзина");
 			35 => "PROPERTY_TSVET_POKRYTIYA",
 			36 => "PROPERTY_SHIRINA",
 			37 => "PROPERTY__1200KH1800",
+			38 => "PROPS",
 		),
 		"AJAX_MODE" => "N",
 		"AJAX_OPTION_JUMP" => "N",

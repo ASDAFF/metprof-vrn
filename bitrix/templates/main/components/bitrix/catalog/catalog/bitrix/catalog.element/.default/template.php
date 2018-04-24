@@ -238,7 +238,7 @@ foreach($arResult['OFFERS'] as $offer){
                             7 => "SCHEDULE",
                             8 => "",
                         ),
-                        "IBLOCK_ID" => $arParams['IBLOCK_ID'],
+                        "IBLOCK_ID" => $arParams["IBLOCK_ID"],
                         "IBLOCK_TYPE" => "1c_catalog",
                         "MAIN_TITLE" => "",
                         "MIN_AMOUNT" => "0",
@@ -246,20 +246,7 @@ foreach($arResult['OFFERS'] as $offer){
                         "SHOW_EMPTY_STORE" => "N",
                         "SHOW_GENERAL_STORE_INFORMATION" => "N",
                         "STORES" => array(
-                            0 => "3",
-                            1 => "4",
-                            2 => "5",
-                            3 => "6",
-                            4 => "7",
-                            5 => "8",
-                            6 => "9",
-                            7 => "10",
-                            8 => "11",
-                            9 => "12",
-                            10 => "13",
-                            11 => "14",
-                            12 => "15",
-                            13 => "",
+                            0 => "16",
                         ),
                         "STORE_PATH" => "",
                         "USER_FIELDS" => array(
@@ -298,7 +285,7 @@ foreach($arResult['OFFERS'] as $offer){
                         <th>кол-во м²</th>
                         <th>стоимость</th>
                     </tr>
-                    <tr class="order-cnt">
+                    <tr class="order-cnt" data-list="500" data-count="0">
 
                         <td data-toggle="modal" data-target="#available-length" data-item="">
                             <div class="dropdown dropdown_double-icon dropdown-modal">
@@ -331,6 +318,7 @@ foreach($arResult['OFFERS'] as $offer){
 
             <input type="hidden" name="width" value="<?=$arResult['PROPERTIES']['SHIRINA_LISTA']['VALUE']?>" >
             <input type="hidden" name="product_id" size="2" value="<?=$arResult['ID']?>" />
+            <input type="hidden" name="product_offer_id" id="product_offer_id" value="<?=$arOffers['ID']?>" />
             <input type="hidden" name="price" value="<?=$arOffers['DISCOUNT_VALUE']?>">
 
             <? if($arOffers['DISCOUNT_VALUE']): ?>

@@ -29,15 +29,42 @@ function addToBasket2(idel, quantity,el,type) {
                 alertify.error("Минимальный заказ 20м2");
                 return false;
             }
+
+            if(quantity >= 20 && type == 6){
+                var table = $(el).parent().find('#order-table');
+                var props = [];
+                $('.order-cnt',table).each(function(li,el){
+
+                    props[li] = [
+                        {
+                            NAME:"длина листа",
+                            CODE:"WIDTH_LIST",
+                            VALUE:$(el).data('list')
+                        },
+                        {
+                            NAME:"кол-во м²",
+                            CODE:"SQUARE",
+                            VALUE:$(el).data('count')
+                        }
+                    ];
+                });
+            }
+
             quantity = parseFloat(quantity);
 
-            $href = "/ajax/add.php?id="+idel;
+            $href = "/ajax/add.php";
             var _result = true;
-
                 $.ajax({
-                    url: $href + '&quantity=' + quantity + '&type=' + type,
-                    type: 'get',
+                    url: $href,
+                    type: 'post',
+                    data:{
+                        id:idel,
+                        quantity:quantity,
+                        type:type,
+                        props:props
+                    },
                     success: function (data) {
+
                         if (data == 'Товар успешно добавлен в корзину') {
                             replaseBasketTop();
                             alertify.success(data);
@@ -73,7 +100,7 @@ function setCupon(){
             success: function(msg){
                 if(msg)
                 {
-                    console.log(msg);
+
                     UpdateBigBasket();
                     alertify.success("Купон активирован!");
                 }
@@ -233,13 +260,13 @@ function updatePrice(El, val) {
         val = 0;
     }
     if (val < 0) {
-        console.log(El);
         $(El).attr('value', 0);
         val = 0;
         return false;
     }
 
-    var sq_full = 0;
+            var sq_full = 0;
+            var width_list = {};
 
             var _elements = $(".order-cnt");
 
@@ -249,6 +276,7 @@ function updatePrice(El, val) {
                 var length_part = (dv.length > 0) ? parseFloat($(_el).find('.drop-value').html()) : parseFloat($(_el).find('input[name=length]').val().replace(',', '.') * 1000);
                 var width_part = $("input[name=width]").val();
                 var sq = width_part * length_part * val / 1000000;
+                width_list = sq
                 sq_full = sq_full + sq;
             });
 
@@ -270,6 +298,7 @@ function updatePrice(El, val) {
 
 
 
+                $(_el).attr('data-count',sq);
                 $(_el).find('.sq').empty().append(sq + ' м²');
                 $(_el).find('.price_in-table').empty().append(number_format(parseFloat(price), 2, '.', ' ') + '₽');
 
@@ -308,9 +337,11 @@ $(function(){
     });
     //Выбор длины в карточке товара.
     $("#available-length td").bind('click', function () {
+        $('#button-cart').attr('onclick','addToBasket2('+$('#product_offer_id').val()+', $("#count_product").val(),this,6)').text('Добавить в корзину');
         if (!$(this).hasClass('disable')) {
             var data_item = $("#av-length-table").attr('data-td');
             $("td[data-item='" + data_item + "'] div.drop-value").empty().append($(this).html() + ' мм');
+            $("td[data-item='" + data_item + "']").parent().attr('data-list',$(this).html());
             $("#available-length").modal('hide');
 
             updatePrice($("td[data-item='" + data_item + "'] div.drop-value").parent().parent().parent().find('input[name=_quantity]'), $("td[data-item='" + data_item + "'] div.drop-value").parent().parent().parent().find('input[name=_quantity]').val());
