@@ -1,6 +1,6 @@
 <?
 require($_SERVER["DOCUMENT_ROOT"]."/bitrix/header.php");
-$APPLICATION->SetTitle("«Полимер» — главная страница сайта");
+$APPLICATION->SetTitle("«Металлинвест Профиль» — главная страница сайта");
 ?>
 <div class="mp__categories">
 
