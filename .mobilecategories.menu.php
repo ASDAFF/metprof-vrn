@@ -1,0 +1,25 @@
+<?
+$aMenuLinks = Array(
+	Array(
+		"1", 
+		"1", 
+		Array(), 
+		Array(), 
+		"" 
+	),
+	Array(
+		"2", 
+		"2", 
+		Array(), 
+		Array(), 
+		"" 
+	),
+	Array(
+		"3", 
+		"3", 
+		Array(), 
+		Array(), 
+		"" 
+	)
+);
+?>
