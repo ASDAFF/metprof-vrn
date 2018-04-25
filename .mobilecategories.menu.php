@@ -1,25 +1,28 @@
 <?
 $aMenuLinks = Array(
 	Array(
-		"1", 
-		"1", 
-		Array(), 
-		Array(), 
-		"" 
+		"Инженерная<br> сантехника",
+		"/catalog/inzhenernaya_santekhnika/",
+		Array(),
+		Array(),
+		""
 	),
+
 	Array(
-		"2", 
-		"2", 
-		Array(), 
-		Array(), 
-		"" 
+		"Cтроительные<br> материалы",
+		"/catalog/stroitelno_otdelochnye_materialy/",
+		Array(),
+		Array(),
+		""
 	),
+
 	Array(
-		"3", 
-		"3", 
-		Array(), 
-		Array(), 
-		"" 
-	)
+		"Прайс-листы",
+		"/price/",
+		Array(),
+		Array(),
+		""
+	),
+
 );
 ?>
