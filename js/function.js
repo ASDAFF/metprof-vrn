@@ -31,20 +31,19 @@ function addToBasket2(idel, quantity,el,type) {
             }
 
             if(quantity >= 20 && type == 6){
-                var table = $(el).parent().find('#order-table');
+                var table = $(el).parent().find('#order-table .order-cnt');
                 var props = [];
-                $('.order-cnt',table).each(function(li,el){
-
+                table.each(function(li,el){
                     props[li] = [
                         {
                             NAME:"длина листа",
                             CODE:"WIDTH_LIST",
-                            VALUE:$(el).data('list')
+                            VALUE:$(el).attr('data-list')
                         },
                         {
                             NAME:"кол-во м²",
                             CODE:"SQUARE",
-                            VALUE:$(el).data('count')
+                            VALUE:$(el).attr('data-count')
                         }
                     ];
                 });
@@ -64,7 +63,6 @@ function addToBasket2(idel, quantity,el,type) {
                         props:props
                     },
                     success: function (data) {
-
                         if (data == 'Товар успешно добавлен в корзину') {
                             replaseBasketTop();
                             alertify.success(data);
