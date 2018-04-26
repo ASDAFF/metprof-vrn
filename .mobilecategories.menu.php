@@ -1,28 +1,25 @@
 <?
 $aMenuLinks = Array(
 	Array(
-		"Инженерная<br> сантехника",
-		"/catalog/inzhenernaya_santekhnika/",
-		Array(),
-		Array(),
-		""
+		"Кровельные<br>  материалы", 
+		"/catalog/krovelnye_materialy/", 
+		Array(), 
+		Array(), 
+		"" 
 	),
-
 	Array(
-		"Cтроительные<br> материалы",
-		"/catalog/stroitelno_otdelochnye_materialy/",
-		Array(),
-		Array(),
-		""
+		"Фасадные<br>  материалы", 
+		"/catalog/fasadnye_materialy/", 
+		Array(), 
+		Array(), 
+		"" 
 	),
-
 	Array(
-		"Прайс-листы",
-		"/price/",
-		Array(),
-		Array(),
-		""
-	),
-
+		"Прайс-листы", 
+		"/price/", 
+		Array(), 
+		Array(), 
+		"" 
+	)
 );
 ?>

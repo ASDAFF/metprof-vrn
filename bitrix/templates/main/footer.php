@@ -6,9 +6,9 @@
 					<div class="footer__top cl">
 						<div class="footer__col col--1">
 							<a href="/" class="footer__logo">
-								<img src="<?=SITE_TEMPLATE_PATH?>/img/h_logo.jpg" alt="Полимер" width="206" height="44">
+								<img src="<?=SITE_TEMPLATE_PATH?>/img/h_logo.jpg" alt="Металлинвест Профиль" width="206" height="44">
 							</a>
-							<p class="footer__logotext">Оптово-розничная торговля материалами и оборудованием для отопления и водоснабжения в Воронежской области.</p>
+							<p class="footer__logotext">Кровельные и фасадные материалы для промышленного и гражданского строительства.</p>
 							<a href="/upload/politics.pdf" target="_blank" style="font-size: 11px; text-decoration: none; color: #4d4d4d;">Политика конфиденциальности</a><br><a href="/upload/compliance.pdf" target="_blank" style="font-size: 11px; text-decoration: none; color: #4d4d4d;">Согласие на обработку персональных данных</a>
 						</div><!--end::col__1-->
 						<div class="footer__col col--2">
@@ -74,7 +74,7 @@
 						</div>
 					</div>
 					<div class="footer__bottom cl">
-						<div class="footer__copyright">© 2006 — <?=date("Y");?>. Полимер.</div>
+						<div class="footer__copyright">© 2006 — <?=date("Y");?>. Металлинвест Профиль</div>
 						<ul class="footer__pay pay" title="Все способы оплаты">
 							<li><a href="javascript:void(0)" class="visa">Visa</a></li>
 							<li><a href="javascript:void(0)" class="master">MasterCard</a></li>
