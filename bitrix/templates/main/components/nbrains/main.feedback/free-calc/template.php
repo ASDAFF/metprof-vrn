@@ -10,11 +10,12 @@ if(!defined("B_PROLOG_INCLUDED")||B_PROLOG_INCLUDED!==true)die();
  * @global CUser $USER
  */
 ?>
-<form action="<?=POST_FORM_ACTION_URI?>" method="POST" enctype="multipart/form-data">
-<?=bitrix_sessid_post()?>
 
-<div class="row cl">
-	<div class="rq__form">
+
+
+<form action="<?=POST_FORM_ACTION_URI?>" method="POST" enctype="multipart/form-data">
+		<?=bitrix_sessid_post()?>
+
 		<?if(!empty($arResult["ERROR_MESSAGE"]))
 		{
 			foreach($arResult["ERROR_MESSAGE"] as $v)
@@ -26,9 +27,6 @@ if(!defined("B_PROLOG_INCLUDED")||B_PROLOG_INCLUDED!==true)die();
 			?><div class="mf-ok-text"><?=$arResult["OK_MESSAGE"]?></div><?
 		}
 		?>
-		<p>Наши консультации помогут Вам избежать стандартных ошибок и как следствие сэкономить время и деньги.</p>
-
-
 
 		<div class="line">
 			<span>ФИО</span>
@@ -76,18 +74,12 @@ if(!defined("B_PROLOG_INCLUDED")||B_PROLOG_INCLUDED!==true)die();
 
 		<input type="hidden" name="PARAMS_HASH" value="<?=$arResult["PARAMS_HASH"]?>">
 		<input type="submit" class="send" name="submit" value="<?=GetMessage("MFT_SUBMIT")?>">
-	</div>
 
-	<div class="rq__list">
-		<div class="title">Мы не просто продаем оборудование для отопления, водоснабжения и канализации. Мы решаем эти проблемы для Вас. Обратившись в нашу компанию Вы получите:</div>
-		<ul>
-			<li>Бесплатную консультацию по правильной организации систем отопления, водоснабжения и канализации;</li>
-			<li>Квалифицированный подбор и расчет характеристик оборудования под Ваши потребности;</li>
-			<li>Рекомендации по монтажу от ведущих заводов-изготовителей отопительного оборудования.</li>
-		</ul>
-	</div>
-</div>
 </form>
+
+
+
+
 
 <div class="popup" id="<?=$arParams["IBLOCK_TYPE"].$arParams["IBLOCK_ID"]?>" style="display: none;width: 650px;margin: 0 0 0 -325px;">
 	<a href="#" class="close">&nbsp;</a>
