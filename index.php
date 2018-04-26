@@ -65,7 +65,7 @@ $APPLICATION->SetTitle("«Металлинвест Профиль» — гла�
 			$section = array_chunk($arrSection,6);
 			?>
 			<? for($i = 0;$i < $rows;$i++):?>
-			<div class="row cl category__line <?if($i >= 2):?>toggle_product_no<? endif; ?>">
+			<div class="row cl category__line">
 				<? foreach($section[$i] as $item):?>
 				<div class="category">
 					<a href="<?=$item['SECTION_PAGE_URL']?>" class="link">
@@ -76,7 +76,7 @@ $APPLICATION->SetTitle("«Металлинвест Профиль» — гла�
 				<? endforeach; ?>
 			</div><!-- row cl category__line-->
 			<? endfor; ?>
-			<a href="#" class="category__show">Показать ещё категории</a>
+			
 		</div><!-- end: tabitem -->
 		<? endforeach; ?>
       	<div class="tabitem"></div>
