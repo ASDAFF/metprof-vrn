@@ -1,15 +1,22 @@
 <?
 $aMenuLinks = Array(
 	Array(
-		"Сервисный центр насосного оборудования", 
-		"/service/equipment/", 
+		"Бесплатный расчёт", 
+		"/calc/", 
 		Array(), 
 		Array(), 
 		"" 
 	),
 	Array(
-		"Сервисный центр производителей", 
-		"/service/manufacturers/", 
+		"Бесплатный замер", 
+		"/service/zamer/", 
+		Array(), 
+		Array(), 
+		"" 
+	),
+	Array(
+		"Монтаж", 
+		"/service/montazh/", 
 		Array(), 
 		Array(), 
 		"" 
