@@ -2,7 +2,7 @@
 $aMenuLinks = Array(
 	Array(
 		"Бесплатный расчёт", 
-		"/calc/", 
+		"/service/raschet/", 
 		Array(), 
 		Array(), 
 		"" 
