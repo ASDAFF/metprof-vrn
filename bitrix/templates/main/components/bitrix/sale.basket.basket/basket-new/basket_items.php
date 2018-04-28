@@ -11,6 +11,7 @@ if ($normalCount > 0)
 				<div class="lh">Наименование</div>
 				<div class="lh">Цена</div>
 				<div class="lh">Скидка</div>
+				<div class="lh">Длина листа</div>
 				<div class="lh">Кол-во</div>
 				<div class="lh">Стоимость</div>
 			</div>
@@ -24,6 +25,14 @@ if ($normalCount > 0)
 					</div>
 					<div class="l-cell price"><div class="txt pr">Цена</div><span><?=$arItem['FULL_PRICE']?></span> &#8381;</div>
 					<div class="l-cell sale"><div class="txt sl">Скидка</div><span><?=$arItem['DISCOUNT_PRICE_PERCENT']?></span>%</div>
+					<? foreach($arItem['PROPERTIES'] as $props):?>
+						<? if($props['CODE'] == "WIDTH_LIST"): ?>
+							<div class="l-cell width-list">
+								<div class="txt qn">Длина листа</div>
+								<span><?=$props['VALUE']?> мм</span>
+							</div>
+						<? endif;?>
+					<? endforeach;?>
 					<div class="l-cell quan">
 						<div class="txt qn">Кол-во</div>
 						<div class="quantity" id="<?=$arItem['ID']?>">
