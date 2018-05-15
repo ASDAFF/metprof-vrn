@@ -3,7 +3,7 @@
 function price($id){
     $res = CCatalogSKU::getOffersList(
         $id,
-        $iblockID = 24,
+        $iblockID = 21,
         $skuFilter = array("ACTIVE" => "Y"),
         $fields = array("CATALOG_PRICE_4"),
         $propertyFilter = array()
