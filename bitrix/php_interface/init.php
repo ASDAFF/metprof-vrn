@@ -3,7 +3,7 @@
 function price($id){
     $res = CCatalogSKU::getOffersList(
         $id,
-        $iblockID = 21,
+        $iblockID = 24,
         $skuFilter = array("ACTIVE" => "Y"),
         $fields = array("CATALOG_PRICE_4"),
         $propertyFilter = array()
@@ -41,7 +41,7 @@ function getUrlProd($url){
 
         if(CModule::IncludeModule("iblock")) {
             $arSelect = Array("ID", "IBLOCK_ID","DETAIL_PAGE_URL","PREVIEW_PICTURE","DETAIL_PICTURE", "NAME", "PROPERTY_*");//IBLOCK_ID и ID обязательно должны быть указаны, см. описание arSelectFields выше
-            $arFilter = Array("IBLOCK_ID" => 21, "CODE" => $code);
+            $arFilter = Array("IBLOCK_ID" => 24, "CODE" => $code);
             $res = CIBlockElement::GetList(Array(), $arFilter, false, false, $arSelect);
             if($ob = $res->GetNextElement()) {
                 $arFields = $ob->GetFields();
