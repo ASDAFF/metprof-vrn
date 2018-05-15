@@ -133,7 +133,7 @@ $APPLICATION->SetTitle("О компании");
 		</p>
 		<ul>
 			<li>Долгие и стабильные партнерские отношения с компаниями-производителями позволяют нам поставлять товары вовремя и по наиболее выгодным ценам.</li>
-			<li>Мы заботимся о своей репутации, поэтому каждый день подтверждаем ее перед нашими клиентами и партнерами. Вся наша деятельность направлена на взаимовыгодное и долгосрочное сотрудничество.</li>
+			<li>Мы заботимся о своей репутации, поэтому каждый день подтверждаем ее перед нашими клиентами и партнерами.</li>
 			<li>Мы приглашаем к сотрудничеству новые компании. Звоните нам, и мы найдем варианты взаимовыгодного сотрудничества.</li>
 		</ul>
 	</div>
@@ -148,4 +148,29 @@ $APPLICATION->SetTitle("О компании");
 			Тел/факс: +7 (473) 250-22-10
 		</div>
 	</div>
-</div><?require($_SERVER["DOCUMENT_ROOT"]."/bitrix/footer.php");?>
+</div>
+<div align="center">
+	<p align="center">
+ <a href="/upload/sertifikat-rpof.jpg" target="_blank"></a>
+	</p>
+	<p style="text-align: center;">
+ <a href="/upload/sertifikat-rpof.jpg" target="_blank"><img width="265" src="/upload/sertifikat-rpof.jpg" style="margin-right: 45px;"></a>  <a href="/upload/sertifikat-rpof2.jpg" target="_blank"><img width="265" src="/upload/sertifikat-rpof2.jpg"></a>
+	</p>
+	<p align="center">
+ <a href="/upload/sertifikat-rpof2.jpg" target="_blank"></a>
+	</p>
+</div>
+	<p>
+ <img width="580" src="/upload/company/comp-0.jpg" height="387" style="margin-right: 30px;"> 
+ <img width="580" src="/upload/company/comp-1.jpg" height="387"> 
+ <img width="580" src="/upload/company/comp-2.jpg" height="387" style="margin-right: 30px;"> 
+ <img width="580" src="/upload/company/comp-3.jpg" height="387"> 
+ <img width="580" src="/upload/company/comp-4.jpg" height="387" style="margin-right: 30px;"> 
+ <img width="580" src="/upload/company/comp-5.jpg" height="387"> 
+ <img width="580" src="/upload/company/comp-6.jpg" height="387" style="margin-right: 30px;">
+ <img width="580" src="/upload/company/comp-7.jpg" height="387"> 
+ <img width="580" src="/upload/company/comp-8.jpg" height="387" style="margin-right: 30px;"> 
+ <img width="580" src="/upload/company/comp-9.jpg" height="387">
+	</p>
+
+<br><?require($_SERVER["DOCUMENT_ROOT"]."/bitrix/footer.php");?>
