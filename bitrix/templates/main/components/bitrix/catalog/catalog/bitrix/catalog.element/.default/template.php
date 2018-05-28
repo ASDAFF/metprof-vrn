@@ -166,11 +166,18 @@ foreach($arResult['OFFERS'] as $offer){
                   if (!empty($arResult['PROPERTIES']))
                   {
                      foreach($arResult['PROPERTIES'] as $property){
-                         if(strlen(implode(",",$property['VALUE'])) > 0) {
+                         if(is_array($property['VALUE'])) {
                              ?>
                              <div class="line cl">
                                  <div class="prop"><?= $property['NAME'] ?></div>
                                  <div class="val"><?= implode(",", $property['VALUE']) ?></div>
+                             </div>
+                             <?
+                         }elseif($property['VALUE']){
+                             ?>
+                             <div class="line cl">
+                                 <div class="prop"><?= $property['NAME'] ?></div>
+                                 <div class="val"><?= $property['VALUE'] ?></div>
                              </div>
                              <?
                          }
