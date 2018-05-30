@@ -166,21 +166,29 @@ foreach($arResult['OFFERS'] as $offer){
                   if (!empty($arResult['PROPERTIES']))
                   {
                      foreach($arResult['PROPERTIES'] as $property){
-                         if(is_array($property['VALUE'])) {
-                             ?>
-                             <div class="line cl">
-                                 <div class="prop"><?= $property['NAME'] ?></div>
-                                 <div class="val"><?= implode(",", $property['VALUE']) ?></div>
-                             </div>
-                             <?
-                         }elseif($property['VALUE']){
-                             ?>
-                             <div class="line cl">
-                                 <div class="prop"><?= $property['NAME'] ?></div>
-                                 <div class="val"><?= $property['VALUE'] ?></div>
-                             </div>
-                             <?
+                         if(
+                             $property['CODE']
+                             and $property['CODE'] != "DLINA_1"
+                             and $property['CODE'] != "DLINA"
+                         ){
+                             if(is_array($property['VALUE'])) {
+                                 ?>
+                                 <div class="line cl">
+                                     <div class="prop"><?= $property['NAME'] ?></div>
+                                     <div class="val"><?= implode(",", $property['VALUE']) ?></div>
+                                 </div>
+                                 <?
+                             }elseif($property['VALUE']){
+                                 ?>
+                                 <div class="line cl">
+                                     <div class="prop"><?= $property['NAME'] ?></div>
+                                     <div class="val"><?= $property['VALUE'] ?></div>
+                                 </div>
+                                 <?
+                             }
+
                          }
+
                      }
                   }
                   ?>
