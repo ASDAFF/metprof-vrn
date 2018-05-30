@@ -170,6 +170,7 @@ foreach($arResult['OFFERS'] as $offer){
                              $property['CODE']
                              and $property['CODE'] != "DLINA_1"
                              and $property['CODE'] != "DLINA"
+                             and $property['CODE'] != "CML2_BASE_UNIT"
                          ){
                              if(is_array($property['VALUE'])) {
                                  ?>
