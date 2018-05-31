@@ -201,35 +201,40 @@ foreach($arResult['OFFERS'] as $offer){
 
 
 
-                  <?$APPLICATION->IncludeComponent("bitrix:forum.topic.reviews", "reviews", Array(
-                      "AJAX_POST" => "Y",	// Р�СЃРїРѕР»СЊР·РѕРІР°С‚СЊ AJAX РІ РґРёР°Р»РѕРіР°С…
-                      "CACHE_TIME" => "0",	// Р’СЂРµРјСЏ РєРµС€РёСЂРѕРІР°РЅРёСЏ (СЃРµРє.)
-                      "CACHE_TYPE" => "A",	// РўРёРї РєРµС€РёСЂРѕРІР°РЅРёСЏ
-                      "DATE_TIME_FORMAT" => "d.m.Y H:i:s",	// Р¤РѕСЂРјР°С‚ РїРѕРєР°Р·Р° РґР°С‚С‹ Рё РІСЂРµРјРµРЅРё
-                      "EDITOR_CODE_DEFAULT" => "Y",	// РџРѕ СѓРјРѕР»С‡Р°РЅРёСЋ РїРѕРєР°Р·С‹РІР°С‚СЊ РЅРµРІРёР·СѓР°Р»СЊРЅС‹Р№ СЂРµР¶РёРј СЂРµРґР°РєС‚РѕСЂР°
-                      "ELEMENT_ID" => $arResult['ID'],	// ID СЌР»РµРјРµРЅС‚Р°
-                      "FILES_COUNT" => "2",	// РњР°РєСЃРёРјР°Р»СЊРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ С„Р°Р№Р»РѕРІ, РїСЂРёРєСЂРµРїР»РµРЅРЅС‹С… Рє РѕРґРЅРѕРјСѓ СЃРѕРѕР±С‰РµРЅРёСЋ
-                      "FORUM_ID" => "1",	// ID С„РѕСЂСѓРјР° РґР»СЏ РѕС‚Р·С‹РІРѕРІ
-                      "IBLOCK_ID" => $arParams['IBLOCK_ID'],	// РљРѕРґ РёРЅС„РѕСЂРјР°С†РёРѕРЅРЅРѕРіРѕ Р±Р»РѕРєР°
-                      "IBLOCK_TYPE" => "1c_catalog",	// РўРёРї РёРЅС„РѕСЂРјР°С†РёРѕРЅРЅРѕРіРѕ Р±Р»РѕРєР° (РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ С‚РѕР»СЊРєРѕ РґР»СЏ РїСЂРѕРІРµСЂРєРё)
-                      "MESSAGES_PER_PAGE" => "10",	// РљРѕР»РёС‡РµСЃС‚РІРѕ СЃРѕРѕР±С‰РµРЅРёР№ РЅР° РѕРґРЅРѕР№ СЃС‚СЂР°РЅРёС†Рµ
-                      "NAME_TEMPLATE" => "",	// Р¤РѕСЂРјР°С‚ РёРјРµРЅРё
-                      "PAGE_NAVIGATION_TEMPLATE" => "",	// РќР°Р·РІР°РЅРёРµ С€Р°Р±Р»РѕРЅР° РґР»СЏ РІС‹РІРѕРґР° РїРѕСЃС‚СЂР°РЅРёС‡РЅРѕР№ РЅР°РІРёРіР°С†РёРё
-                      "PREORDER" => "N",	// Р’С‹РІРѕРґРёС‚СЊ СЃРѕРѕР±С‰РµРЅРёСЏ РІ РїСЂСЏРјРѕРј РїРѕСЂСЏРґРєРµ
-                      "RATING_TYPE" => "",	// Р’РёРґ РєРЅРѕРїРѕРє СЂРµР№С‚РёРЅРіР°
-                      "SHOW_AVATAR" => "N",	// РџРѕРєР°Р·С‹РІР°С‚СЊ Р°РІР°С‚Р°СЂС‹ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№
-                      "SHOW_LINK_TO_FORUM" => "N",	// РџРѕРєР°Р·Р°С‚СЊ СЃСЃС‹Р»РєСѓ РЅР° С„РѕСЂСѓРј
-                      "SHOW_MINIMIZED" => "N",	// РЎРІРѕСЂР°С‡РёРІР°С‚СЊ С„РѕСЂРјСѓ РґРѕР±Р°РІР»РµРЅРёСЏ РѕС‚Р·С‹РІР°
-                      "SHOW_RATING" => "N",	// Р’РєР»СЋС‡РёС‚СЊ СЂРµР№С‚РёРЅРі
-                      "URL_TEMPLATES_DETAIL" => "",	// РЎС‚СЂР°РЅРёС†Р° СЌР»РµРјРµРЅС‚Р° РёРЅС„РѕР±Р»РѕРєР°
-                      "URL_TEMPLATES_PROFILE_VIEW" => "",	// РЎС‚СЂР°РЅРёС†Р° РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
-                      "URL_TEMPLATES_READ" => "",	// РЎС‚СЂР°РЅРёС†Р° С‡С‚РµРЅРёСЏ С‚РµРјС‹ С„РѕСЂСѓРјР°
-                      "USE_CAPTCHA" => "N",	// Р�СЃРїРѕР»СЊР·РѕРІР°С‚СЊ CAPTCHA
-                      "COMPONENT_TEMPLATE" => ".default",
-                      "SHOW_SUBSCRIBE" => "N"
-                  ),
-                      false
-                  );?>
+                  <?$APPLICATION->IncludeComponent(
+	"bitrix:forum.topic.reviews", 
+	"reviews", 
+	array(
+		"AJAX_POST" => "Y",
+		"CACHE_TIME" => "0",
+		"CACHE_TYPE" => "A",
+		"DATE_TIME_FORMAT" => "d.m.Y H:i:s",
+		"EDITOR_CODE_DEFAULT" => "Y",
+		"ELEMENT_ID" => $arResult["ID"],
+		"FILES_COUNT" => "2",
+		"FORUM_ID" => "1",
+		"IBLOCK_ID" => "24",
+		"IBLOCK_TYPE" => "1c_catalog",
+		"MESSAGES_PER_PAGE" => "10",
+		"NAME_TEMPLATE" => "",
+		"PAGE_NAVIGATION_TEMPLATE" => "",
+		"PREORDER" => "N",
+		"RATING_TYPE" => "",
+		"SHOW_AVATAR" => "N",
+		"SHOW_LINK_TO_FORUM" => "N",
+		"SHOW_MINIMIZED" => "N",
+		"SHOW_RATING" => "N",
+		"URL_TEMPLATES_DETAIL" => "",
+		"URL_TEMPLATES_PROFILE_VIEW" => "",
+		"URL_TEMPLATES_READ" => "",
+		"USE_CAPTCHA" => "N",
+		"COMPONENT_TEMPLATE" => "reviews",
+		"SHOW_SUBSCRIBE" => "N",
+		"COMPOSITE_FRAME_MODE" => "A",
+		"COMPOSITE_FRAME_TYPE" => "AUTO"
+	),
+	false
+);?>
 
 
                </div>

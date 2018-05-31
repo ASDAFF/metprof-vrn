@@ -6,52 +6,34 @@ ErrorDocument 404 /404.php
   #php_value display_errors 1
   #php_value mbstring.internal_encoding UTF-8
 </IfModule>
-
-  Redirect 301 /articles/plastic-pipes/ /articles/plastikovye-truby/
-  Redirect 301 /articles/polyethylene-pipes/ /articles/polijetilenovye-truby/
-  Redirect 301 /articles/pipes-for-heating/ /articles/truby-dlja-otoplenija/
-  Redirect 301 /articles/centrifugal-pump/ /articles/centrobezhnyj-nasos/
-  Redirect 301 /articles/pump-for-heating/ /articles/nasos-dlja-otoplenija/
-  Redirect 301 /articles/klej_plitochnyj/ /articles/plitochnyy-kley/
-  Redirect 301 /articles/gidroizolyaciya/ /catalog/gidro_paroizolyatsiya/
-  Redirect 301 /articles/gvl/ /catalog/gipsokarton/
-  Redirect 301 /articles/list_osb/ /catalog/osp/
-  Redirect 301 /articles/list_sml/ /catalog/sml/
-  Redirect 301 /articles/list_dvp/ /catalog/dvp/
-  Redirect 301 /articles/list_dsp/ /catalog/dsp/
-  Redirect 301 /articles/polypropylene-fittings/ /catalog/truby_i_fitingi/
-  Redirect 301 /articles/polypropylene-pipes/ /catalog/truby_i_fitingi/
-  Redirect 301 /articles/disk-shutter/ /catalog/zatvor_povorotnyy_diskovyy_tecofi_frantsiya/
-
 # от 31.08.2017
-  Redirect 301 /catalog/inzhenernaya_santekhnika_otoplenie_vodoprovod_kanalizatsiya/ /catalog/inzhenernaya_santekhnika/
-  Redirect 301 /catalog/stroitelnye_materialy/ /catalog/stroitelno_otdelochnye_materialy/
-  Redirect 301 /catalog/polipropilenovye_truby_i_fitingi_/ /catalog/polipropelenovye_truby_i_fitingi_fusitek/
-  Redirect 301 /catalog/peletkotly/ /catalog/tverdotoplivnye_kotly/
-  Redirect 301 /articles/tverdotoplivnyj-kotel/ /catalog/tverdotoplivnye_kotly/
-  Redirect 301 /articles/centrobezhnyj-nasos/ /articles/tsentrobezhnye-nasosy-dlya-vody/
-  Redirect 301 /catalog/vikhrevye_nasosy/ /catalog/tsentrobezhnye_nasosy/   
-  Redirect 301 /catalog/kotly_nastennye/ /catalog/dvukhkonturnye_nastennye_gazovye_kotly/                                 
+#  Redirect 301 /catalog/inzhenernaya_santekhnika_otoplenie_vodoprovod_kanalizatsiya/ /catalog/inzhenernaya_santekhnika/
 
 <IfModule mod_rewrite.c>
   Options +FollowSymLinks
   RewriteEngine On
-  
-RewriteCond %{HTTP_HOST} ^www.polimer-vrn\.ru$ [NC]
-RewriteRule ^(.*)$ http://polimer-vrn.ru/$1 [R=301,L]
-
-RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /index\.php\ HTTP/
-RewriteRule ^index\.php$ http://polimer-vrn.ru [R=301,L]
-
+# Убрать www  
+RewriteCond %{HTTP_HOST} ^www.metprof-vrn\.ru$ [NC]
+RewriteRule ^(.*)$ http://metprof-vrn.ru/$1 [R=301,L]
+# Убрать index.php На главной
 RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /index\.(php|html|htm)\ HTTP/ 
 RewriteRule ^(.*)index\.(php|html|htm)$ $1 [R=301,L]
-
+# Убрать index.html
 RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /.*index\.html?\ HTTP/
-RewriteRule ^(.*)index\.html?$ http://polimer-vrn.ru/$1 [R=301,L]
-
+RewriteRule ^(.*)index\.html?$ http://metprof-vrn.ru/$1 [R=301,L]
+# Убрать index.php
 RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /.*index\.php?\ HTTP/
-RewriteRule ^(.*)index\.php?$ http://polimer-vrn.ru/$1 [R=301,L]
-
+RewriteRule ^(.*)index\.php?$ http://metprof-vrn.ru/$1 [R=301,L]
+#убрать //
+RewriteCond %{REQUEST_URI} ^(.*)/{2,}(.*)$
+RewriteRule (.*) %1/%2 [R=301,L] 
+# убрать окончание html
+# RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+([^.]+)\.html [NC]
+# RewriteRule ^ /%1/ [R=301,L]
+# убрать окончание htm
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+([^.]+)\.htm [NC]
+RewriteRule ^ /%1/ [R=301,L]
+# убрать idc=4&marea=6
 RewriteCond %{QUERY_STRING} ^idc=4&marea=6$ [NC]
 RewriteRule ^index\.php$ /? [R=301,L]
 

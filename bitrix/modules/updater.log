@@ -1762,3 +1762,59 @@
 2018-04-17 15:56:18 -  - exec CUpdateClient::GetHTTPPage
 2018-04-17 15:56:18 -  - TIME GetUpdatesList(request) 0.19 sec
 2018-04-17 15:56:18 -  - exec CUpdateClient::ParseServerData
+2018-05-30 12:04:38 -  - exec CUpdateClient::GetUpdatesList
+2018-05-30 12:04:38 -  - exec CUpdateClient::CollectRequestData
+2018-05-30 12:04:38 -  - LICENSE_KEY=X&lang=ru&SUPD_VER=17.5.0&VERSION=17.5.8&TYPENC=E&SUPD_STS=1&SUPD_URS=0&SUPD_DBS=MYSQL&XE=N&CLIENT_SITE=metprof-vrn.ru&CHHB=metprof-vrn.ru&CSAB=92.63.96.52&SUID=bd89304a06c5fb5fc8c162ef4e84c8fa&CANGZIP=Y&CLIENT_PHPVER=5.6.31&stable=Y&NGINX=Y&rerere=Y&bitm_main=17.5.8&bitm_abtest=17.5.0&bitm_b24connector=17.0.1&bitm_bitrixcloud=17.0.1&bitm_blog=17.5.6&bitm_catalog=17.5.7&bitm_clouds=17.0.2&bitm_compression=16.0.0&bitm_conversion=17.5.0&bitm_currency=17.5.1&bitm_eshopapp=16.5.0&bitm_fileman=17.5.8&bitm_form=17.0.1&bitm_forum=17.5.1&bitm_highloadblock=17.0.2&bitm_iblock=17.5.3&bitm_mobileapp=17.5.0&bitm_perfmon=17.0.1&bitm_photogallery=17.0.2&bitm_pull=17.5.2&bitm_report=17.0.0&bitm_sale=17.6.6&bitm_scale=17.5.0&bitm_search=17.0.1&bitm_security=17.0.2&bitm_sender=17.1.4&bitm_seo=17.5.0&bitm_socialservices=17.5.1&bitm_storeassist=16.0.1&bitm_subscribe=17.0.1&bitm_translate=16.0.0&bitm_vote=17.5.0&bitm_ui=17.5.2&bitl_en=&bitl_ru=&SUPD_OFC=Small&SUPD_SRS=RU&SUPD_CMP=Y&SALE_15=Y
+2018-05-30 12:04:38 -  - exec CUpdateClient::GetHTTPPage
+2018-05-30 12:04:50 -  - TIME GetUpdatesList(request) 11.421 sec
+2018-05-30 12:04:50 -  - exec CUpdateClient::ParseServerData
+2018-05-30 12:05:04 -  - exec CUpdateClient::GetUpdatesList
+2018-05-30 12:05:04 -  - exec CUpdateClient::CollectRequestData
+2018-05-30 12:05:04 -  - LICENSE_KEY=X&lang=ru&SUPD_VER=17.5.0&VERSION=17.5.8&TYPENC=E&SUPD_STS=1&SUPD_URS=0&SUPD_DBS=MYSQL&XE=N&CLIENT_SITE=metprof-vrn.ru&CHHB=metprof-vrn.ru&CSAB=92.63.96.52&SUID=bd89304a06c5fb5fc8c162ef4e84c8fa&CANGZIP=Y&CLIENT_PHPVER=5.6.31&stable=Y&NGINX=Y&rerere=Y&bitm_main=17.5.8&bitm_abtest=17.5.0&bitm_b24connector=17.0.1&bitm_bitrixcloud=17.0.1&bitm_blog=17.5.6&bitm_catalog=17.5.7&bitm_clouds=17.0.2&bitm_compression=16.0.0&bitm_conversion=17.5.0&bitm_currency=17.5.1&bitm_eshopapp=16.5.0&bitm_fileman=17.5.8&bitm_form=17.0.1&bitm_forum=17.5.1&bitm_highloadblock=17.0.2&bitm_iblock=17.5.3&bitm_mobileapp=17.5.0&bitm_perfmon=17.0.1&bitm_photogallery=17.0.2&bitm_pull=17.5.2&bitm_report=17.0.0&bitm_sale=17.6.6&bitm_scale=17.5.0&bitm_search=17.0.1&bitm_security=17.0.2&bitm_sender=17.1.4&bitm_seo=17.5.0&bitm_socialservices=17.5.1&bitm_storeassist=16.0.1&bitm_subscribe=17.0.1&bitm_translate=16.0.0&bitm_vote=17.5.0&bitm_ui=17.5.2&bitl_en=&bitl_ru=&SUPD_OFC=Small&SUPD_SRS=RU&SUPD_CMP=Y&SALE_15=Y
+2018-05-30 12:05:04 -  - exec CUpdateClient::GetHTTPPage
+2018-05-30 12:05:24 -  - TIME GetUpdatesList(request) 19.724 sec
+2018-05-30 12:05:24 -  - exec CUpdateClient::ParseServerData
+2018-05-30 12:05:42 -  - exec CUpdateClient::GetUpdatesList
+2018-05-30 12:05:42 -  - exec CUpdateClient::CollectRequestData
+2018-05-30 12:05:42 -  - LICENSE_KEY=X&lang=ru&SUPD_VER=17.5.0&VERSION=17.5.8&TYPENC=E&SUPD_STS=1&SUPD_URS=0&SUPD_DBS=MYSQL&XE=N&CLIENT_SITE=metprof-vrn.ru&CHHB=metprof-vrn.ru&CSAB=92.63.96.52&SUID=bd89304a06c5fb5fc8c162ef4e84c8fa&CANGZIP=Y&CLIENT_PHPVER=5.6.31&stable=Y&NGINX=Y&rerere=Y&bitm_main=17.5.8&bitm_abtest=17.5.0&bitm_b24connector=17.0.1&bitm_bitrixcloud=17.0.1&bitm_blog=17.5.6&bitm_catalog=17.5.7&bitm_clouds=17.0.2&bitm_compression=16.0.0&bitm_conversion=17.5.0&bitm_currency=17.5.1&bitm_eshopapp=16.5.0&bitm_fileman=17.5.8&bitm_form=17.0.1&bitm_forum=17.5.1&bitm_highloadblock=17.0.2&bitm_iblock=17.5.3&bitm_mobileapp=17.5.0&bitm_perfmon=17.0.1&bitm_photogallery=17.0.2&bitm_pull=17.5.2&bitm_report=17.0.0&bitm_sale=17.6.6&bitm_scale=17.5.0&bitm_search=17.0.1&bitm_security=17.0.2&bitm_sender=17.1.4&bitm_seo=17.5.0&bitm_socialservices=17.5.1&bitm_storeassist=16.0.1&bitm_subscribe=17.0.1&bitm_translate=16.0.0&bitm_vote=17.5.0&bitm_ui=17.5.2&bitl_en=&bitl_ru=&SUPD_OFC=Small&SUPD_SRS=RU&SUPD_CMP=Y&SALE_15=Y
+2018-05-30 12:05:42 -  - exec CUpdateClient::GetHTTPPage
+2018-05-30 12:05:47 -  - TIME GetUpdatesList(request) 5.61 sec
+2018-05-30 12:05:47 -  - exec CUpdateClient::ParseServerData
+2018-05-30 12:06:29 -  - exec CUpdateClient::UpdateUpdate
+2018-05-30 12:06:29 -  - exec CUpdateClient::CollectRequestData
+2018-05-30 12:06:29 -  - LICENSE_KEY=X&lang=ru&SUPD_VER=17.5.0&VERSION=17.5.8&TYPENC=E&SUPD_STS=1&SUPD_URS=0&SUPD_DBS=MYSQL&XE=N&CLIENT_SITE=metprof-vrn.ru&CHHB=metprof-vrn.ru&CSAB=92.63.96.52&SUID=bd89304a06c5fb5fc8c162ef4e84c8fa&CANGZIP=Y&CLIENT_PHPVER=5.6.31&stable=Y&NGINX=Y&rerere=Y&bitm_main=17.5.8&bitm_abtest=17.5.0&bitm_b24connector=17.0.1&bitm_bitrixcloud=17.0.1&bitm_blog=17.5.6&bitm_catalog=17.5.7&bitm_clouds=17.0.2&bitm_compression=16.0.0&bitm_conversion=17.5.0&bitm_currency=17.5.1&bitm_eshopapp=16.5.0&bitm_fileman=17.5.8&bitm_form=17.0.1&bitm_forum=17.5.1&bitm_highloadblock=17.0.2&bitm_iblock=17.5.3&bitm_mobileapp=17.5.0&bitm_perfmon=17.0.1&bitm_photogallery=17.0.2&bitm_pull=17.5.2&bitm_report=17.0.0&bitm_sale=17.6.6&bitm_scale=17.5.0&bitm_search=17.0.1&bitm_security=17.0.2&bitm_sender=17.1.4&bitm_seo=17.5.0&bitm_socialservices=17.5.1&bitm_storeassist=16.0.1&bitm_subscribe=17.0.1&bitm_translate=16.0.0&bitm_vote=17.5.0&bitm_ui=17.5.2&bitl_en=&bitl_ru=&SUPD_OFC=Small&SUPD_SRS=RU&SUPD_CMP=Y&SALE_15=Y&query_type=updateupdate
+2018-05-30 12:06:29 -  - exec CUpdateClient::GetHTTPPage
+2018-05-30 12:06:42 -  - TIME UpdateUpdate(request) 13.281 sec
+2018-05-30 12:06:42 -  - exec CUpdateClient::UnGzipArchive
+2018-05-30 12:06:42 -  - TIME UnGzipArchive 0.014 sec
+2018-05-30 12:06:42 -  - exec CUpdateClient::ParseServerData
+2018-05-30 12:06:52 -  - exec CUpdateClient::UpdateUpdate
+2018-05-30 12:06:52 -  - exec CUpdateClient::CollectRequestData
+2018-05-30 12:06:52 -  - LICENSE_KEY=X&lang=ru&SUPD_VER=17.5.0&VERSION=17.5.8&TYPENC=E&SUPD_STS=1&SUPD_URS=0&SUPD_DBS=MYSQL&XE=N&CLIENT_SITE=metprof-vrn.ru&CHHB=metprof-vrn.ru&CSAB=92.63.96.52&SUID=bd89304a06c5fb5fc8c162ef4e84c8fa&CANGZIP=Y&CLIENT_PHPVER=5.6.31&stable=Y&NGINX=Y&rerere=Y&bitm_main=17.5.8&bitm_abtest=17.5.0&bitm_b24connector=17.0.1&bitm_bitrixcloud=17.0.1&bitm_blog=17.5.6&bitm_catalog=17.5.7&bitm_clouds=17.0.2&bitm_compression=16.0.0&bitm_conversion=17.5.0&bitm_currency=17.5.1&bitm_eshopapp=16.5.0&bitm_fileman=17.5.8&bitm_form=17.0.1&bitm_forum=17.5.1&bitm_highloadblock=17.0.2&bitm_iblock=17.5.3&bitm_mobileapp=17.5.0&bitm_perfmon=17.0.1&bitm_photogallery=17.0.2&bitm_pull=17.5.2&bitm_report=17.0.0&bitm_sale=17.6.6&bitm_scale=17.5.0&bitm_search=17.0.1&bitm_security=17.0.2&bitm_sender=17.1.4&bitm_seo=17.5.0&bitm_socialservices=17.5.1&bitm_storeassist=16.0.1&bitm_subscribe=17.0.1&bitm_translate=16.0.0&bitm_vote=17.5.0&bitm_ui=17.5.2&bitl_en=&bitl_ru=&SUPD_OFC=Small&SUPD_SRS=RU&SUPD_CMP=Y&SALE_15=Y&query_type=updateupdate
+2018-05-30 12:06:52 -  - exec CUpdateClient::GetHTTPPage
+2018-05-30 12:07:16 -  - TIME UpdateUpdate(request) 23.38 sec
+2018-05-30 12:07:16 -  - exec CUpdateClient::UnGzipArchive
+2018-05-30 12:07:16 -  - TIME UnGzipArchive 0.015 sec
+2018-05-30 12:07:16 -  - exec CUpdateClient::ParseServerData
+2018-05-30 12:13:23 -  - exec CUpdateClient::UpdateUpdate
+2018-05-30 12:13:23 -  - exec CUpdateClient::CollectRequestData
+2018-05-30 12:13:23 -  - LICENSE_KEY=X&lang=ru&SUPD_VER=17.5.0&VERSION=17.5.8&TYPENC=E&SUPD_STS=1&SUPD_URS=0&SUPD_DBS=MYSQL&XE=N&CLIENT_SITE=metprof-vrn.ru&CHHB=metprof-vrn.ru&CSAB=92.63.96.52&SUID=bd89304a06c5fb5fc8c162ef4e84c8fa&CANGZIP=Y&CLIENT_PHPVER=5.6.31&stable=Y&NGINX=Y&rerere=Y&bitm_main=17.5.8&bitm_abtest=17.5.0&bitm_b24connector=17.0.1&bitm_bitrixcloud=17.0.1&bitm_blog=17.5.6&bitm_catalog=17.5.7&bitm_clouds=17.0.2&bitm_compression=16.0.0&bitm_conversion=17.5.0&bitm_currency=17.5.1&bitm_eshopapp=16.5.0&bitm_fileman=17.5.8&bitm_form=17.0.1&bitm_forum=17.5.1&bitm_highloadblock=17.0.2&bitm_iblock=17.5.3&bitm_mobileapp=17.5.0&bitm_perfmon=17.0.1&bitm_photogallery=17.0.2&bitm_pull=17.5.2&bitm_report=17.0.0&bitm_sale=17.6.6&bitm_scale=17.5.0&bitm_search=17.0.1&bitm_security=17.0.2&bitm_sender=17.1.4&bitm_seo=17.5.0&bitm_socialservices=17.5.1&bitm_storeassist=16.0.1&bitm_subscribe=17.0.1&bitm_translate=16.0.0&bitm_vote=17.5.0&bitm_ui=17.5.2&bitl_en=&bitl_ru=&SUPD_OFC=Small&SUPD_SRS=RU&SUPD_CMP=Y&SALE_15=Y&query_type=updateupdate
+2018-05-30 12:13:23 -  - exec CUpdateClient::GetHTTPPage
+2018-05-30 12:13:31 -  - TIME UpdateUpdate(request) 7.809 sec
+2018-05-30 12:13:31 -  - exec CUpdateClient::UnGzipArchive
+2018-05-30 12:13:31 -  - TIME UnGzipArchive 0.014 sec
+2018-05-30 12:13:31 -  - exec CUpdateClient::ParseServerData
+2018-05-30 12:13:31 - CURV - Update updated successfully!
+2018-05-30 12:13:31 - UPD_SUCCESS - Update system updated
+2018-05-30 12:13:31 -  - exec CUpdateClient::GetUpdatesList
+2018-05-30 12:13:31 -  - exec CUpdateClient::CollectRequestData
+2018-05-30 12:13:31 -  - LICENSE_KEY=X&lang=ru&SUPD_VER=18.0.0&VERSION=17.5.8&TYPENC=E&SUPD_STS=1&SUPD_URS=0&SUPD_DBS=MYSQL&XE=N&CLIENT_SITE=metprof-vrn.ru&CHHB=metprof-vrn.ru&CSAB=92.63.96.52&SUID=bd89304a06c5fb5fc8c162ef4e84c8fa&CANGZIP=Y&CLIENT_PHPVER=5.6.31&stable=Y&NGINX=Y&rerere=Y&bitm_main=17.5.8&bitm_abtest=17.5.0&bitm_b24connector=17.0.1&bitm_bitrixcloud=17.0.1&bitm_blog=17.5.6&bitm_catalog=17.5.7&bitm_clouds=17.0.2&bitm_compression=16.0.0&bitm_conversion=17.5.0&bitm_currency=17.5.1&bitm_eshopapp=16.5.0&bitm_fileman=17.5.8&bitm_form=17.0.1&bitm_forum=17.5.1&bitm_highloadblock=17.0.2&bitm_iblock=17.5.3&bitm_mobileapp=17.5.0&bitm_perfmon=17.0.1&bitm_photogallery=17.0.2&bitm_pull=17.5.2&bitm_report=17.0.0&bitm_sale=17.6.6&bitm_scale=17.5.0&bitm_search=17.0.1&bitm_security=17.0.2&bitm_sender=17.1.4&bitm_seo=17.5.0&bitm_socialservices=17.5.1&bitm_storeassist=16.0.1&bitm_subscribe=17.0.1&bitm_translate=16.0.0&bitm_vote=17.5.0&bitm_ui=17.5.2&bitl_en=&bitl_ru=&SUPD_OFC=Small&SUPD_SRS=RU&SUPD_CMP=Y&SALE_15=Y&LICENSE_SIGNED=%7Enew_license18_0_sign-N
+2018-05-30 12:13:31 -  - exec CUpdateClient::GetHTTPPage
+2018-05-30 12:13:34 -  - TIME GetUpdatesList(request) 2.22 sec
+2018-05-30 12:13:34 -  - exec CUpdateClient::ParseServerData
+2018-05-31 11:03:49 -  - exec CUpdateClient::GetUpdatesList
+2018-05-31 11:03:49 -  - exec CUpdateClient::CollectRequestData
+2018-05-31 11:03:49 -  - LICENSE_KEY=X&lang=ru&SUPD_VER=18.0.0&VERSION=17.5.8&TYPENC=E&SUPD_STS=1&SUPD_URS=0&SUPD_DBS=MYSQL&XE=N&CLIENT_SITE=metprof-vrn.ru&CHHB=metprof-vrn.ru&CSAB=92.63.96.52&SUID=bd89304a06c5fb5fc8c162ef4e84c8fa&CANGZIP=Y&CLIENT_PHPVER=5.6.31&stable=Y&NGINX=Y&rerere=Y&bitm_main=17.5.8&bitm_abtest=17.5.0&bitm_b24connector=17.0.1&bitm_bitrixcloud=17.0.1&bitm_blog=17.5.6&bitm_catalog=17.5.7&bitm_clouds=17.0.2&bitm_compression=16.0.0&bitm_conversion=17.5.0&bitm_currency=17.5.1&bitm_eshopapp=16.5.0&bitm_fileman=17.5.8&bitm_form=17.0.1&bitm_forum=17.5.1&bitm_highloadblock=17.0.2&bitm_iblock=17.5.3&bitm_mobileapp=17.5.0&bitm_perfmon=17.0.1&bitm_photogallery=17.0.2&bitm_pull=17.5.2&bitm_report=17.0.0&bitm_sale=17.6.6&bitm_scale=17.5.0&bitm_search=17.0.1&bitm_security=17.0.2&bitm_sender=17.1.4&bitm_seo=17.5.0&bitm_socialservices=17.5.1&bitm_storeassist=16.0.1&bitm_subscribe=17.0.1&bitm_translate=16.0.0&bitm_vote=17.5.0&bitm_ui=17.5.2&bitl_en=&bitl_ru=&SUPD_OFC=Small&SUPD_SRS=RU&SUPD_CMP=Y&SALE_15=Y&LICENSE_SIGNED=%7Enew_license18_0_sign-N
+2018-05-31 11:03:49 -  - exec CUpdateClient::GetHTTPPage
+2018-05-31 11:03:49 -  - TIME GetUpdatesList(request) 0.292 sec
+2018-05-31 11:03:49 -  - exec CUpdateClient::ParseServerData
