@@ -201,45 +201,6 @@ foreach($arResult['OFFERS'] as $offer){
                <a href="#" class="mtb" onclick="return false">Отзывы</a>
                <div class="content">
 
-<<<<<<< HEAD
-
-
-                  <?$APPLICATION->IncludeComponent(
-	"bitrix:forum.topic.reviews", 
-	"reviews", 
-	array(
-		"AJAX_POST" => "Y",
-		"CACHE_TIME" => "0",
-		"CACHE_TYPE" => "A",
-		"DATE_TIME_FORMAT" => "d.m.Y H:i:s",
-		"EDITOR_CODE_DEFAULT" => "Y",
-		"ELEMENT_ID" => $arResult["ID"],
-		"FILES_COUNT" => "2",
-		"FORUM_ID" => "1",
-		"IBLOCK_ID" => "24",
-		"IBLOCK_TYPE" => "1c_catalog",
-		"MESSAGES_PER_PAGE" => "10",
-		"NAME_TEMPLATE" => "",
-		"PAGE_NAVIGATION_TEMPLATE" => "",
-		"PREORDER" => "N",
-		"RATING_TYPE" => "",
-		"SHOW_AVATAR" => "N",
-		"SHOW_LINK_TO_FORUM" => "N",
-		"SHOW_MINIMIZED" => "N",
-		"SHOW_RATING" => "N",
-		"URL_TEMPLATES_DETAIL" => "",
-		"URL_TEMPLATES_PROFILE_VIEW" => "",
-		"URL_TEMPLATES_READ" => "",
-		"USE_CAPTCHA" => "N",
-		"COMPONENT_TEMPLATE" => "reviews",
-		"SHOW_SUBSCRIBE" => "N",
-		"COMPOSITE_FRAME_MODE" => "A",
-		"COMPOSITE_FRAME_TYPE" => "AUTO"
-	),
-	false
-);?>
-
-=======
                    <?$APPLICATION->IncludeComponent(
                         "bitrix:catalog.comments",
                         ".default",
@@ -277,8 +238,6 @@ foreach($arResult['OFFERS'] as $offer){
                         ),
                         false
                     );?>
->>>>>>> 29d6cbce86f4de8891b6aba2741043aaae115b3a
-
                </div>
             </div>
             <div class="tab tab_nal active">
