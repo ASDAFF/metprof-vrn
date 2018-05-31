@@ -986,6 +986,11 @@ else
 				<?
 				while ($arBasketItems = $dbBasketItems->Fetch())
 				{
+					$mxResult = CCatalogSku::GetProductInfo($arBasketItems["PRODUCT_ID"]);
+					if (is_array($mxResult))
+					{
+						$arBasketItems["PRODUCT_ID"] = $mxResult['ID'];
+					}
 
 					$res = CIBlockElement::GetByID($arBasketItems["PRODUCT_ID"]);
 					$ar_res = $res->GetNext();
