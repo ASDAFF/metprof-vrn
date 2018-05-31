@@ -96,7 +96,7 @@ foreach($arResult['OFFERS'] as $offer){
                           <span>при заказе<br>с сайта</span>
                       </div>
 
-                      <?if(!$arResult['PROPERTIES']['DLINA']['VALUE']):?>
+                      <?if(!$arResult['PROPERTIES']['DUPUSTIMYE_RAZMERY_METALLOCHEREPITSA_MM']['VALUE']):?>
                           <div class="quantity">
                               <a class="minus na" href="#"></a>
                               <input type="text" value="1" max="<?=$arOffers['QUANTITY']?>" id="count_product"/>
@@ -125,7 +125,7 @@ foreach($arResult['OFFERS'] as $offer){
               <div class="buy-box-product">Продаётся упаковкой по 250 шт.</div>
               <? endif; ?>
 
-              <?if(!$arResult['PROPERTIES']['DLINA']['VALUE']):?>
+              <?if(!$arResult['PROPERTIES']['DUPUSTIMYE_RAZMERY_METALLOCHEREPITSA_MM']['VALUE']):?>
 
                   <? if($arOffers['DISCOUNT_VALUE'] and $arOffers['QUANTITY'] > 0): ?>
                       <a href="javascript:void(0)" class="add2cart" onclick="addToBasket2(<?=$arOffers['ID']?>, $('#count_product').val(),this,<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);">Добавить в корзину</a>
@@ -170,6 +170,7 @@ foreach($arResult['OFFERS'] as $offer){
                              $property['CODE']
                              and $property['CODE'] != "DLINA_1"
                              and $property['CODE'] != "DLINA"
+                             and $property['CODE'] != "DUPUSTIMYE_RAZMERY_METALLOCHEREPITSA_MM"
                              and $property['CODE'] != "CML2_BASE_UNIT"
                          ){
                              if(is_array($property['VALUE'])) {
@@ -195,10 +196,12 @@ foreach($arResult['OFFERS'] as $offer){
                   ?>
                </div>
             </div>
+
             <div class="tab tab_fed">
                <a href="#" class="mtb" onclick="return false">Отзывы</a>
                <div class="content">
 
+<<<<<<< HEAD
 
 
                   <?$APPLICATION->IncludeComponent(
@@ -236,6 +239,45 @@ foreach($arResult['OFFERS'] as $offer){
 	false
 );?>
 
+=======
+                   <?$APPLICATION->IncludeComponent(
+                        "bitrix:catalog.comments",
+                        ".default",
+                        array(
+                            "TEMPLATE_THEME" => "blue",
+                            "IBLOCK_TYPE" => "1c_catalog",
+                            "IBLOCK_ID" => $arParams["IBLOCK_ID"],
+                            "ELEMENT_ID" => $arResult["ID"],
+                            "ELEMENT_CODE" => $arResult["CODE"],
+                            "URL_TO_COMMENT" => $arResult["DETAIL_PAGE_URL"],
+                            "WIDTH" => "",
+                            "COMMENTS_COUNT" => "10",
+                            "BLOG_USE" => "Y",
+                            "FB_USE" => "N",
+                            "VK_USE" => "N",
+                            "CACHE_TYPE" => "N",
+                            "CACHE_TIME" => "0",
+                            "BLOG_TITLE" => "Отзывы на товары",
+                            "BLOG_URL" => "catalog_comments",
+                            "PATH_TO_SMILE" => "/bitrix/images/blog/smile/",
+                            "EMAIL_NOTIFY" => "N",
+                            "AJAX_POST" => "Y",
+                            "SHOW_SPAM" => "N",
+                            "SHOW_RATING" => "N",
+                            "RATING_TYPE" => "like_graphic",
+                            "FB_TITLE" => "Facebook",
+                            "FB_USER_ADMIN_ID" => "",
+                            "FB_APP_ID" => "",
+                            "FB_COLORSCHEME" => "dark",
+                            "FB_ORDER_BY" => "time",
+                            "VK_TITLE" => "Вконтакте",
+                            "VK_API_ID" => "API_ID",
+                            "COMPONENT_TEMPLATE" => ".default",
+                            "SHOW_DEACTIVATED" => "N"
+                        ),
+                        false
+                    );?>
+>>>>>>> 29d6cbce86f4de8891b6aba2741043aaae115b3a
 
                </div>
             </div>
@@ -291,7 +333,7 @@ foreach($arResult['OFFERS'] as $offer){
 
 
 
-    <?if($arResult['PROPERTIES']['DLINA']['VALUE']):?>
+    <?if($arResult['PROPERTIES']['DUPUSTIMYE_RAZMERY_METALLOCHEREPITSA_MM']['VALUE']):?>
 
      <div class="p-view__param-col p-view__param-col_restyled">
 
@@ -592,7 +634,7 @@ foreach($arResult['OFFERS'] as $offer){
 
 </div><!--end::prod_card-->
 
-<?if($arResult['PROPERTIES']['DLINA']['VALUE']):?>
+<?if($arResult['PROPERTIES']['DUPUSTIMYE_RAZMERY_METALLOCHEREPITSA_MM']['VALUE']):?>
 <!-- Modal -->
 <div class="modal fade  bs-example-modal-lg" id="available-length" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
     <div class="modal-dialog modal-lg" role="document">
