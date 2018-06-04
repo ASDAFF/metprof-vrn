@@ -90,8 +90,8 @@ foreach($arResult['OFFERS'] as $offer){
                   <div class="bb_col right">
 
                       <div class="sale">
-                          <? if($arOffers['DISCOUNT_DIFF']): ?>
-                              <span>СКИДКА <?=$arOffers['DISCOUNT_DIFF'];?>%</span>
+                          <? if($arResult['DISCOUNT_DIFF']): ?>
+                              <span>СКИДКА <?=$arResult['DISCOUNT_DIFF'];?>%</span>
                           <? endif;?>
                           <span>при заказе<br>с сайта</span>
                       </div>
