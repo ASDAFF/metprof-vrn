@@ -40,7 +40,7 @@ foreach($arResult['OFFERS'] as $offer){
     if($offer['MIN_PRICE']['DISCOUNT_VALUE']){
         $arOffers['ID'] = $offer['ID'];
         $arOffers['DISCOUNT_VALUE'] = $offer['MIN_PRICE']['DISCOUNT_VALUE'];
-        $arOffers['DISCOUNT_DIFF'] = $offer['MIN_PRICE']['DISCOUNT_DIFF'];
+        $arOffers['DISCOUNT_DIFF_PERCENT'] = $offer['MIN_PRICE']['DISCOUNT_DIFF_PERCENT'];
     }
     $arOffers['QUANTITY'] = $offer['CATALOG_QUANTITY'];
 }
@@ -88,10 +88,9 @@ foreach($arResult['OFFERS'] as $offer){
                   </div>
 
                   <div class="bb_col right">
-
                       <div class="sale">
-                          <? if($arResult['DISCOUNT_DIFF']): ?>
-                              <span>СКИДКА <?=$arResult['DISCOUNT_DIFF'];?>%</span>
+                          <? if($arOffers['DISCOUNT_DIFF_PERCENT']): ?>
+                              <span>СКИДКА <?=$arOffers['DISCOUNT_DIFF_PERCENT'];?>%</span>
                           <? endif;?>
                           <span>при заказе<br>с сайта</span>
                       </div>
