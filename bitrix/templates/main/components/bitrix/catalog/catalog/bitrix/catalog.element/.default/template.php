@@ -40,9 +40,10 @@ foreach($arResult['OFFERS'] as $offer){
     if($offer['MIN_PRICE']['DISCOUNT_VALUE']){
         $arOffers['ID'] = $offer['ID'];
         $arOffers['DISCOUNT_VALUE'] = $offer['MIN_PRICE']['DISCOUNT_VALUE'];
+		$arOffers['BASE_PRICE'] = $offer['MIN_PRICE']['VALUE'];
         $arOffers['DISCOUNT_DIFF_PERCENT'] = $offer['MIN_PRICE']['DISCOUNT_DIFF_PERCENT'];
     }
-    $arOffers['QUANTITY'] = $offer['CATALOG_QUANTITY'];
+	$arOffers['QUANTITY'] = $offer['CATALOG_QUANTITY'];
 }
 ?>
 
@@ -83,6 +84,7 @@ foreach($arResult['OFFERS'] as $offer){
               <? else: ?>
                   <div class="bb_col">
                       <div class="price">
+							  <div class="price-old"><span><?=$arOffers['BASE_PRICE']?></span> &#8381;/<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['VALUE'];?></div>
                               <div class="price-new"><span><?=$arOffers['DISCOUNT_VALUE']?></span>  &#8381;/<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['VALUE'];?></div>
                       </div>
                   </div>
