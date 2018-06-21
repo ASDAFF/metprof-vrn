@@ -44,8 +44,8 @@ if ($USER->IsAuthorized()) {?>
 	),
 	false
 );?>
-<?}?>
-
-
+<?}else{
+	LocalRedirect("/personal/order/make/",false,301);
+}?>
 
 <?require($_SERVER["DOCUMENT_ROOT"]."/bitrix/footer.php");?>
