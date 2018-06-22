@@ -19,10 +19,10 @@ $this->setFrameMode(true);
 				<div>
 					<div class="item cl">
 						<a href="<?=$arItem['DETAIL_PAGE_URL']?>"><span><img src="<?=$arItem['PREVIEW_PICTURE']['SRC']?>" alt=""></span></a>
-						<div class="cost"><span><?=price($arItem['ID']);?></span> &#8381;/<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['VALUE'];?></div>
+						<div class="cost"><span><?=$arItem['PRICE'];?></span> &#8381;/<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['VALUE'];?></div>
 						<a href="<?=$arItem['DETAIL_PAGE_URL']?>" class="txt"><?=$arItem['NAME']?></a>
-						<? if((float)price($arItem['ID'])): ?>
-							<a href="javascript:void(0)" onclick="addToBasket2(<?=$arItem['ID']?>,1,this);" class="add2cart">В корзину</a>
+						<? if((float)$arItem['PRICE']): ?>
+							<a href="javascript:void(0)" onclick="addToBasket2(<?=$arItem['ID']?>,1,this,5);" class="add2cart">В корзину</a>
 						<? else: ?>
 							<a href="javascript:void(0)" class="add2cart show-popup" data-id="order-product">под заказ</a>
 						<? endif; ?>

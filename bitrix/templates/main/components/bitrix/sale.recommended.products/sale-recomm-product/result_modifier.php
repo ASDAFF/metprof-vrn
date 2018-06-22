@@ -399,4 +399,54 @@ if (isset($arResult['ITEMS']) && !empty($arResult['ITEMS']))
 	$arResult['SKU_PROPS'] = $skuPropList;
 	$arResult['DEFAULT_PICTURE'] = $arEmptyPreview;
 }
+
+function getOffers($iblock,$id){
+	$res = CCatalogSKU::getOffersList(
+		$id,
+		$iblockID = $iblock,
+		$skuFilter = array("ACTIVE" => "Y"),
+		$fields = array("CATALOG_PRICE_4"),
+		$propertyFilter = array()
+	);
+	$id_offer = array_keys($res[$id])[0];
+	return $id_offer;
+}
+
+global $USER;
+if(empty($arResult['ITEMS'])){
+	if($arParams['RECOMEND_PRODUCT']):
+
+			$arSelect = Array("ID","IBLOCK_ID", "NAME","PREVIEW_PICTURE","DETAIL_PAGE_URL","CATALOG_GROUP_1","PROPERTY_CML2_BASE_UNIT");
+			foreach($arParams['RECOMEND_PRODUCT'] as $id){
+				$arFilter = Array("IBLOCK_ID"=> $arParams['IBLOCK_ID'],"ID" => $id);
+				$res = CIBlockElement::GetList(Array(), $arFilter, false, false, $arSelect);
+				if($ob = $res->GetNextElement())
+				{$arFields = $ob->GetFields();
+
+					$arResult['ITEMS'][$arFields['ID']] = $arFields;
+					$arResult['ITEMS'][$arFields['ID']]['PREVIEW_PICTURE'] = array("SRC" => CFile::GetPath($arFields['PREVIEW_PICTURE']));
+					$arResult['ITEMS'][$arFields['ID']]['PROPERTIES']['CML2_BASE_UNIT']['VALUE'] = $arFields['PROPERTY_CML2_BASE_UNIT_VALUE'];
+					$id_offer = getOffers($arParams['IBLOCK_ID'],$arFields['ID']);
+					$ar_res_price = CCatalogProduct::GetOptimalPrice($id_offer, 1, $USER->GetUserGroupArray(), 'N');
+					if($ar_res_price['DISCOUNT_PRICE'])
+						$arResult['ITEMS'][$arFields['ID']]['PRICE'] = $ar_res_price['DISCOUNT_PRICE'];
+
+					$arResult['ITEMS'][$arFields['ID']]['ID'] = $id_offer;
+
+				}
+			}
+	 endif;
+}
+
+foreach ($arResult['ITEMS'] as &$arItem){
+	if(empty($arItem['PRICE'])){
+		$id_offer = getOffers($arParams['IBLOCK_ID'],$arItem['ID']);
+		$ar_res_price = CCatalogProduct::GetOptimalPrice($id_offer, 1, $USER->GetUserGroupArray(), 'N');
+		$arItem['PRICE'] = $ar_res_price['DISCOUNT_PRICE'];
+		if(!$ar_res_price['DISCOUNT_PRICE']){
+			$arItem['PRICE'] = price($arItem['ID']);
+		}
+		$arItem['ID'] = $id_offer;
+	}
+}
 ?>

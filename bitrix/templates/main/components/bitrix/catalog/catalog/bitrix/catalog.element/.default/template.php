@@ -426,7 +426,8 @@ foreach($arResult['OFFERS'] as $offer){
                 "SHOW_OLD_PRICE" => "N",
                 "SHOW_PRICE_COUNT" => "1",
                 "TEMPLATE_THEME" => "blue",
-                "USE_PRODUCT_QUANTITY" => "N"
+                "USE_PRODUCT_QUANTITY" => "N",
+                "RECOMEND_PRODUCT" => $arResult['PROPERTIES']['RECOMEND_PRODUCT']['VALUE']
             )
         );?>
 
