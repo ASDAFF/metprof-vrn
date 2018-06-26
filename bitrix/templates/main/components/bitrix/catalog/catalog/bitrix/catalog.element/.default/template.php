@@ -173,6 +173,7 @@ foreach($arResult['OFFERS'] as $offer){
                              and $property['CODE'] != "DLINA"
                              and $property['CODE'] != "DUPUSTIMYE_RAZMERY_METALLOCHEREPITSA_MM"
                              and $property['CODE'] != "CML2_BASE_UNIT"
+                             and $property['CODE'] != "RECOMEND_PRODUCT"
                          ){
                              if(is_array($property['VALUE'])) {
                                  ?>
