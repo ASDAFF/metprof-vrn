@@ -93,7 +93,7 @@ $noh1    = $pages[1] == 'personal' || $pages[1] == 'price' || ($pages[1] == 'cat
 						<a href="/" class="hmobile__logo">
 							<img src="<?=SITE_TEMPLATE_PATH?>/img/h_logo.jpg" alt="Полимер" width="165" height="37" />
 						</a>
-						<div class="hmobile__phone">+7 (473) 250-22-33</div>
+						<div class="hmobile__phone">+7 (473) 250-22-10</div>
 						<a href="/search/index.php" class="hmobile__search"></a>
 						<a href="#" class="menu__trigger">
 							<span class="i1"></span>
