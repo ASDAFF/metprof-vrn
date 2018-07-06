@@ -97,7 +97,7 @@ foreach($arResult['OFFERS'] as $offer){
                           <span>при заказе<br>с сайта</span>
                       </div>
 
-                      <?if(!$arResult['PROPERTIES']['DUPUSTIMYE_RAZMERY_METALLOCHEREPITSA_MM']['VALUE']):?>
+                      <?if(!$arResult['PROPERTIES']['DLINA_TEST']['VALUE']):?>
                           <div class="quantity">
                               <a class="minus na" href="#"></a>
                               <input type="text" value="1" max="<?=$arOffers['QUANTITY']?>" id="count_product"/>
@@ -126,7 +126,7 @@ foreach($arResult['OFFERS'] as $offer){
               <div class="buy-box-product">Продаётся упаковкой по 250 шт.</div>
               <? endif; ?>
 
-              <?if(!$arResult['PROPERTIES']['DUPUSTIMYE_RAZMERY_METALLOCHEREPITSA_MM']['VALUE']):?>
+              <?if(!$arResult['PROPERTIES']['DLINA_TEST']['VALUE']):?>
 
                   <? if($arOffers['DISCOUNT_VALUE'] and $arOffers['QUANTITY'] > 0): ?>
                       <a href="javascript:void(0)" class="add2cart" onclick="addToBasket2(<?=$arOffers['ID']?>, $('#count_product').val(),this,<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);">Добавить в корзину</a>
@@ -171,6 +171,7 @@ foreach($arResult['OFFERS'] as $offer){
                              $property['CODE']
                              and $property['CODE'] != "DLINA_1"
                              and $property['CODE'] != "DLINA"
+                             and $property['CODE'] != "DLINA_TEST"
                              and $property['CODE'] != "DUPUSTIMYE_RAZMERY_METALLOCHEREPITSA_MM"
                              and $property['CODE'] != "CML2_BASE_UNIT"
                              and $property['CODE'] != "RECOMEND_PRODUCT"
@@ -294,7 +295,7 @@ foreach($arResult['OFFERS'] as $offer){
 
 
 
-    <?if($arResult['PROPERTIES']['DUPUSTIMYE_RAZMERY_METALLOCHEREPITSA_MM']['VALUE']):?>
+    <?if($arResult['PROPERTIES']['DLINA_TEST']['VALUE']):?>
 
      <div class="p-view__param-col p-view__param-col_restyled">
 
@@ -596,7 +597,7 @@ foreach($arResult['OFFERS'] as $offer){
 
 </div><!--end::prod_card-->
 
-<?if($arResult['PROPERTIES']['DUPUSTIMYE_RAZMERY_METALLOCHEREPITSA_MM']['VALUE']):?>
+<?if($arResult['PROPERTIES']['DLINA_TEST']['VALUE']):?>
 <!-- Modal -->
 <div class="modal fade  bs-example-modal-lg" id="available-length" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
     <div class="modal-dialog modal-lg" role="document">
