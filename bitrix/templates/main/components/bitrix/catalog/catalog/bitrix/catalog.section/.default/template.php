@@ -122,7 +122,7 @@ if (!empty($arResult['ITEMS']))
 
 								<? if($arOffers['DISCOUNT_VALUE']): ?>
 
-									<?if(!$arItem['PROPERTIES']['DLINA']['VALUE']):?>
+									<?if(!$arItem['PROPERTIES']['DLINA_TEST']['VALUE']):?>
 									<div class="quantity" id="count_<?=$arItem['ID']?>">
 										<a class="minus na" href="#"></a>
 										<input type="text" value="1"/>
@@ -177,7 +177,7 @@ if (!empty($arResult['ITEMS']))
 										</a>
 									<?else:?>
 
-										<?if($arOffers['QUANTITY'] > 0):?>
+										<?if($arOffers['QUANTITY'] > 0 and !$arItem['PROPERTIES']['DLINA_TEST']['VALUE']):?>
 											<a href="javascript:void(0)" class="add2cart">
 												<span class="txt1" onclick="if(document.body.clientWidth < 659){addToBasket2(<?=$arOffers['ID']?>, $('#count_<?=$arItem['ID']?> input').val(),this,<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>)};">В корзину</span>
 												<span class="txt2" onclick="addToBasket2(<?=$arOffers['ID']?>, $('#count_<?=$arItem['ID']?> input').val(),this,<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);">Добавить в корзину</span>
@@ -194,7 +194,7 @@ if (!empty($arResult['ITEMS']))
 											<div class="instock">Товар в наличии</div>
 										<?endif;?>
 
-								<?else:?>
+								<? else:?>
 									<div class="cost_total"><span></span></div>
 									<a href="javascript:void(0)" class="add2cartOrder show-popup" data-id="order-product">Товар под заказ</a>
 									<div class="outstock">Товар под заказ</div>
