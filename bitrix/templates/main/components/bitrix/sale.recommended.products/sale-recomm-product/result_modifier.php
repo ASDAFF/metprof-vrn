@@ -413,9 +413,8 @@ function getOffers($iblock,$id){
 }
 
 global $USER;
-if(empty($arResult['ITEMS'])){
-	if($arParams['RECOMEND_PRODUCT']):
-
+if($arParams['RECOMEND_PRODUCT']):
+			$arResult = array();
 			$arSelect = Array("ID","IBLOCK_ID", "NAME","PREVIEW_PICTURE","DETAIL_PAGE_URL","CATALOG_GROUP_1","PROPERTY_CML2_BASE_UNIT");
 			foreach($arParams['RECOMEND_PRODUCT'] as $id){
 				$arFilter = Array("IBLOCK_ID"=> $arParams['IBLOCK_ID'],"ID" => $id);
@@ -432,11 +431,10 @@ if(empty($arResult['ITEMS'])){
 						$arResult['ITEMS'][$arFields['ID']]['PRICE'] = $ar_res_price['DISCOUNT_PRICE'];
 
 					$arResult['ITEMS'][$arFields['ID']]['ID'] = $id_offer;
-
 				}
 			}
-	 endif;
-}
+ endif;
+
 
 foreach ($arResult['ITEMS'] as &$arItem){
 	if(empty($arItem['PRICE'])){
