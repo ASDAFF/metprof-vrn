@@ -132,6 +132,11 @@ $areaIds = array();
 		$this->AddEditAction($uniqueId, $item['EDIT_LINK'], $elementEdit);
 		$this->AddDeleteAction($uniqueId, $item['DELETE_LINK'], $elementDelete, $elementDeleteParams);
 
+		$arOffers = array();
+		foreach($item['OFFERS'] as $offer){
+				$arOffers['ID'] = $offer['ID'];
+				$arOffers['QUANTITY'] = $offer['CATALOG_QUANTITY'];
+		}
 		?>
 			<div>
 				<div class="product ">
@@ -142,7 +147,11 @@ $areaIds = array();
 					<div class="price">
 							<span><?=price($item['ID']);?></span> &#8381;/<?=$item['PROPERTIES']['CML2_BASE_UNIT']['VALUE'];?>
 					</div>
-					<a href="<?=$arItem["DETAIL_PAGE_URL"]?>" class="cart">Подробнее</a>
+					<?if($item['PROPERTIES']['DLINA_TEST']['VALUE']):?>
+						<a href="<?=$item["DETAIL_PAGE_URL"]?>" class="cart">Подробнее</a>
+					<?else:?>
+						<a href="javascript:void(0);" onclick="addToBasket2(<?=$arOffers['ID']?>, 1,this,<?=$item['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);" class="cart">В корзину</a>
+					<?endif;?>
 				</div>
 			</div>
 		<?
