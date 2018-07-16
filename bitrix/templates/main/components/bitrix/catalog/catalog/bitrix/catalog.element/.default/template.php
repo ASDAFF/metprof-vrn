@@ -170,7 +170,6 @@ foreach($arResult['OFFERS'] as $offer){
                          if(
                              $property['CODE']
                              and $property['CODE'] != "DLINA_1"
-                             and $property['CODE'] != "DLINA"
                              and $property['CODE'] != "DLINA_TEST"
                              and $property['CODE'] != "SALE"
                              and $property['CODE'] != "DUPUSTIMYE_RAZMERY_METALLOCHEREPITSA_MM"
