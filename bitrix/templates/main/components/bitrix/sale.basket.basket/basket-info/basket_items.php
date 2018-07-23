@@ -13,7 +13,7 @@ if ($normalCount > 0)
 						<li>
 							<div>Сумма:</div>
 							<div></div>
-							<div><span class="info-weight"><?=str_replace('руб.','',$arResult['PRICE_WITHOUT_DISCOUNT'])?></span> &#8381;</div>
+							<div><span class="info-weight"><?=str_replace('руб.','',$arResult['PRICE_WITHOUT_DISCOUNT'])?></span></div>
 						</li>
 						<li>
 							<div>Товаров:</div>

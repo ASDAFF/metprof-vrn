@@ -8,7 +8,13 @@ $arUrls = array(
 );
 unset($curPage);
 
+$_SESSION['MEASURE'] = "";
+
 foreach($arResult["GRID"]["ROWS"] as &$row){
+
+    $measure = CCatalogProduct::GetByID($row['PRODUCT_ID']);
+    if($measure['MEASURE'] == 6)
+    $_SESSION['MEASURE'] = $measure['MEASURE'];
 
     $mxResult = CCatalogSku::GetProductInfo($row['PRODUCT_ID']);
     if (is_array($mxResult))

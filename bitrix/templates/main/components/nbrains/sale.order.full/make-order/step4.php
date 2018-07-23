@@ -57,7 +57,8 @@
 		"GIFTS_HIDE_NOT_AVAILABLE" => "N",	// Не отображать товары, которых нет на складах
 	),
 		false
-	);?>
+	);
+	?>
 
 
 </div>
@@ -66,7 +67,10 @@
 	<div class="title">Укажите удобный способ оплаты заказа</div>
 	<div class="payment_types cl">
 
-		<? foreach($arResult["PAY_SYSTEM"] as $key => $arPaySystem): ?>
+		<? foreach($arResult["PAY_SYSTEM"] as $key => $arPaySystem):
+			if($arPaySystem["ID"] == 11 AND $_SESSION['MEASURE'] == "6")
+				continue;
+			?>
 		<a href="#" class="type t<?=$key+1;?>" <? if($key == 0){print 'style="border:5px solid #000"';}?>>
 			<?= str_replace(' ','<br>',$arPaySystem["PSA_NAME"]) ?>
 			<input type="radio" hidden id="ID_PAY_SYSTEM_ID_<?= $arPaySystem["ID"] ?>" name="PAY_SYSTEM_ID" value="<?= $arPaySystem["ID"] ?>"<?if ($arPaySystem["CHECKED"]=="Y") echo " checked";?>>
