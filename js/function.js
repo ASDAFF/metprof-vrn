@@ -70,6 +70,7 @@ function addToBasket2(idel, quantity,el,type) {
                                 $(el).text('Перейти в корзину');
                                 $(el).attr('onclick','window.location.href="/personal/cart/"');
                             }
+                            yaCounter48970379.reachGoal('korzina250720181506');
                         } else {
                             alertify.error(data);
                             _result = false;

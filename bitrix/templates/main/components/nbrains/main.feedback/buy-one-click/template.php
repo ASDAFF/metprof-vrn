@@ -33,6 +33,11 @@ if(!defined("B_PROLOG_INCLUDED")||B_PROLOG_INCLUDED!==true)die();
 			<div class="mf-ok-text"><?=$arResult["OK_MESSAGE"]?></div>
 		</div>
 	</div>
+	<script type="text/javascript">
+		window.onload = function() {
+			yaCounter48970379.reachGoal('zakazzvonka250720181509',function(){console.log('zakazzvonka ok')});
+		}
+	</script>
 <?}?>
 
 
