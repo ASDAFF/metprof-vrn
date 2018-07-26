@@ -76,4 +76,4 @@ Allow: /*.gif
 Clean-param: utm_source&utm_medium&utm_term&utm_content&utm_campaign&yclid&gclid&_openstat&from /
 Host: metprof-vrn.ru/
 Sitemap: http://metprof-vrn.ru/sitemap.xml
-Sitemap: http:///sitemap.xml
+Sitemap: http://sitemap.xml
