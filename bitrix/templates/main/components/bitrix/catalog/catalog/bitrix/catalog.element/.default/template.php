@@ -169,6 +169,7 @@ foreach($arResult['OFFERS'] as $offer){
                      foreach($arResult['PROPERTIES'] as $property){
                          if(
                              $property['CODE']
+                             and $property['CODE'] != "MORE_PHOTO"
                              and $property['CODE'] != "DLINA_1"
                              and $property['CODE'] != "DLINA_TEST"
                              and $property['CODE'] != "SALE"
