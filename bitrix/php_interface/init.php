@@ -40,7 +40,7 @@ function getUrlProd($url){
         }
 
         if(CModule::IncludeModule("iblock")) {
-            $arSelect = Array("ID", "IBLOCK_ID","DETAIL_PAGE_URL","PREVIEW_PICTURE","DETAIL_PICTURE", "NAME", "PROPERTY_*");//IBLOCK_ID è ID îáÿçàòåëüíî äîëæíû áûòü óêàçàíû, ñì. îïèñàíèå arSelectFields âûøå
+            $arSelect = Array("ID", "IBLOCK_ID","DETAIL_PAGE_URL","PREVIEW_PICTURE","DETAIL_PICTURE", "NAME", "PROPERTY_*");//IBLOCK_ID Ð¸ ID Ð¾Ð±ÑÐ·Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾ Ð´Ð¾Ð»Ð¶Ð½Ñ‹ Ð±Ñ‹Ñ‚ÑŒ ÑƒÐºÐ°Ð·Ð°Ð½Ñ‹, ÑÐ¼. Ð¾Ð¿Ð¸ÑÐ°Ð½Ð¸Ðµ arSelectFields Ð²Ñ‹ÑˆÐµ
             $arFilter = Array("IBLOCK_ID" => 24, "CODE" => $code);
             $res = CIBlockElement::GetList(Array(), $arFilter, false, false, $arSelect);
             if($ob = $res->GetNextElement()) {
@@ -68,4 +68,21 @@ function isRootFolder($id,$root){
             return false;
         }
     }
+}
+
+
+function buttonName($IBLOCK_ID,$SECTION_ID){
+
+    $IDs = array();
+    $nav = CIBlockSection::GetNavChain($IBLOCK_ID, $SECTION_ID);
+    foreach($nav->arResult as $item){
+        $IDs[] = (int)$item['ID'];
+    }
+    $SECTION = array(3191,3266,3205);
+    foreach($SECTION as $s_id){
+        if(in_array($s_id,$IDs)){
+            return "ÐŸÐ¾Ð´ Ð·Ð°ÐºÐ°Ð·";
+        }
+    }
+    return "ÐŸÐ¾Ð´Ñ€Ð¾Ð±Ð½ÐµÐµ";
 }

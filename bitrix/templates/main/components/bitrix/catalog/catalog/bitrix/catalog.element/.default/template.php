@@ -617,7 +617,7 @@ foreach($arResult['OFFERS'] as $offer){
                         ?>
                             <tr>
                             <?foreach($arResult['TYPE_LENGTH'][$i] as $length => $status):?>
-                                <td class="<?if($status == "N"):?>disable<?endif;?>" ><?=$length;?></td>
+                                <td class="<?if($status['STATUS'] == "N"):?>disable<?endif;?>" <?if($status['DEF'] == "Y"):?>style="color: green; background: #C1EFB1"<?endif;?>><?=$length;?></td>
                             <? endforeach; ?>
                             </tr>
                         <? endfor; ?>

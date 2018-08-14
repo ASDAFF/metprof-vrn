@@ -168,12 +168,11 @@ if (!empty($arResult['ITEMS']))
 										</script>
 									<?endif;?>
 
-
 									<div class="cost_total"><span><?=$arOffers['DISCOUNT_VALUE']?></span> &#8381;</div>
 									<?if($arItem['PROPERTIES']['DLINA_TEST']['VALUE']):?>
 										<a href="<?=$arItem['DETAIL_PAGE_URL']?>" class="add2cart">
-											<span class="txt1">Подробнее</span>
-											<span class="txt2">Подробнее</span>
+											<span class="txt1"><?=buttonName($arItem['IBLOCK_ID'],$arItem['IBLOCK_SECTION_ID']);?></span>
+											<span class="txt2"><?=buttonName($arItem['IBLOCK_ID'],$arItem['IBLOCK_SECTION_ID']);?></span>
 										</a>
 									<?else:?>
 
