@@ -2009,6 +2009,9 @@ if ($USER->IsAuthorized())
 		$bFirst = True;
 		while ($arPaySystem = $dbPaySystem->Fetch())
 		{
+			if($arPaySystem["ID"] == "1" AND $deliv == "2")
+				continue;
+
 			if (!$bShowDefault || in_array($arPaySystem["ID"], $arD2P))
 			{
 				if ($arPaySystem["PSA_LOGOTIP"] > 0)
