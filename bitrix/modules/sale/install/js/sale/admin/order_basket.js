@@ -32,6 +32,7 @@ BX.Sale.Admin.OrderBasket = function (params)
 	this.qantityUpdaterTimeout = 0;
 	this.qantityUpdaterDelay = 750;
 	this.canSendUpdateQuantityRequest = true;
+	this.lastChangedQuantity = false;
 
 	if(params.iblocksSkuParams)
 	{
@@ -726,7 +727,8 @@ BX.Sale.Admin.OrderBasket.prototype.createProductCell = function(basketCode, pro
 		fieldValue = product[fieldId],
 		tdClass = "",
 		_this = this,
-		isSetItem = (BX.type.isNotEmptyString(product.IS_SET_ITEM) && product.IS_SET_ITEM === 'Y');
+		isSetItem = (BX.type.isNotEmptyString(product.IS_SET_ITEM) && product.IS_SET_ITEM === 'Y'),
+		isProductActive = (BX.type.isNotEmptyString(product.PRODUCT_ACTIVE) && product.PRODUCT_ACTIVE === 'Y');
 
 	switch(fieldId)
 	{
@@ -751,7 +753,8 @@ BX.Sale.Admin.OrderBasket.prototype.createProductCell = function(basketCode, pro
 				var bundleShow = BX.create('a',{
 					props:{
 						href:"javascript:void(0);",
-						className: "dashed-link show-set-link"
+						className: "dashed-link show-set-link" + (!isProductActive ? ' product-unactive' : ''),
+						title: (!isProductActive ? BX.message('SALE_ORDER_BASKET_PRODUCT_UNACTIVE') : '')
 					},
 					html: BX.message("SALE_ORDER_BASKET_EXPAND")
 				});
@@ -776,7 +779,9 @@ BX.Sale.Admin.OrderBasket.prototype.createProductCell = function(basketCode, pro
 				node = BX.create('a',{
 						props:{
 							href:product.EDIT_PAGE_URL,
-							target:"_blank"
+							target:"_blank",
+							className: (!isProductActive ? 'product-unactive' : ''),
+							title: (!isProductActive ? BX.message('SALE_ORDER_BASKET_PRODUCT_UNACTIVE') : '')
 						},
 						html: BX.util.htmlspecialchars(fieldValue)
 					});
@@ -2213,6 +2218,24 @@ BX.Sale.Admin.OrderBasketEdit.prototype.createFieldQuantity = function(basketCod
 			style: { width: '60px' }
 		}),
 		ratioNode = this.createMeasureRatioNode(basketCode, input, ratio);
+
+	/*
+	 * If we will receive the error during the refreshOrderData error we must restore this value
+	 */
+	BX.bind(
+		input,
+		"focus",
+		function(e){
+			var oldValue = input.value;
+			BX.Sale.Admin.OrderEditPage.addRollbackMethod(
+				function(){
+					var tmp = _this.canSendUpdateQuantityRequest;
+					_this.canSendUpdateQuantityRequest = false;
+					_this.setProductQuantity(basketCode, oldValue);
+					setTimeout(function(){_this.canSendUpdateQuantityRequest = tmp;}, 1);
+			});
+		}
+	);
 
 	BX.bind(
 		input,

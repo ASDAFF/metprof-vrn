@@ -1,9 +1,14 @@
 <?php
+use Bitrix\Main,
+	Bitrix\Iblock,
+	Bitrix\Catalog;
+
 IncludeModuleLangFile(__FILE__);
 
 class CIBlockCMLImport
 {
 	var $LAST_ERROR = "";
+	/** @var bool|array */
 	var $next_step = false;
 	var $files_dir = false;
 	var $use_offers = true;
@@ -1434,6 +1439,7 @@ class CIBlockCMLImport
 
 	function ImportStores($XML_STORES_PARENT)
 	{
+		$error = '';
 		$ID = 0;
 		$arDBStores = array();
 		$rsStore = CCatalogStore::GetList(array(), array(), false, false, array("ID", "XML_ID"));
@@ -1482,14 +1488,20 @@ class CIBlockCMLImport
 			{
 				if ((count($arDBStores) < 1) || CBXFeatures::IsFeatureEnabled('CatMultiStore'))
 					$arDBStores[$arStore["XML_ID"]] = $ID = CCatalogStore::Add($arStore);
+				else
+					$error = GetMessage("IBLOCK_XML2_MULTI_STORE_IMPORT_ERROR");
 			}
 			else
 			{
 				if ((count($arDBStores) <= 1) || CBXFeatures::IsFeatureEnabled('CatMultiStore'))
 					$ID = CCatalogStore::Update($arDBStores[$arStore["XML_ID"]], $arStore);
+				else
+					$error = GetMessage("IBLOCK_XML2_MULTI_STORE_IMPORT_ERROR");
 			}
 		}
 
+		if($error)
+			return $error;
 		if(!$ID)
 			return false;
 		return true;
@@ -2425,6 +2437,10 @@ class CIBlockCMLImport
 		);
 		if($this->next_step["XML_ELEMENTS_PARENT"])
 		{
+			Iblock\PropertyIndex\Manager::enableDeferredIndexing();
+			if ($this->bCatalog)
+				Catalog\Product\Sku::enableDeferredCalculation();
+
 			$obElement = new CIBlockElement();
 			$obElement->CancelWFSetMove();
 			$bWF = CModule::IncludeModule("workflow");
@@ -2435,6 +2451,9 @@ class CIBlockCMLImport
 			);
 			while($arParent = $rsParents->Fetch())
 			{
+				if (!$arParent["RIGHT_MARGIN"])
+					continue;
+
 				$counter["CRC"]++;
 
 				$arXMLElement = $this->_xml_file->GetAllChildrenArray($arParent);
@@ -2523,9 +2542,16 @@ class CIBlockCMLImport
 
 				$this->next_step["XML_LAST_ID"] = $arParent["ID"];
 
-				if($interval > 0 && (time()-$start_time) > $interval)
+				if($interval > 0 && (time()-$start_time) > (2*$interval/3))
 					break;
 			}
+			if ($this->bCatalog)
+			{
+				Catalog\Product\Sku::disableDeferredCalculation();
+				Catalog\Product\Sku::calculate();
+			}
+			Iblock\PropertyIndex\Manager::disableDeferredIndexing();
+			Iblock\PropertyIndex\Manager::runDeferredIndexing($this->next_step["IBLOCK_ID"]);
 		}
 		$this->CleanTempFiles();
 		return $counter;
@@ -3110,13 +3136,20 @@ class CIBlockCMLImport
 
 			if($this->bCatalog && array_key_exists($this->mess["IBLOCK_XML2_AMOUNT"], $arXMLElement))
 			{
-				$arElementTmp = array();
 				$arElement["QUANTITY_RESERVED"] = 0;
 				if($arDBElement["ID"])
-					$arElementTmp = CCatalogProduct::GetByID($arDBElement["ID"]);
-				if(is_array($arElementTmp) && !empty($arElementTmp) && isset($arElementTmp["QUANTITY_RESERVED"]))
-					$arElement["QUANTITY_RESERVED"] = $arElementTmp["QUANTITY_RESERVED"];
-				$arElement["QUANTITY"] = $this->ToFloat($arXMLElement[$this->mess["IBLOCK_XML2_AMOUNT"]]) - doubleval($arElement["QUANTITY_RESERVED"]);
+				{
+					$iterator = Catalog\Model\Product::getList([
+						'select' => ['ID', 'QUANTITY_RESERVED'],
+						'filter' => ['=ID' => $arDBElement['ID']]
+					]);
+					$arElementTmp = $iterator->fetch();
+					if (isset($arElementTmp["QUANTITY_RESERVED"]))
+						$arElement["QUANTITY_RESERVED"] = (float)$arElementTmp["QUANTITY_RESERVED"];
+					unset($arElementTmp);
+					unset($iterator);
+				}
+				$arElement["QUANTITY"] = $this->ToFloat($arXMLElement[$this->mess["IBLOCK_XML2_AMOUNT"]]) - $arElement["QUANTITY_RESERVED"];
 			}
 
 			if(isset($arXMLElement[$this->mess["IBLOCK_XML2_ITEM_ATTRIBUTES"]]))
@@ -3786,7 +3819,25 @@ class CIBlockCMLImport
 				$arProduct["VAT_INCLUDED"] = $TAX_IN_SUM;
 			}
 
-			CCatalogProduct::Add($arProduct);
+			if (CCatalogProduct::Add($arProduct))
+			{
+				//TODO: replace this code after upload measure ratio from 1C
+				$iterator = \Bitrix\Catalog\MeasureRatioTable::getList(array(
+					'select' => array('ID'),
+					'filter' => array('=PRODUCT_ID' => $arElement['ID'])
+				));
+				$ratioRow = $iterator->fetch();
+				if (empty($ratioRow))
+				{
+					$ratioResult = \Bitrix\Catalog\MeasureRatioTable::add(array(
+						'PRODUCT_ID' => $arElement['ID'],
+						'RATIO' => 1,
+						'IS_DEFAULT' => 'Y'
+					));
+					unset($ratioResult);
+				}
+				unset($ratioRow, $iterator);
+			}
 
 			if(isset($arElement["PRICES"]))
 				$this->SetProductPrice($arElement["ID"], $arElement["PRICES"], $arElement["DISCOUNTS"]);
@@ -3986,13 +4037,20 @@ class CIBlockCMLImport
 
 			if($this->bCatalog && array_key_exists($this->mess["IBLOCK_XML2_AMOUNT"], $arXMLElement))
 			{
-				$arElementTmp = array();
 				$arElement["QUANTITY_RESERVED"] = 0;
 				if($arElement["ID"])
-					$arElementTmp = CCatalogProduct::GetByID($arElement["ID"]);
-				if(is_array($arElementTmp) && !empty($arElementTmp) && isset($arElementTmp["QUANTITY_RESERVED"]))
-					$arElement["QUANTITY_RESERVED"] = $arElementTmp["QUANTITY_RESERVED"];
-				$arElement["QUANTITY"] = $this->ToFloat($arXMLElement[$this->mess["IBLOCK_XML2_AMOUNT"]]) - doubleval($arElement["QUANTITY_RESERVED"]);
+				{
+					$iterator = Catalog\Model\Product::getList([
+						'select' => ['ID', 'QUANTITY_RESERVED'],
+						'filter' => ['=ID' => $arDBElement['ID']]
+					]);
+					$arElementTmp = $iterator->fetch();
+					if (!empty($arElementTmp) && is_array($arElementTmp) && isset($arElementTmp["QUANTITY_RESERVED"]))
+						$arElement["QUANTITY_RESERVED"] = (float)$arElementTmp["QUANTITY_RESERVED"];
+					unset($arElementTmp);
+					unset($iterator);
+				}
+				$arElement["QUANTITY"] = $this->ToFloat($arXMLElement[$this->mess["IBLOCK_XML2_AMOUNT"]]) - $arElement["QUANTITY_RESERVED"];
 			}
 
 			if(isset($arElement["PRICES"]) && $this->bCatalog)
@@ -4127,33 +4185,71 @@ class CIBlockCMLImport
 
 				$arProduct["VAT_INCLUDED"] = $TAX_IN_SUM;
 
-				CCatalogProduct::Add($arProduct);
+				if (CCatalogProduct::Add($arProduct))
+				{
+					//TODO: replace this code after upload measure ratio from 1C
+					$iterator = \Bitrix\Catalog\MeasureRatioTable::getList(array(
+						'select' => array('ID'),
+						'filter' => array('=PRODUCT_ID' => $arElement['ID'])
+					));
+					$ratioRow = $iterator->fetch();
+					if (empty($ratioRow))
+					{
+						$ratioResult = \Bitrix\Catalog\MeasureRatioTable::add(array(
+							'PRODUCT_ID' => $arElement['ID'],
+							'RATIO' => 1,
+							'IS_DEFAULT' => 'Y'
+						));
+						unset($ratioResult);
+					}
+					unset($ratioRow, $iterator);
+				}
 
 				$this->SetProductPrice($arElement["ID"], $arElement["PRICES"], $arElement["DISCOUNTS"]);
 				\Bitrix\Iblock\PropertyIndex\Manager::updateElementIndex($IBLOCK_ID, $arElement["ID"]);
 			}
 			elseif(
 				$this->bCatalog
-				&& isset($arElement["STORE_AMOUNT"])
-				&& !empty($arElement["STORE_AMOUNT"])
-				&& ($arElementTmp = CCatalogProduct::GetByID($arElement["ID"]))
+				&& (
+					(isset($arElement["STORE_AMOUNT"]) && !empty($arElement["STORE_AMOUNT"]))
+					|| isset($arElement["QUANTITY"])
+				)
 			)
 			{
-				CCatalogProduct::Update($arElement["ID"], array(
-					"QUANTITY" => array_sum($arElement["STORE_AMOUNT"]) - $arElementTmp["QUANTITY_RESERVED"],
-					"SUBSCRIBE" => $arElementTmp["SUBSCRIBE_ORIG"]	// TODO: remove hack for subscribe after refactoring CCatalogProduct::Update
-				));
-			}
-			elseif(
-				$this->bCatalog
-				&& isset($arElement["QUANTITY"])
-				&& ($arElementTmp = CCatalogProduct::GetByID($arElement["ID"]))
-			)
-			{
-				CCatalogProduct::Update($arElement["ID"], array(
-					"QUANTITY" => $arElement["QUANTITY"] - $arElementTmp["QUANTITY_RESERVED"],
-					"SUBSCRIBE" => $arElementTmp["SUBSCRIBE_ORIG"]	// TODO: remove hack for subscribe after refactoring CCatalogProduct::Update
-				));
+				$iterator = Catalog\Model\Product::getList([
+					'select' => ['ID', 'QUANTITY_RESERVED'],
+					'filter' => ['=ID' => $arElement['ID']]
+				]);
+				$arElementTmp = $iterator->fetch();
+				if (!empty($arElementTmp) && is_array($arElementTmp))
+				{
+					$quantityReserved = 0;
+					if (isset($arElementTmp["QUANTITY_RESERVED"]))
+						$quantityReserved = (float)$arElementTmp["QUANTITY_RESERVED"];
+					$internalFields = [];
+					if (isset($arElement["STORE_AMOUNT"]) && !empty($arElement["STORE_AMOUNT"]))
+					{
+						$internalFields['QUANTITY'] = array_sum($arElement["STORE_AMOUNT"]);
+					}
+					elseif (isset($arElement["QUANTITY"]))
+					{
+						$internalFields['QUANTITY'] = $arElement["QUANTITY"];
+					}
+					if (!empty($internalFields))
+					{
+						$internalFields['QUANTITY'] -= $quantityReserved;
+						$internalResult = Catalog\Model\Product::update($arElement['ID'], ['fields' => $internalFields]);
+						if (!$internalResult->isSuccess())
+						{
+
+						}
+						unset($internalResult);
+					}
+					unset($internalFields);
+					unset($quantityReserved);
+				}
+				unset($arElementTmp);
+				unset($iterator);
 			}
 		}
 
@@ -4544,7 +4640,11 @@ class CIBlockCMLImport
 		}
 
 		if($arSection["ID"])
+		{
+			$ipropValues = new \Bitrix\Iblock\InheritedProperty\SectionValues($this->next_step["IBLOCK_ID"], $arSection["ID"]);
+			$ipropValues->clearValues();
 			$this->_xml_file->Add(array("PARENT_ID" => 0, "LEFT_MARGIN" => $arSection["ID"]));
+		}
 
 		if($XML_SECTIONS_PARENT)
 		{
@@ -5708,9 +5808,6 @@ class CIBlockCMLExport
 
 		if($this->next_step["catalog"])
 		{
-			$rsProduct = CCatalogProduct::GetList(array(), array("ID" => $arElement["ID"]));
-			$arProduct = $rsProduct->Fetch();
-
 			static $measure = null;
 			if (!isset($measure))
 			{
@@ -5719,40 +5816,68 @@ class CIBlockCMLExport
 				while($arIDUnit = $rsBaseUnit->Fetch())
 					$measure[$arIDUnit["ID"]] = $arIDUnit["CODE"];
 			}
-			$xmlMeasure = GetMessage("IBLOCK_XML2_PCS");
-			if ($arProduct["MEASURE"] > 0 && isset($measure[$arProduct["MEASURE"]]))
-				$xmlMeasure = $measure[$arProduct["MEASURE"]];
 
-			$arPrices = array();
-			$rsPrices = CPrice::GetList(array(), array("PRODUCT_ID" => $arElement["ID"]));
-			while($arPrice = $rsPrices->Fetch())
+			$iterator = Catalog\ProductTable::getList([
+				'select' => ['ID', 'MEASURE', 'QUANTITY', 'TYPE'],
+				'filter' => ['=ID' => $arElement['ID']]
+			]);
+			$row = $iterator->fetch();
+			unset($iterator);
+			if (!empty($row) && is_array($row))
 			{
-				$arPrices[] = array(
-					GetMessage("IBLOCK_XML2_PRICE_TYPE_ID") => $this->prices[$arPrice["CATALOG_GROUP_ID"]],
-					GetMessage("IBLOCK_XML2_PRICE_FOR_ONE") => $arPrice["PRICE"],
-					GetMessage("IBLOCK_XML2_CURRENCY") => $arPrice["CURRENCY"],
-					GetMessage("IBLOCK_XML2_MEASURE") => $xmlMeasure,
-					GetMessage("IBLOCK_XML2_QUANTITY_FROM") => $arPrice["QUANTITY_FROM"],
-					GetMessage("IBLOCK_XML2_QUANTITY_TO") => $arPrice["QUANTITY_TO"],
-				);
-			}
-			if(count($arPrices)>0)
-			{
-				fwrite($this->fp, "\t\t\t\t<".GetMessage("IBLOCK_XML2_PRICES").">\n");
-				foreach($arPrices as $arPrice)
+				$row['TYPE'] = (int)$row['TYPE'];
+				if (
+					$row['TYPE'] == Catalog\ProductTable::TYPE_PRODUCT
+					|| $row['TYPE'] == Catalog\ProductTable::TYPE_SET
+					|| $row['TYPE'] == Catalog\ProductTable::TYPE_OFFER
+					|| (
+						$row['TYPE'] == Catalog\ProductTable::TYPE_SKU
+						&& (string)Main\Config\Option::get('catalog', 'show_catalog_tab_with_offers') == 'Y'
+					)
+				)
 				{
-					fwrite($this->fp, "\t\t\t\t\t<".GetMessage("IBLOCK_XML2_PRICE").">\n");
-					foreach($arPrice as $key=>$value)
+					$row['MEASURE'] = (int)$row['MEASURE'];
+					$xmlMeasure = GetMessage("IBLOCK_XML2_PCS");
+					if ($row["MEASURE"] > 0 && isset($measure[$row["MEASURE"]]))
+						$xmlMeasure = $measure[$row["MEASURE"]];
+
+					$arPrices = [];
+					$rsPrices = Catalog\PriceTable::getList([
+						'select' => ['ID', 'CATALOG_GROUP_ID', 'PRICE', 'CURRENCY', 'QUANTITY_FROM', 'QUANTITY_TO'],
+						'filter' => ['=PRODUCT_ID' => $arElement['ID']]
+					]);
+					while($arPrice = $rsPrices->fetch())
 					{
-						fwrite($this->fp, "\t\t\t\t\t\t<".$key.">".htmlspecialcharsbx($value)."</".$key.">\n");
+						$arPrices[] = [
+							GetMessage("IBLOCK_XML2_PRICE_TYPE_ID") => $this->prices[$arPrice["CATALOG_GROUP_ID"]],
+							GetMessage("IBLOCK_XML2_PRICE_FOR_ONE") => $arPrice["PRICE"],
+							GetMessage("IBLOCK_XML2_CURRENCY") => $arPrice["CURRENCY"],
+							GetMessage("IBLOCK_XML2_MEASURE") => $xmlMeasure,
+							GetMessage("IBLOCK_XML2_QUANTITY_FROM") => $arPrice["QUANTITY_FROM"],
+							GetMessage("IBLOCK_XML2_QUANTITY_TO") => $arPrice["QUANTITY_TO"],
+						];
 					}
-					fwrite($this->fp, "\t\t\t\t\t</".GetMessage("IBLOCK_XML2_PRICE").">\n");
+					unset($arPrice);
+					unset($rsPrices);
+					if (!empty($arPrices))
+					{
+						fwrite($this->fp, "\t\t\t\t<".GetMessage("IBLOCK_XML2_PRICES").">\n");
+						foreach($arPrices as $arPrice)
+						{
+							fwrite($this->fp, "\t\t\t\t\t<".GetMessage("IBLOCK_XML2_PRICE").">\n");
+							foreach($arPrice as $key=>$value)
+							{
+								fwrite($this->fp, "\t\t\t\t\t\t<".$key.">".htmlspecialcharsbx($value)."</".$key.">\n");
+							}
+							fwrite($this->fp, "\t\t\t\t\t</".GetMessage("IBLOCK_XML2_PRICE").">\n");
+						}
+						fwrite($this->fp, "\t\t\t\t</".GetMessage("IBLOCK_XML2_PRICES").">\n");
+					}
+					unset($arPrices);
+					fwrite($this->fp, "\t\t\t\t<".GetMessage("IBLOCK_XML2_AMOUNT").">".htmlspecialcharsbx($row["QUANTITY"])."</".GetMessage("IBLOCK_XML2_AMOUNT").">\n");
 				}
-				fwrite($this->fp, "\t\t\t\t</".GetMessage("IBLOCK_XML2_PRICES").">\n");
-				$arCatalogProduct = CCatalogProduct::GetByID($arElement["ID"]);
-				if($arCatalogProduct)
-					fwrite($this->fp, "\t\t\t\t<".GetMessage("IBLOCK_XML2_AMOUNT").">".htmlspecialcharsbx($arCatalogProduct["QUANTITY"])."</".GetMessage("IBLOCK_XML2_AMOUNT").">\n");
 			}
+			unset($row);
 		}
 	}
 	function ExportElements($PROPERTY_MAP, $SECTION_MAP, $start_time, $INTERVAL, $counter_limit = 0, $arElementFilter = false)

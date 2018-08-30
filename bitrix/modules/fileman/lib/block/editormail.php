@@ -126,9 +126,9 @@ class EditorMail
 		if(is_object($GLOBALS["USER"]))
 		{
 			/* @var $GLOBALS["USER"] \CAllUser */
-			$fields['EMAIL_TO'] = $GLOBALS["USER"]->GetEmail();
+			$fields['EMAIL_TO'] = htmlspecialcharsbx($GLOBALS["USER"]->GetEmail());
 			$fields['USER_ID'] = $GLOBALS["USER"]->GetID();
-			$fields['NAME'] = $GLOBALS["USER"]->GetFirstName() ?: $GLOBALS["USER"]->GetLastName();
+			$fields['NAME'] = htmlspecialcharsbx($GLOBALS["USER"]->GetFirstName() ?: $GLOBALS["USER"]->GetLastName());
 		}
 
 		$siteDb = SiteTable::getList(array(
@@ -497,7 +497,7 @@ class EditorMail
 							<tbody>
 								<tr>
 									<td valign="top" class="bxBlockPadding">
-
+										' . (Editor::isAvailableRussian() ? '
 										<table align="left" border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate !important; margin-right: 10px;">
 										<tbody>
 											<tr>
@@ -512,6 +512,7 @@ class EditorMail
 											</tr>
 										</tbody>
 										</table>
+										' : '') . '
 
 										<table align="left" border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate !important; margin-right: 10px;">
 										<tbody>
@@ -543,6 +544,7 @@ class EditorMail
 										</tbody>
 										</table>
 
+										' . (!Editor::isAvailableRussian() ? '
 										<table align="left" border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate !important; margin-right: 10px;">
 										<tbody>
 											<tr>
@@ -557,6 +559,8 @@ class EditorMail
 											</tr>
 										</tbody>
 										</table>
+										' : '') . '
+										
 									</td>
 								</tr>
 							</tbody>

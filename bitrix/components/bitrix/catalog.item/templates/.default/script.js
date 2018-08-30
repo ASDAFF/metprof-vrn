@@ -104,6 +104,9 @@
 		};
 		this.touch = null;
 
+		this.quantityDelay = null;
+		this.quantityTimer = null;
+
 		this.checkQuantity = false;
 		this.maxQuantity = 0;
 		this.minQuantity = 0;
@@ -576,13 +579,22 @@
 
 				if (this.showQuantity)
 				{
+					var startEventName = this.isTouchDevice ? 'touchstart' : 'mousedown';
+					var endEventName = this.isTouchDevice ? 'touchend' : 'mouseup';
+
 					if (this.obQuantityUp)
 					{
+						BX.bind(this.obQuantityUp, startEventName, BX.proxy(this.startQuantityInterval, this));
+						BX.bind(this.obQuantityUp, endEventName, BX.proxy(this.clearQuantityInterval, this));
+						BX.bind(this.obQuantityUp, 'mouseout', BX.proxy(this.clearQuantityInterval, this));
 						BX.bind(this.obQuantityUp, 'click', BX.delegate(this.quantityUp, this));
 					}
 
 					if (this.obQuantityDown)
 					{
+						BX.bind(this.obQuantityDown, startEventName, BX.proxy(this.startQuantityInterval, this));
+						BX.bind(this.obQuantityDown, endEventName, BX.proxy(this.clearQuantityInterval, this));
+						BX.bind(this.obQuantityDown, 'mouseout', BX.proxy(this.clearQuantityInterval, this));
 						BX.bind(this.obQuantityDown, 'click', BX.delegate(this.quantityDown, this));
 					}
 
@@ -850,6 +862,27 @@
 				cookieDate = new Date(new Date().getTime() + 1000 * 3600 * 24 * 365 * 10).toUTCString();
 
 			document.cookie = cookieName + "=" + plNewCookie + "; path=/; expires=" + cookieDate + "; domain=" + BX.cookie_domain;
+		},
+
+		startQuantityInterval: function()
+		{
+			var target = BX.proxy_context;
+			var func = target.id === this.visual.QUANTITY_DOWN_ID
+				? BX.proxy(this.quantityDown, this)
+				: BX.proxy(this.quantityUp, this);
+
+			this.quantityDelay = setTimeout(
+				BX.delegate(function() {
+					this.quantityTimer = setInterval(func, 150);
+				}, this),
+				300
+			);
+		},
+
+		clearQuantityInterval: function()
+		{
+			clearTimeout(this.quantityDelay);
+			clearInterval(this.quantityTimer);
 		},
 
 		quantityUp: function()
@@ -1770,7 +1803,7 @@
 							this.obPictSlider.appendChild(
 								BX.create('SPAN', {
 									props: {className: 'product-item-image-slide item' + (i == 0 ? ' active' : '')},
-									style: {backgroundImage: 'url(' + this.offers[index].MORE_PHOTO[i].SRC + ')'}
+									style: {backgroundImage: 'url(\'' + this.offers[index].MORE_PHOTO[i].SRC + '\')'}
 								})
 							);
 						}
@@ -1830,11 +1863,11 @@
 					{
 						if (this.offers[index].PREVIEW_PICTURE)
 						{
-							BX.adjust(this.obPict, {style: {backgroundImage: 'url(' + this.offers[index].PREVIEW_PICTURE.SRC + ')'}});
+							BX.adjust(this.obPict, {style: {backgroundImage: 'url(\'' + this.offers[index].PREVIEW_PICTURE.SRC + '\')'}});
 						}
 						else
 						{
-							BX.adjust(this.obPict, {style: {backgroundImage: 'url(' + this.defaultPict.pict.SRC + ')'}});
+							BX.adjust(this.obPict, {style: {backgroundImage: 'url(\'' + this.defaultPict.pict.SRC + '\')'}});
 						}
 
 						this.obPict.style.display = '';
@@ -1844,19 +1877,19 @@
 					{
 						if (this.offers[index].PREVIEW_PICTURE_SECOND)
 						{
-							BX.adjust(this.obSecondPict, {style: {backgroundImage: 'url(' + this.offers[index].PREVIEW_PICTURE_SECOND.SRC + ')'}});
+							BX.adjust(this.obSecondPict, {style: {backgroundImage: 'url(\'' + this.offers[index].PREVIEW_PICTURE_SECOND.SRC + '\')'}});
 						}
 						else if (this.offers[index].PREVIEW_PICTURE.SRC)
 						{
-							BX.adjust(this.obSecondPict, {style: {backgroundImage: 'url(' + this.offers[index].PREVIEW_PICTURE.SRC + ')'}});
+							BX.adjust(this.obSecondPict, {style: {backgroundImage: 'url(\'' + this.offers[index].PREVIEW_PICTURE.SRC + '\')'}});
 						}
 						else if (this.defaultPict.secondPict)
 						{
-							BX.adjust(this.obSecondPict, {style: {backgroundImage: 'url(' + this.defaultPict.secondPict.SRC + ')'}});
+							BX.adjust(this.obSecondPict, {style: {backgroundImage: 'url(\'' + this.defaultPict.secondPict.SRC + '\')'}});
 						}
 						else
 						{
-							BX.adjust(this.obSecondPict, {style: {backgroundImage: 'url(' + this.defaultPict.pict.SRC + ')'}});
+							BX.adjust(this.obSecondPict, {style: {backgroundImage: 'url(\'' + this.defaultPict.pict.SRC + '\')'}});
 						}
 
 						this.obSecondPict.style.display = '';

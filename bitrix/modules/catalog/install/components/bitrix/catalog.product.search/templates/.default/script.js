@@ -57,10 +57,23 @@ BX.Catalog.ProductSearchDialog = (function () {
 	};
 
 	ProductSearchDialog.prototype.SelEl = function (arParams, scope) {
-		BX.removeClass(scope, 'row-sku-selected');
+		var qtyElement,
+			parent;
+		if (BX.hasClass(scope, 'adm-list-table-row'))
+		{
+			BX.addClass(scope, 'row-sku-selected');
+		}
+		else
+		{
+			parent = BX.findParent(scope, {className: 'adm-list-table-row'});
+			if (BX.type.isElementNode(parent))
+				BX.addClass(parent, 'row-sku-selected');
+			parent = null;
+		}
+
 		if (typeof arParams['quantity'] === 'undefined')
 			arParams['quantity'] = 1;
-		var qtyElement = BX(this.tableId+'_qty_'+arParams['id']);
+		qtyElement = BX(this.tableId+'_qty_'+arParams['id']);
 		if (!!qtyElement)
 			arParams['quantity'] = qtyElement.value;
 

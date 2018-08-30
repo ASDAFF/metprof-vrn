@@ -27,6 +27,12 @@ abstract class BasketBase extends BasketItemCollection
 	/** @var array $basketItemIndexMap */
 	protected $basketItemIndexMap = array();
 
+	/** @var int $maxItemSort */
+	protected $maxItemSort = null;
+
+	/** @var bool $isLoadForFUserId */
+	protected $isLoadForFUserId = false;
+
 	/**
 	 * @param $itemCode
 	 * @return BasketItemBase|null
@@ -42,6 +48,22 @@ abstract class BasketBase extends BasketItemCollection
 		}
 
 		return parent::getItemByBasketCode($itemCode);
+	}
+
+	/**
+	 * @param BasketItemBase $item
+	 *
+	 * @return BasketItemBase|null
+	 */
+	public function getExistsItemByItem(BasketItemBase $item)
+	{
+		$propertyList = [];
+		$propertyCollection = $item->getPropertyCollection();
+		if ($propertyCollection)
+		{
+			$propertyList = $propertyCollection->getPropertyValues();
+		}
+		return $this->getExistsItem($item->getField('MODULE'), $item->getField('PRODUCT_ID'), $propertyList);
 	}
 
 	/**
@@ -75,14 +97,6 @@ abstract class BasketBase extends BasketItemCollection
 	}
 
 	/**
-	 * @return bool
-	 */
-	public function isLoadForFUserId()
-	{
-		return $this->fUserId !== null;
-	}
-
-	/**
 	 * @throws Main\NotImplementedException
 	 * @return BasketBase
 	 */
@@ -102,6 +116,8 @@ abstract class BasketBase extends BasketItemCollection
 		$basket = static::create($siteId);
 
 		$basket->setFUserId($fUserId);
+
+		$basket->isLoadForFUserId = true;
 
 		/** @var BasketBase $collection */
 		return $basket->loadFromDb(
@@ -210,6 +226,8 @@ abstract class BasketBase extends BasketItemCollection
 
 		$this->basketItemIndexMap[$basketItem->getBasketCode()] = $basketItem->getInternalIndex();
 
+		$this->verifyItemSort($basketItem);
+
 		$basketItem->setCollection($this);
 
 		/** @var OrderBase $order */
@@ -217,6 +235,29 @@ abstract class BasketBase extends BasketItemCollection
 		{
 			$order->onBasketModify(EventActions::ADD, $basketItem);
 		}
+	}
+
+	protected function verifyItemSort(BasketItemBase $item)
+	{
+		$itemSort = (int)$item->getField('SORT') ?: 100;
+
+		if ($this->maxItemSort === null)
+		{
+			$this->maxItemSort = $itemSort;
+		}
+		else
+		{
+			if ($itemSort > $this->maxItemSort)
+			{
+				$this->maxItemSort = $itemSort;
+			}
+			else
+			{
+				$this->maxItemSort += 100 + $this->maxItemSort % 100;
+			}
+		}
+
+		$item->setFieldNoDemand('SORT', $this->maxItemSort);
 	}
 
 	/**
@@ -481,7 +522,9 @@ abstract class BasketBase extends BasketItemCollection
 						$orderId,
 						"BASKET_SAVED",
 						$basketItem->getId(),
-						$basketItem
+						$basketItem,
+						array(),
+						OrderHistory::SALE_ORDER_HISTORY_ACTION_LOG_LEVEL_1
 					);
 				}
 			}
@@ -657,18 +700,6 @@ abstract class BasketBase extends BasketItemCollection
 	}
 
 	/**
-	 * Removing the old records in the basket
-	 *
-	 * @param int $days - number of days, how many is considered obsolete basket
-	 *
-	 * @return bool
-	 */
-	public static function deleteOld($days)
-	{
-		return true;
-	}
-
-	/**
 	 * @internal
 	 * @param \SplObjectStorage $cloneEntity
 	 *
@@ -742,11 +773,6 @@ abstract class BasketBase extends BasketItemCollection
 	{
 		$isStartField = $this->isStartField();
 
-		if ($strategy === null)
-		{
-			$strategy = RefreshFactory::create();
-		}
-
 		/** @var OrderBase $order */
 		$order = $this->getOrder();
 		if ($order)
@@ -756,6 +782,11 @@ abstract class BasketBase extends BasketItemCollection
 			{
 				return $r;
 			}
+		}
+
+		if ($strategy === null)
+		{
+			$strategy = RefreshFactory::create();
 		}
 
 		$result = $strategy->refresh($this);
@@ -827,13 +858,23 @@ abstract class BasketBase extends BasketItemCollection
 		/** @var BasketBase $basket */
 		$basket = static::create($this->getSiteId());
 
+		if ($this->isLoadForFUserId)
+		{
+			$basket->setFUserId($this->getFUserId(true));
+		}
+
 		if ($order = $this->getOrder())
 		{
 			$basket->setOrder($order);
 		}
 
+		$sortedCollection = $this->collection;
+		usort($sortedCollection, function(BasketItemBase $a, BasketItemBase $b){
+			return (int)$a->getField('SORT') - (int)$b->getField('SORT');
+		});
+
 		/** @var BasketItemBase $item */
-		foreach ($this->collection as $item)
+		foreach ($sortedCollection as $item)
 		{
 			if (!$item->canBuy() || $item->isDelay())
 				continue;
@@ -851,5 +892,57 @@ abstract class BasketBase extends BasketItemCollection
 	public function getBasket()
 	{
 		return $this;
+	}
+
+	/**
+	 * Apply the result of the discount to the basket.
+	 *
+	 * @param array $basketRows		Changed fields for basket rows.
+	 * @return Result
+	 * @throws Main\ArgumentNullException
+	 */
+	public function applyDiscount(array $basketRows)
+	{
+		$result = new Result();
+
+		if ($this->count() == 0 || empty($basketRows))
+			return $result;
+
+		/** @var BasketItemBase $basketItem */
+		foreach ($this->collection as $basketItem)
+		{
+			if ($basketItem->isCustomPrice())
+				continue;
+			$basketCode = $basketItem->getBasketCode();
+			if (!isset($basketRows[$basketCode]))
+				continue;
+
+			$fields = $basketRows[$basketCode];
+
+			if (isset($fields['PRICE']) && isset($fields['DISCOUNT_PRICE']))
+			{
+				$fields['PRICE'] = (float)$fields['PRICE'];
+				$fields['DISCOUNT_PRICE'] = (float)$fields['DISCOUNT_PRICE'];
+
+				if ($fields['PRICE'] >= 0
+					&& $basketItem->getPrice() != $fields['PRICE'])
+				{
+					$fields['PRICE'] = PriceMaths::roundPrecision($fields['PRICE']);
+					$basketItem->setFieldNoDemand('PRICE', $fields['PRICE']);
+				}
+
+				if ($basketItem->getDiscountPrice() != $fields['DISCOUNT_PRICE'])
+				{
+					$fields['DISCOUNT_PRICE'] = PriceMaths::roundPrecision($fields['DISCOUNT_PRICE']);
+					$basketItem->setFieldNoDemand('DISCOUNT_PRICE', $fields['DISCOUNT_PRICE']);
+				}
+
+				if (isset($fields['DISCOUNT_VALUE']))
+					$basketItem->setFieldNoDemand('DISCOUNT_VALUE', $fields['DISCOUNT_VALUE']);
+			}
+		}
+		unset($fields, $basketCode, $basketItem);
+
+		return $result;
 	}
 }

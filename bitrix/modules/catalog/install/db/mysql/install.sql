@@ -184,11 +184,12 @@ create table if not exists b_catalog_discount
 	NOTES varchar(255) null,
 	CONDITIONS text null,
 	UNPACK text null,
+	USE_COUPONS char(1) not null default 'N',
 	SALE_ID int null,
 	primary key (ID),
-	index IX_C_D_COUPON(COUPON),
 	index IX_C_D_ACT(ACTIVE, ACTIVE_FROM, ACTIVE_TO),
-	index IX_C_D_ACT_B(SITE_ID, RENEWAL, ACTIVE, ACTIVE_FROM, ACTIVE_TO)
+	index IX_C_D_ACT_B(SITE_ID, RENEWAL, ACTIVE, ACTIVE_FROM, ACTIVE_TO),
+	index IX_B_CAT_DISCOUNT_COUPON(USE_COUPONS)
 );
 
 create table if not exists b_catalog_discount_cond
@@ -501,7 +502,10 @@ create table if not exists b_catalog_viewed_product
 	VIEW_COUNT INT NOT NULL DEFAULT 1,
 	RECOMMENDATION VARCHAR(40) NULL,
 	PRIMARY KEY (ID),
-	INDEX IX_CAT_V_PR_FUSER_ID (FUSER_ID)
+	INDEX IX_CAT_V_PR_FUSER_ID (FUSER_ID),
+	INDEX IX_CAT_V_PR_VISIT(FUSER_ID, SITE_ID, DATE_VISIT DESC),
+	INDEX IX_CAT_V_PR_PRODUCT(FUSER_ID, SITE_ID, ELEMENT_ID),
+	INDEX IX_CAT_V_PR_PRODUCT_VISIT(ELEMENT_ID, DATE_VISIT)
 );
 
 create table if not exists b_catalog_subscribe (

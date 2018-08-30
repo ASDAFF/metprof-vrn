@@ -255,7 +255,12 @@ abstract class CAllUser extends CDBResult
 				else
 				{
 					//Delete invalid stored auth cookie
-					$APPLICATION->set_cookie("UIDH", "", 0, '/', false, false, COption::GetOptionString("main", "auth_multisite", "N")=="Y", false, true);
+					$spread = (COption::GetOptionString("main", "auth_multisite", "N") == "Y"? (Main\Web\Cookie::SPREAD_SITES | Main\Web\Cookie::SPREAD_DOMAIN) : Main\Web\Cookie::SPREAD_DOMAIN);
+
+					$cookie = new Main\Web\Cookie("UIDH", "", 0);
+					$cookie->setSpread($spread);
+					$cookie->setHttpOnly(true);
+					Main\Context::getCurrent()->getResponse()->addCookie($cookie);
 				}
 			}
 			if(!$bFound)
@@ -623,21 +628,37 @@ abstract class CAllUser extends CDBResult
 
 				if($applicationId === null && ($bSave || COption::GetOptionString("main", "auth_multisite", "N") == "Y"))
 				{
+					$response = Main\Context::getCurrent()->getResponse();
+
 					$hash = $this->GetSessionHash();
 					$secure = (COption::GetOptionString("main", "use_secure_password_cookies", "N")=="Y" && CMain::IsHTTPS());
 
 					if($bSave)
 					{
 						$period = time()+60*60*24*30*60;
-						$spread = BX_SPREAD_SITES | BX_SPREAD_DOMAIN;
+						$spread = Main\Web\Cookie::SPREAD_SITES | Main\Web\Cookie::SPREAD_DOMAIN;
 					}
 					else
 					{
 						$period = 0;
-						$spread = BX_SPREAD_SITES;
+						$spread = Main\Web\Cookie::SPREAD_SITES;
 					}
-					$APPLICATION->set_cookie("UIDH", $hash, $period, '/', false, $secure, $spread, false, true);
-					$APPLICATION->set_cookie("UIDL", $arUser["LOGIN"], $period, '/', false, $secure, $spread, false, true);
+
+					$cookie = new Bitrix\Main\Web\Cookie("UIDH", $hash, $period);
+
+					$cookie->setSecure($secure)
+						->setSpread($spread)
+						->setHttpOnly(true);
+
+					$response->addCookie($cookie);
+
+					$cookie = new Bitrix\Main\Web\Cookie("UIDL", $arUser["LOGIN"], $period);
+
+					$cookie->setSecure($secure)
+						->setSpread($spread)
+						->setHttpOnly(true);
+
+					$response->addCookie($cookie);
 
 					$stored_id = CUser::CheckStoredHash($arUser["ID"], $hash);
 					if($stored_id)
@@ -721,15 +742,25 @@ abstract class CAllUser extends CDBResult
 
 		$hash = $this->GetSessionHash();
 		$time = time()+60*60*24*30*60;
-		$secure = 0;
-		if(COption::GetOptionString("main", "use_secure_password_cookies", "N")=="Y" && CMain::IsHTTPS())
-			$secure=1;
+		$secure = (COption::GetOptionString("main", "use_secure_password_cookies", "N")=="Y" && CMain::IsHTTPS());
+		$spread = (COption::GetOptionString("main", "auth_multisite", "N") == "Y"? (Main\Web\Cookie::SPREAD_SITES | Main\Web\Cookie::SPREAD_DOMAIN) : Main\Web\Cookie::SPREAD_DOMAIN);
 
-		$APPLICATION->set_cookie("UIDH", $hash, $time, '/', false, $secure, COption::GetOptionString("main", "auth_multisite", "N")=="Y");
+		$cookie = new Main\Web\Cookie("UIDH", $hash, $time);
+
+		$cookie->setSpread($spread)
+			->setSecure($secure)
+			->setHttpOnly(true);
+
+		Main\Context::getCurrent()->getResponse()->addCookie($cookie);
 	}
 
 	/**
 	 * Authenticates the user and then authorizes him
+	 * @param string $login
+	 * @param string $password
+	 * @param string $remember
+	 * @param string $password_original
+	 * @return array|bool
 	 */
 	public function Login($login, $password, $remember="N", $password_original="Y")
 	{
@@ -779,6 +810,11 @@ abstract class CAllUser extends CDBResult
 			foreach(GetModuleEvents("main", "OnUserLoginExternal", true) as $arEvent)
 			{
 				$user_id = ExecuteModuleEventEx($arEvent, array(&$arParams));
+
+				if(isset($arParams["RESULT_MESSAGE"]))
+				{
+					$result_message = $arParams["RESULT_MESSAGE"];
+				}
 				if($user_id > 0)
 				{
 					break;
@@ -789,126 +825,9 @@ abstract class CAllUser extends CDBResult
 			{
 				//internal authentication OR application password for external user
 
-				$foundUser = false;
+				$user_id = self::LoginInternal($arParams, $result_message, $applicationId, $applicationPassId);
 
-				$strSql =
-					"SELECT U.ID, U.LOGIN, U.ACTIVE, U.PASSWORD, U.LOGIN_ATTEMPTS, U.CONFIRM_CODE, U.EMAIL ".
-					"FROM b_user U  ".
-					"WHERE U.LOGIN='".$DB->ForSQL($arParams["LOGIN"])."' ".
-					"	AND (EXTERNAL_AUTH_ID IS NULL OR EXTERNAL_AUTH_ID='') ";
-
-				$result = $DB->Query($strSql);
-
-				if(($arUser = $result->Fetch()))
-				{
-					//internal authentication by login and password
-
-					$foundUser = true;
-
-					if(strlen($arUser["PASSWORD"]) > 32)
-					{
-						$salt = substr($arUser["PASSWORD"], 0, strlen($arUser["PASSWORD"]) - 32);
-						$db_password = substr($arUser["PASSWORD"], -32);
-					}
-					else
-					{
-						$salt = "";
-						$db_password = $arUser["PASSWORD"];
-					}
-
-					$user_password_no_otp = "";
-					if($arParams["PASSWORD_ORIGINAL"] == "Y")
-					{
-						$user_password =  md5($salt.$arParams["PASSWORD"]);
-						if($arParams["OTP"] <> '')
-						{
-							$user_password_no_otp =  md5($salt.substr($arParams["PASSWORD"], 0, -6));
-						}
-					}
-					else
-					{
-						if(strlen($arParams["PASSWORD"]) > 32)
-							$user_password = substr($arParams["PASSWORD"], -32);
-						else
-							$user_password = $arParams["PASSWORD"];
-					}
-
-					$passwordCorrect = ($db_password === $user_password || ($arParams["OTP"] <> '' && $db_password === $user_password_no_otp));
-
-					if($db_password === $user_password)
-					{
-						//this password has no added otp for sure
-						$arParams["OTP"] = '';
-					}
-
-					if(!$passwordCorrect)
-					{
-						//let's try to find application password
-						if(($appPassword = ApplicationPasswordTable::findPassword($arUser["ID"], $arParams["PASSWORD"], ($arParams["PASSWORD_ORIGINAL"] == "Y"))) !== false)
-						{
-							$passwordCorrect = true;
-							$applicationId = $appPassword["APPLICATION_ID"];
-							$applicationPassId = $appPassword["ID"];
-						}
-					}
-
-					$arPolicy = CUser::GetGroupPolicy($arUser["ID"]);
-					$pol_login_attempts = intval($arPolicy["LOGIN_ATTEMPTS"]);
-					$usr_login_attempts = intval($arUser["LOGIN_ATTEMPTS"])+1;
-					if($pol_login_attempts > 0 && $usr_login_attempts > $pol_login_attempts)
-					{
-						$_SESSION["BX_LOGIN_NEED_CAPTCHA"] = true;
-						if(!$APPLICATION->CaptchaCheckCode($_REQUEST["captcha_word"], $_REQUEST["captcha_sid"]))
-						{
-							$passwordCorrect = false;
-						}
-					}
-
-					if($passwordCorrect)
-					{
-						if($salt == '' && $arParams["PASSWORD_ORIGINAL"] == "Y" && $applicationId === null)
-						{
-							$salt = randString(8, array(
-								"abcdefghijklnmopqrstuvwxyz",
-								"ABCDEFGHIJKLNMOPQRSTUVWXYZ",
-								"0123456789",
-								",.<>/?;:[]{}\\|~!@#\$%^&*()-_+=",
-							));
-							$new_password = $salt.md5($salt.$arParams["PASSWORD"]);
-							$DB->Query("UPDATE b_user SET PASSWORD='".$DB->ForSQL($new_password)."', TIMESTAMP_X = TIMESTAMP_X WHERE ID = ".intval($arUser["ID"]));
-						}
-
-						if($arUser["ACTIVE"] == "Y")
-						{
-							$user_id = $arUser["ID"];
-
-							//update digest hash for http digest authorization
-							if($arParams["PASSWORD_ORIGINAL"] == "Y" && $applicationId === null && COption::GetOptionString('main', 'use_digest_auth', 'N') == 'Y')
-							{
-								CUser::UpdateDigest($arUser["ID"], $arParams["PASSWORD"]);
-							}
-						}
-						elseif($arUser["CONFIRM_CODE"] <> '')
-						{
-							//unconfirmed registration
-							$message = GetMessage("MAIN_LOGIN_EMAIL_CONFIRM", array("#EMAIL#" => $arUser["EMAIL"]));
-							$APPLICATION->ThrowException($message);
-							$result_message = array("MESSAGE"=>$message."<br>", "TYPE"=>"ERROR");
-						}
-						else
-						{
-							$APPLICATION->ThrowException(GetMessage("LOGIN_BLOCK"));
-							$result_message = array("MESSAGE"=>GetMessage("LOGIN_BLOCK")."<br>", "TYPE"=>"ERROR");
-						}
-					}
-					else
-					{
-						$DB->Query("UPDATE b_user SET LOGIN_ATTEMPTS = ".$usr_login_attempts.", TIMESTAMP_X = TIMESTAMP_X WHERE ID = ".intval($arUser["ID"]));
-						$APPLICATION->ThrowException(GetMessage("WRONG_LOGIN"));
-						$result_message = array("MESSAGE"=>GetMessage("WRONG_LOGIN")."<br>", "TYPE"=>"ERROR", "ERROR_TYPE" => "LOGIN");
-					}
-				}
-				else
+				if($user_id <= 0)
 				{
 					//no user found by login - try to find an external user
 					foreach(GetModuleEvents("main", "OnFindExternalUser", true) as $arEvent)
@@ -920,7 +839,6 @@ abstract class CAllUser extends CDBResult
 							if(($appPassword = ApplicationPasswordTable::findPassword($external_user_id, $arParams["PASSWORD"], ($arParams["PASSWORD_ORIGINAL"] == "Y"))) !== false)
 							{
 								//bingo, the user has the application password
-								$foundUser = true;
 								$user_id = $external_user_id;
 								$applicationId = $appPassword["APPLICATION_ID"];
 								$applicationPassId = $appPassword["ID"];
@@ -930,7 +848,7 @@ abstract class CAllUser extends CDBResult
 					}
 				}
 
-				if(!$foundUser)
+				if($user_id <= 0 && $result_message === true)
 				{
 					$APPLICATION->ThrowException(GetMessage("WRONG_LOGIN"));
 					$result_message = array("MESSAGE"=>GetMessage("WRONG_LOGIN")."<br>", "TYPE"=>"ERROR", "ERROR_TYPE" => "LOGIN");
@@ -999,7 +917,8 @@ abstract class CAllUser extends CDBResult
 			if($applicationId === null && $arParams["LOGIN"] <> '')
 			{
 				//the cookie is for authentication forms mostly, does not make sense for applications
-				$APPLICATION->set_cookie("LOGIN", $arParams["LOGIN"], time()+60*60*24*30*60, '/', false, false, COption::GetOptionString("main", "auth_multisite", "N")=="Y");
+				$cookie = new Bitrix\Main\Web\Cookie("LOGIN", $arParams["LOGIN"], time()+60*60*24*30*60);
+				Main\Context::getCurrent()->getResponse()->addCookie($cookie);
 			}
 		}
 
@@ -1013,6 +932,150 @@ abstract class CAllUser extends CDBResult
 			CEventLog::Log("SECURITY", "USER_LOGIN", "main", $login, $result_message["MESSAGE"]);
 
 		return $arParams["RESULT_MESSAGE"];
+	}
+
+	/**
+	 * Internal authentication by login and password.
+	 * @param array $arParams
+	 * @param array|bool $result_message
+	 * @param string|null $applicationId
+	 * @param string|null $applicationPassId
+	 * @return int User ID on success or 0 on failure. Additionally, $result_message will hold an error.
+	 */
+	public static function LoginInternal(&$arParams, &$result_message = true, &$applicationId = null, &$applicationPassId = null)
+	{
+		global $DB, $APPLICATION;
+
+		$user_id = 0;
+
+		$strSql =
+			"SELECT U.ID, U.LOGIN, U.ACTIVE, U.PASSWORD, U.LOGIN_ATTEMPTS, U.CONFIRM_CODE, U.EMAIL ".
+			"FROM b_user U  ".
+			"WHERE U.LOGIN='".$DB->ForSQL($arParams["LOGIN"])."' ";
+
+		if(isset($arParams["EXTERNAL_AUTH_ID"]) && $arParams["EXTERNAL_AUTH_ID"] <> '')
+		{
+			//external user
+			$strSql .= " AND EXTERNAL_AUTH_ID='".$DB->ForSql($arParams["EXTERNAL_AUTH_ID"])."'";
+		}
+		else
+		{
+			//internal user (by default)
+			$strSql .= " AND (EXTERNAL_AUTH_ID IS NULL OR EXTERNAL_AUTH_ID='') ";
+		}
+
+		$result = $DB->Query($strSql);
+
+		if(($arUser = $result->Fetch()))
+		{
+			if(strlen($arUser["PASSWORD"]) > 32)
+			{
+				$salt = substr($arUser["PASSWORD"], 0, strlen($arUser["PASSWORD"]) - 32);
+				$db_password = substr($arUser["PASSWORD"], -32);
+			}
+			else
+			{
+				$salt = "";
+				$db_password = $arUser["PASSWORD"];
+			}
+
+			$user_password_no_otp = "";
+			if($arParams["PASSWORD_ORIGINAL"] == "Y")
+			{
+				$user_password = md5($salt.$arParams["PASSWORD"]);
+				if($arParams["OTP"] <> '')
+				{
+					$user_password_no_otp = md5($salt.substr($arParams["PASSWORD"], 0, -6));
+				}
+			}
+			else
+			{
+				if(strlen($arParams["PASSWORD"]) > 32)
+				{
+					$user_password = substr($arParams["PASSWORD"], -32);
+				}
+				else
+				{
+					$user_password = $arParams["PASSWORD"];
+				}
+			}
+
+			$passwordCorrect = ($db_password === $user_password || ($arParams["OTP"] <> '' && $db_password === $user_password_no_otp));
+
+			if($db_password === $user_password)
+			{
+				//this password has no added otp for sure
+				$arParams["OTP"] = '';
+			}
+
+			if(!$passwordCorrect)
+			{
+				//let's try to find application password
+				if(($appPassword = ApplicationPasswordTable::findPassword($arUser["ID"], $arParams["PASSWORD"], ($arParams["PASSWORD_ORIGINAL"] == "Y"))) !== false)
+				{
+					$passwordCorrect = true;
+					$applicationId = $appPassword["APPLICATION_ID"];
+					$applicationPassId = $appPassword["ID"];
+				}
+			}
+
+			$arPolicy = CUser::GetGroupPolicy($arUser["ID"]);
+			$pol_login_attempts = intval($arPolicy["LOGIN_ATTEMPTS"]);
+			$usr_login_attempts = intval($arUser["LOGIN_ATTEMPTS"]) + 1;
+			if($pol_login_attempts > 0 && $usr_login_attempts > $pol_login_attempts)
+			{
+				$_SESSION["BX_LOGIN_NEED_CAPTCHA"] = true;
+				if(!$APPLICATION->CaptchaCheckCode($_REQUEST["captcha_word"], $_REQUEST["captcha_sid"]))
+				{
+					$passwordCorrect = false;
+				}
+			}
+
+			if($passwordCorrect)
+			{
+				if($salt == '' && $arParams["PASSWORD_ORIGINAL"] == "Y" && $applicationId === null)
+				{
+					$salt = randString(8, array(
+						"abcdefghijklnmopqrstuvwxyz",
+						"ABCDEFGHIJKLNMOPQRSTUVWXYZ",
+						"0123456789",
+						",.<>/?;:[]{}\\|~!@#\$%^&*()-_+=",
+					));
+					$new_password = $salt.md5($salt.$arParams["PASSWORD"]);
+					$DB->Query("UPDATE b_user SET PASSWORD='".$DB->ForSQL($new_password)."', TIMESTAMP_X = TIMESTAMP_X WHERE ID = ".intval($arUser["ID"]));
+				}
+
+				if($arUser["ACTIVE"] == "Y")
+				{
+					$user_id = $arUser["ID"];
+
+					//update digest hash for http digest authorization
+					if($arParams["PASSWORD_ORIGINAL"] == "Y" && $applicationId === null && COption::GetOptionString('main', 'use_digest_auth', 'N') == 'Y')
+					{
+						CUser::UpdateDigest($arUser["ID"], $arParams["PASSWORD"]);
+					}
+				}
+				elseif($arUser["CONFIRM_CODE"] <> '')
+				{
+					//unconfirmed registration
+					$message = GetMessage("MAIN_LOGIN_EMAIL_CONFIRM", array("#EMAIL#" => $arUser["EMAIL"]));
+					$APPLICATION->ThrowException($message);
+					$result_message = array("MESSAGE" => $message."<br>", "TYPE" => "ERROR");
+				}
+				else
+				{
+					$APPLICATION->ThrowException(GetMessage("LOGIN_BLOCK"));
+					$result_message = array("MESSAGE" => GetMessage("LOGIN_BLOCK")."<br>", "TYPE" => "ERROR");
+				}
+			}
+			else
+			{
+				$DB->Query("UPDATE b_user SET LOGIN_ATTEMPTS = ".$usr_login_attempts.", TIMESTAMP_X = TIMESTAMP_X WHERE ID = ".intval($arUser["ID"]));
+				$APPLICATION->ThrowException(GetMessage("WRONG_LOGIN"));
+				$result_message = array("MESSAGE" => GetMessage("WRONG_LOGIN")."<br>", "TYPE" => "ERROR", "ERROR_TYPE" => "LOGIN");
+			}
+		}
+		return $user_id;
 	}
 
 	protected static function CheckUsersCount($user_id)
@@ -1112,7 +1175,7 @@ abstract class CAllUser extends CDBResult
 		return false;
 	}
 
-	public function ChangePassword($LOGIN, $CHECKWORD, $PASSWORD, $CONFIRM_PASSWORD, $SITE_ID=false, $captcha_word = "", $captcha_sid = 0)
+	public function ChangePassword($LOGIN, $CHECKWORD, $PASSWORD, $CONFIRM_PASSWORD, $SITE_ID=false, $captcha_word = "", $captcha_sid = 0, $authActions = true)
 	{
 		/** @global CMain $APPLICATION */
 		global $DB, $APPLICATION;
@@ -1177,7 +1240,7 @@ abstract class CAllUser extends CDBResult
 
 			$arPolicy = CUser::GetGroupPolicy($res["ID"]);
 
-			$passwordErrors = $this->CheckPasswordAgainstPolicy($arParams["PASSWORD"], $arPolicy);
+			$passwordErrors = self::CheckPasswordAgainstPolicy($arParams["PASSWORD"], $arPolicy);
 			if (!empty($passwordErrors))
 			{
 				return array(
@@ -1201,7 +1264,7 @@ abstract class CAllUser extends CDBResult
 			// change the password
 			$ID = $res["ID"];
 			$obUser = new CUser;
-			$res = $obUser->Update($ID, array("PASSWORD"=>$arParams["PASSWORD"]));
+			$res = $obUser->Update($ID, array("PASSWORD"=>$arParams["PASSWORD"]), $authActions);
 			if(!$res && $obUser->LAST_ERROR <> '')
 				return array("MESSAGE"=>$obUser->LAST_ERROR."<br>", "TYPE"=>"ERROR");
 			CUser::SendUserInfo($ID, $arParams["SITE_ID"], GetMessage('CHANGE_PASS_SUCC'), true, 'USER_PASS_CHANGED');
@@ -1210,7 +1273,7 @@ abstract class CAllUser extends CDBResult
 		return $result_message;
 	}
 
-	public function CheckPasswordAgainstPolicy($password, $arPolicy)
+	public static function CheckPasswordAgainstPolicy($password, $arPolicy)
 	{
 		$errors = array();
 
@@ -1701,9 +1764,33 @@ abstract class CAllUser extends CDBResult
 		return ($_SESSION["SESS_AUTH"]["AUTHORIZED"]=="Y");
 	}
 
+	public function HasNoAccess()
+	{
+		if (!$this->IsAuthorized())
+		{
+			return true;
+		}
+
+		$filePath = \Bitrix\Main\Context::getCurrent()->getRequest()->getScriptFile();
+
+		return !$this->CanDoFileOperation('fm_view_file', [SITE_ID, $filePath]);
+	}
+
 	public function IsJustAuthorized()
 	{
 		return $this->justAuthorized;
+	}
+
+	public function IsJustBecameOnline()
+	{
+		if(!$_SESSION['SESS_AUTH']['PREV_LAST_ACTIVITY'])
+		{
+			return true;
+		}
+		else
+		{
+			return ($_SESSION['SESS_AUTH']['SET_LAST_ACTIVITY'] - $_SESSION['SESS_AUTH']['PREV_LAST_ACTIVITY']) > Main\UserTable::getSecondsForLimitOnline();
+		}
 	}
 
 	public function IsAdmin()
@@ -1794,9 +1881,18 @@ abstract class CAllUser extends CDBResult
 			else
 				session_regenerate_id(true);
 
-			$multi = (COption::GetOptionString("main", "auth_multisite", "N") == "Y");
-			$APPLICATION->set_cookie("UIDH", "", 0, '/', false, false, $multi, false, true);
-			$APPLICATION->set_cookie("UIDL", "", 0, '/', false, false, $multi, false, true);
+			$response = Main\Context::getCurrent()->getResponse();
+			$spread = (COption::GetOptionString("main", "auth_multisite", "N") == "Y"? (Main\Web\Cookie::SPREAD_SITES | Main\Web\Cookie::SPREAD_DOMAIN) : Main\Web\Cookie::SPREAD_DOMAIN);
+
+			$cookie = new Main\Web\Cookie("UIDH",  "", 0);
+			$cookie->setSpread($spread);
+			$cookie->setHttpOnly(true);
+			$response->addCookie($cookie);
+
+			$cookie = new Main\Web\Cookie("UIDL",  "", 0);
+			$cookie->setSpread($spread);
+			$cookie->setHttpOnly(true);
+			$response->addCookie($cookie);
 
 			Main\Composite\Engine::onUserLogout();
 		}
@@ -1875,134 +1971,32 @@ abstract class CAllUser extends CDBResult
 
 		$this->LAST_ERROR = "";
 
-		$bInternal = false;
-		$bExternal = (is_set($arFields, "EXTERNAL_AUTH_ID") && trim($arFields["EXTERNAL_AUTH_ID"]) <> '');
-		$oldEmail = "";
-		if($ID > 0 && !$bExternal)
+		$bInternal = true;
+		if(is_set($arFields, "EXTERNAL_AUTH_ID"))
 		{
-			$strSql = "SELECT EXTERNAL_AUTH_ID, EMAIL FROM b_user WHERE ID=".intval($ID);
-			$dbr = $DB->Query($strSql, false, "FILE: ".__FILE__."<br> LINE: ".__LINE__);
-			if(($ar = $dbr->Fetch()))
+			if(trim($arFields["EXTERNAL_AUTH_ID"]) <> '')
 			{
-				$oldEmail = $ar['EMAIL'];
-				if($ar['EXTERNAL_AUTH_ID'] == '')
-					$bInternal = true;
+				$bInternal = false;
 			}
-
 		}
-		elseif(!$bExternal)
+		else
 		{
-			$bInternal = true;
+			if($ID > 0)
+			{
+				$dbr = $DB->Query("SELECT EXTERNAL_AUTH_ID FROM b_user WHERE ID=".intval($ID));
+				if(($ar = $dbr->Fetch()))
+				{
+					if($ar['EXTERNAL_AUTH_ID'] <> '')
+					{
+						$bInternal = false;
+					}
+				}
+			}
 		}
-
 
 		if($bInternal)
 		{
-			$emailRequired = (COption::GetOptionString("main", "new_user_email_required", "Y") <> "N");
-
-			if($ID === false)
-			{
-				if(!isset($arFields["LOGIN"]))
-					$this->LAST_ERROR .= GetMessage("user_login_not_set")."<br>";
-
-				if(!isset($arFields["PASSWORD"]))
-					$this->LAST_ERROR .= GetMessage("user_pass_not_set")."<br>";
-
-				if($emailRequired && !isset($arFields["EMAIL"]))
-					$this->LAST_ERROR .= GetMessage("user_email_not_set")."<br>";
-			}
-			if(is_set($arFields, "LOGIN") && $arFields["LOGIN"]!=Trim($arFields["LOGIN"]))
-				$this->LAST_ERROR .= GetMessage("LOGIN_WHITESPACE")."<br>";
-
-			if(is_set($arFields, "LOGIN") && strlen($arFields["LOGIN"])<3)
-				$this->LAST_ERROR .= GetMessage("MIN_LOGIN")."<br>";
-
-			if(is_set($arFields, "PASSWORD"))
-			{
-				if(array_key_exists("GROUP_ID", $arFields))
-				{
-					$arGroups = array();
-					if(is_array($arFields["GROUP_ID"]))
-					{
-						foreach($arFields["GROUP_ID"] as $arGroup)
-						{
-							if(is_array($arGroup))
-								$arGroups[] = $arGroup["GROUP_ID"];
-							else
-								$arGroups[] = $arGroup;
-						}
-					}
-					$arPolicy = $this->GetGroupPolicy($arGroups);
-				}
-				elseif($ID !== false)
-				{
-					$arPolicy = $this->GetGroupPolicy($ID);
-				}
-				else
-				{
-					$arPolicy = $this->GetGroupPolicy(array());
-				}
-
-				$passwordErrors = $this->CheckPasswordAgainstPolicy($arFields["PASSWORD"], $arPolicy);
-				if (!empty($passwordErrors))
-				{
-					$this->LAST_ERROR .= implode("<br>", $passwordErrors)."<br>";
-				}
-			}
-
-			if(is_set($arFields, "EMAIL"))
-			{
-				if(($emailRequired && strlen($arFields["EMAIL"]) < 3) || ($arFields["EMAIL"] <> '' && !check_email($arFields["EMAIL"], true)))
-				{
-					$this->LAST_ERROR .= GetMessage("WRONG_EMAIL")."<br>";
-				}
-				elseif(COption::GetOptionString("main", "new_user_email_uniq_check", "N") === "Y")
-				{
-					if($arFields["EMAIL"] <> '')
-					{
-						if($ID == false || $arFields["EMAIL"] <> $oldEmail)
-						{
-							$b = "";
-							$o = "";
-							$res = CUser::GetList($b, $o, array(
-								"=EMAIL" => $arFields["EMAIL"],
-								"EXTERNAL_AUTH_ID"=>''
-							), array(
-								"FIELDS" => array("ID")
-							));
-							while($ar = $res->Fetch())
-							{
-								if (intval($ar["ID"]) !== intval($ID))
-									$this->LAST_ERROR .= GetMessage("USER_WITH_EMAIL_EXIST", array("#EMAIL#" => htmlspecialcharsbx($arFields["EMAIL"])))."<br>";
-							}
-						}
-					}
-				}
-			}
-
-			if(is_set($arFields, "PASSWORD") && is_set($arFields, "CONFIRM_PASSWORD") && $arFields["PASSWORD"] !== $arFields["CONFIRM_PASSWORD"])
-				$this->LAST_ERROR .= GetMessage("WRONG_CONFIRMATION")."<br>";
-
-			if (is_array($arFields["GROUP_ID"]) && count($arFields["GROUP_ID"]) > 0)
-			{
-				if (is_array($arFields["GROUP_ID"][0]) && count($arFields["GROUP_ID"][0]) > 0)
-				{
-					foreach($arFields["GROUP_ID"] as $arGroup)
-					{
-						if($arGroup["DATE_ACTIVE_FROM"] <> '' && !CheckDateTime($arGroup["DATE_ACTIVE_FROM"]))
-						{
-							$error = str_replace("#GROUP_ID#", $arGroup["GROUP_ID"], GetMessage("WRONG_DATE_ACTIVE_FROM"));
-							$this->LAST_ERROR .= $error."<br>";
-						}
-
-						if($arGroup["DATE_ACTIVE_TO"] <> '' && !CheckDateTime($arGroup["DATE_ACTIVE_TO"]))
-						{
-							$error = str_replace("#GROUP_ID#", $arGroup["GROUP_ID"], GetMessage("WRONG_DATE_ACTIVE_TO"));
-							$this->LAST_ERROR .= $error."<br>";
-						}
-					}
-				}
-			}
+			$this->LAST_ERROR .= self::CheckInternalFields($arFields, $ID);
 		}
 		else
 		{
@@ -2107,6 +2101,157 @@ abstract class CAllUser extends CDBResult
 		return true;
 	}
 
+	/**
+	 * @param array $arFields
+	 * @param int|bool $ID
+	 * @return string
+	 */
+	public static function CheckInternalFields($arFields, $ID = false)
+	{
+		global $DB;
+
+		$resultError = '';
+
+		$emailRequired = (COption::GetOptionString("main", "new_user_email_required", "Y") <> "N");
+
+		if($ID === false)
+		{
+			if(!isset($arFields["LOGIN"]))
+			{
+				$resultError .= GetMessage("user_login_not_set")."<br>";
+			}
+
+			if(!isset($arFields["PASSWORD"]))
+			{
+				$resultError .= GetMessage("user_pass_not_set")."<br>";
+			}
+
+			if($emailRequired && !isset($arFields["EMAIL"]))
+			{
+				$resultError .= GetMessage("user_email_not_set")."<br>";
+			}
+		}
+		if(is_set($arFields, "LOGIN") && $arFields["LOGIN"] <> trim($arFields["LOGIN"]))
+		{
+			$resultError .= GetMessage("LOGIN_WHITESPACE")."<br>";
+		}
+
+		if(is_set($arFields, "LOGIN") && strlen($arFields["LOGIN"]) < 3)
+		{
+			$resultError .= GetMessage("MIN_LOGIN")."<br>";
+		}
+
+		if(is_set($arFields, "PASSWORD"))
+		{
+			if(array_key_exists("GROUP_ID", $arFields))
+			{
+				$arGroups = array();
+				if(is_array($arFields["GROUP_ID"]))
+				{
+					foreach($arFields["GROUP_ID"] as $arGroup)
+					{
+						if(is_array($arGroup))
+						{
+							$arGroups[] = $arGroup["GROUP_ID"];
+						}
+						else
+						{
+							$arGroups[] = $arGroup;
+						}
+					}
+				}
+				$arPolicy = self::GetGroupPolicy($arGroups);
+			}
+			elseif($ID !== false)
+			{
+				$arPolicy = self::GetGroupPolicy($ID);
+			}
+			else
+			{
+				$arPolicy = self::GetGroupPolicy(array());
+			}
+
+			$passwordErrors = self::CheckPasswordAgainstPolicy($arFields["PASSWORD"], $arPolicy);
+			if(!empty($passwordErrors))
+			{
+				$resultError .= implode("<br>", $passwordErrors)."<br>";
+			}
+		}
+
+		if(is_set($arFields, "EMAIL"))
+		{
+			if(($emailRequired && strlen($arFields["EMAIL"]) < 3) || ($arFields["EMAIL"] <> '' && !check_email($arFields["EMAIL"], true)))
+			{
+				$resultError .= GetMessage("WRONG_EMAIL")."<br>";
+			}
+			elseif(COption::GetOptionString("main", "new_user_email_uniq_check", "N") === "Y")
+			{
+				if($arFields["EMAIL"] <> '')
+				{
+					$oldEmail = '';
+					if($ID > 0)
+					{
+						//the option 'new_user_email_uniq_check' might have been switched on after the DB already contained identical emails
+						//so we let a user to have the old email, but not the existing new one
+						$dbr = $DB->Query("SELECT EMAIL FROM b_user WHERE ID=".intval($ID));
+						if(($ar = $dbr->Fetch()))
+						{
+							$oldEmail = $ar['EMAIL'];
+						}
+					}
+					if($ID == false || $arFields["EMAIL"] <> $oldEmail)
+					{
+						$b = $o = "";
+						$res = CUser::GetList($b, $o,
+							array(
+								"=EMAIL" => $arFields["EMAIL"],
+								"EXTERNAL_AUTH_ID" => $arFields["EXTERNAL_AUTH_ID"]
+							),
+							array(
+								"FIELDS" => array("ID")
+							)
+						);
+						while($ar = $res->Fetch())
+						{
+							if(intval($ar["ID"]) !== intval($ID))
+							{
+								$resultError .= GetMessage("USER_WITH_EMAIL_EXIST", array("#EMAIL#" => htmlspecialcharsbx($arFields["EMAIL"])))."<br>";
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if(is_set($arFields, "PASSWORD") && is_set($arFields, "CONFIRM_PASSWORD") && $arFields["PASSWORD"] !== $arFields["CONFIRM_PASSWORD"])
+		{
+			$resultError .= GetMessage("WRONG_CONFIRMATION")."<br>";
+		}
+
+		if(is_array($arFields["GROUP_ID"]) && count($arFields["GROUP_ID"]) > 0)
+		{
+			if(is_array($arFields["GROUP_ID"][0]) && count($arFields["GROUP_ID"][0]) > 0)
+			{
+				foreach($arFields["GROUP_ID"] as $arGroup)
+				{
+					if($arGroup["DATE_ACTIVE_FROM"] <> '' && !CheckDateTime($arGroup["DATE_ACTIVE_FROM"]))
+					{
+						$error = str_replace("#GROUP_ID#", $arGroup["GROUP_ID"], GetMessage("WRONG_DATE_ACTIVE_FROM"));
+						$resultError .= $error."<br>";
+					}
+
+					if($arGroup["DATE_ACTIVE_TO"] <> '' && !CheckDateTime($arGroup["DATE_ACTIVE_TO"]))
+					{
+						$error = str_replace("#GROUP_ID#", $arGroup["GROUP_ID"], GetMessage("WRONG_DATE_ACTIVE_TO"));
+						$resultError .= $error."<br>";
+					}
+				}
+			}
+		}
+
+		return $resultError;
+	}
+
 	public static function GetByID($ID)
 	{
 		global $USER;
@@ -2137,7 +2282,7 @@ abstract class CAllUser extends CDBResult
 		return $rs;
 	}
 
-	public function Update($ID, $arFields)
+	public function Update($ID, $arFields, $authActions = true)
 	{
 		/** @global CUserTypeManager $USER_FIELD_MANAGER */
 		global $DB, $USER_FIELD_MANAGER, $CACHE_MANAGER, $USER;
@@ -2159,14 +2304,17 @@ abstract class CAllUser extends CDBResult
 			if(is_set($arFields, "PERSONAL_GENDER") && ($arFields["PERSONAL_GENDER"]!="M" && $arFields["PERSONAL_GENDER"]!="F"))
 				$arFields["PERSONAL_GENDER"] = "";
 
+			$saveHistory = (Main\Config\Option::get("main", "user_profile_history") === "Y");
+
 			//we need old values for some actions
 			$arUser = null;
-			if((isset($arFields["ACTIVE"]) && $arFields["ACTIVE"] == "N") || isset($arFields["PASSWORD"]))
+			if((isset($arFields["ACTIVE"]) && $arFields["ACTIVE"] == "N") || isset($arFields["PASSWORD"]) || $saveHistory)
 			{
 				$rUser = CUser::GetByID($ID);
 				$arUser = $rUser->Fetch();
 			}
 
+			$newPassword = "";
 			if(is_set($arFields, "PASSWORD"))
 			{
 				$original_pass = $arFields["PASSWORD"];
@@ -2177,10 +2325,16 @@ abstract class CAllUser extends CDBResult
 					",.<>/?;:[]{}\\|~!@#\$%^&*()-_+=",
 				));
 				$arFields["PASSWORD"] = $salt.md5($salt.$arFields["PASSWORD"]);
+
 				if($arUser)
 				{
-					if($arUser["PASSWORD"] != $arFields["PASSWORD"])
+					$oldSalt = substr($arUser["PASSWORD"], 0, 8);
+					$newPassword = $oldSalt.md5($oldSalt.$original_pass);
+
+					if($newPassword <> $arUser["PASSWORD"])
+					{
 						$DB->Query("DELETE FROM b_user_stored_auth WHERE USER_ID=".$ID);
+					}
 				}
 				if(COption::GetOptionString("main", "event_log_password_change", "N") === "Y")
 					CEventLog::Log("SECURITY", "USER_PASSWORD_CHANGED", "main", $ID);
@@ -2268,7 +2422,7 @@ abstract class CAllUser extends CDBResult
 				CUser::UpdateDigest($arUser["ID"], $original_pass);
 			}
 
-			if($arUser)
+			if($arUser && $authActions == true)
 			{
 				$authAction = false;
 				if(isset($arFields["ACTIVE"]) && $arUser["ACTIVE"] == "Y" && $arFields["ACTIVE"] == "N")
@@ -2289,7 +2443,7 @@ abstract class CAllUser extends CDBResult
 					$internalUser = false;
 				}
 
-				if($internalUser == true && isset($arFields["PASSWORD"]) && $arUser["PASSWORD"] <> $arFields["PASSWORD"])
+				if($internalUser == true && isset($arFields["PASSWORD"]) && $newPassword <> $arUser["PASSWORD"])
 				{
 					$authAction = true;
 					if(is_object($USER) && $USER->GetID() == $ID)
@@ -2328,6 +2482,14 @@ abstract class CAllUser extends CDBResult
 
 				//cache for GetByID()
 				self::$CURRENT_USER = false;
+			}
+
+			if($saveHistory && $arUser)
+			{
+				$rUser = CUser::GetByID($ID);
+				$newUser = $rUser->Fetch();
+
+				Main\UserProfileHistoryTable::addHistory($ID, Main\UserProfileHistoryTable::TYPE_UPDATE, $arUser, $newUser);
 			}
 		}
 
@@ -2632,6 +2794,12 @@ abstract class CAllUser extends CDBResult
 			'ACTION' => Main\UserAuthActionTable::ACTION_LOGOUT,
 			'ACTION_DATE' => new Main\Type\DateTime(),
 		));
+
+		if(Main\Config\Option::get("main", "user_profile_history") === "Y")
+		{
+			Main\UserProfileHistoryTable::deleteByUser($ID);
+			Main\UserProfileHistoryTable::addHistory($ID, Main\UserProfileHistoryTable::TYPE_DELETE);
+		}
 
 		\Bitrix\Main\UserTable::deleteIndexRecord($ID);
 
@@ -3070,25 +3238,29 @@ abstract class CAllUser extends CDBResult
 			return false;
 		}
 
-		if ($cache && $userId == $USER->GetId())
+		if($userId == $USER->GetId())
 		{
-			if (
-				isset($_SESSION['SESS_AUTH']['SET_LAST_ACTIVITY'])
-				&& intval($_SESSION['SESS_AUTH']['SET_LAST_ACTIVITY'])+60 > time()
-			)
-			{
-				return false;
-			}
+			$_SESSION['SESS_AUTH']['PREV_LAST_ACTIVITY'] = $_SESSION['SESS_AUTH']['SET_LAST_ACTIVITY'];
 
+			if ($cache)
+			{
+				if (
+					isset($_SESSION['SESS_AUTH']['SET_LAST_ACTIVITY'])
+					&& intval($_SESSION['SESS_AUTH']['SET_LAST_ACTIVITY'])+60 > time()
+				)
+				{
+					return false;
+				}
+			}
 			$_SESSION['SESS_AUTH']['SET_LAST_ACTIVITY'] = time();
 		}
 
-		self::SetLastActivityDateByArray(array($userId));
+		self::SetLastActivityDateByArray(array($userId), $_SERVER['REMOTE_ADDR']);
 
 		return true;
 	}
 
-	public static function SetLastActivityDateByArray($arUsers)
+	public static function SetLastActivityDateByArray($arUsers, $ip = null)
 	{
 		global $DB;
 
@@ -3118,7 +3290,7 @@ abstract class CAllUser extends CDBResult
 			$DB->Query($strSqlPrefix.substr($strSqlValues, 1).$strSqlPostfix, false, "", array("ignore_dml"=>true));
 		}
 
-		$event = new \Bitrix\Main\Event("main", "OnUserSetLastActivityDate", array($arUsers));
+		$event = new \Bitrix\Main\Event("main", "OnUserSetLastActivityDate", array($arUsers, $ip));
 		$event->send();
 
 		return true;
@@ -3622,6 +3794,11 @@ abstract class CAllUser extends CDBResult
 			return;
 		}
 
+		if(!is_array($_SESSION["AUTH_ACTIONS_PERFORMED"]))
+		{
+			$_SESSION["AUTH_ACTIONS_PERFORMED"] = array();
+		}
+
 		$user_id = $this->GetID();
 
 		//calculate a session lifetime
@@ -3653,15 +3830,15 @@ abstract class CAllUser extends CDBResult
 				//clear expired records for the user
 				Main\UserAuthActionTable::deleteByFilter(array(
 					"=USER_ID" => $user_id,
-					"<=ACTION_DATE" => $now,
+					"<ACTION_DATE" => $date,
 				));
 				$deleted = true;
 			}
 
-			if($this->IsJustAuthorized())
+			if(isset($_SESSION["AUTH_ACTIONS_PERFORMED"][$action["ID"]]))
 			{
-				//no need to update the session
-				break;
+				//already processed the action in this session
+				continue;
 			}
 
 			/** @var Main\Type\DateTime() $actionDate */
@@ -3669,6 +3846,15 @@ abstract class CAllUser extends CDBResult
 
 			if($actionDate >= $date && $actionDate <= $now)
 			{
+				//remember that we already did the action
+				$_SESSION["AUTH_ACTIONS_PERFORMED"][$action["ID"]] = true;
+
+				if($this->IsJustAuthorized())
+				{
+					//no need to update the session
+					continue;
+				}
+
 				switch($action["ACTION"])
 				{
 					case Main\UserAuthActionTable::ACTION_LOGOUT:

@@ -67,4 +67,5 @@ $MESS["SPS_USER_INFO_EMAIL"] = "E-mail адреса";
 $MESS["SPS_USER_INFO_PERSON_TYPE_NAME"] = "Тип платника";
 $MESS["SPS_ORDER_HIDE_USER_INFO"] = "Не показувати в інформації про користувача";
 $MESS["SPS_CHAIN_MAIN_FIELD"] = "Назва розділу в ланцюжку навігації";
+$MESS["SPS_REFRESH_PRICE_AFTER_PAYSYSTEM_CHANGE"] = "Перераховувати замовлення після зміни платіжної системи";
 ?>

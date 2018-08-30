@@ -317,7 +317,8 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 				'CURRENCY' => $arParams['CURRENCY'],
 				'PRECISION' => (int)Main\Config\Option::get('sale', 'value_precision'),
 				'USE_DISCOUNTS' => $arParams['CHECK_DISCOUNT'] == 'Y',
-				'RESULT_WITH_VAT' => true
+				'RESULT_WITH_VAT' => true,
+				'RESULT_MODE' => Catalog\Product\Price\Calculation::RESULT_MODE_RAW
 			));
 
 			$arPrice = CCatalogProduct::GetOptimalPrice(
@@ -592,7 +593,8 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 			'CURRENCY' => $arParams['CURRENCY'],
 			'PRECISION' => (int)Main\Config\Option::get('sale', 'value_precision'),
 			'USE_DISCOUNTS' => $arParams['CHECK_DISCOUNT'] == 'Y',
-			'RESULT_WITH_VAT' => true
+			'RESULT_WITH_VAT' => true,
+			'RESULT_MODE' => Catalog\Product\Price\Calculation::RESULT_MODE_RAW
 		));
 
 		$arPrice = CCatalogProduct::GetOptimalPrice(
@@ -992,7 +994,7 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 			return $arRes;
 		}
 
-		$isOrderConverted = \Bitrix\Main\Config\Option::get("main", "~sale_converted_15", 'N');
+		$isOrderConverted = \Bitrix\Main\Config\Option::get("main", "~sale_converted_15", 'Y');
 
 		$arParams["QUANTITY"] = doubleval($arParams["QUANTITY"]);
 
@@ -1011,7 +1013,7 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 			$arParams["STORE_DATA"] = array($arParams["STORE_DATA"]);
 
 		$basketItem = null;
-		if (isset($arParams["BASKET_ITEM"]) && $isOrderConverted == "Y")
+		if (isset($arParams["BASKET_ITEM"]) && $isOrderConverted != 'N')
 		{
 			if ($arParams["BASKET_ITEM"] instanceof \Bitrix\Sale\BasketItem)
 			{
@@ -1048,7 +1050,7 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 					if ($strUseStoreControl == "Y")
 					{
 
-						if ($isOrderConverted == "Y" && empty($arParams["STORE_DATA"]) && $basketItem)
+						if ($isOrderConverted != 'N' && empty($arParams["STORE_DATA"]) && $basketItem)
 						{
 							if (static::canProductAutoShip($basketItem))
 							{
@@ -1058,7 +1060,7 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 
 
 						$barcodeMulti = false;
-						if ($isOrderConverted == "Y")
+						if ($isOrderConverted != 'N')
 						{
 							$barcodeMulti = $basketItem->isBarcodeMulti();
 						}
@@ -1378,7 +1380,7 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 				{
 					if ($strUseStoreControl == "Y")
 					{
-						if ($isOrderConverted == "Y" && empty($arParams["STORE_DATA"]) && $basketItem)
+						if ($isOrderConverted != 'N' && empty($arParams["STORE_DATA"]) && $basketItem)
 						{
 							if (static::canProductAutoShip($basketItem))
 							{
@@ -1420,7 +1422,7 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 										$totalAddedAmount += $arRecord["QUANTITY"];
 
 										$barcodeMulti = false;
-										if ($isOrderConverted == "Y")
+										if ($isOrderConverted != 'N')
 										{
 											$barcodeMulti = $basketItem->isBarcodeMulti();
 										}
@@ -2530,39 +2532,39 @@ class CCatalogProductProvider implements IBXSaleProductProvider
 
 	protected static function getStoreIds(array $params)
 	{
-		//TODO: use orm after fix logic or for null with string value
-		/*
-		$filter = array('=ACTIVE' => 'Y', '=SHIPPING_CENTER' => 'Y');
+		$filterId = array('ACTIVE' => 'Y', 'SHIPPING_CENTER' => 'Y');
 		if (isset($params['SITE_ID']) && $params['SITE_ID'] != '')
-		{
-			$filter[] = array(
-				'LOGIC' => 'OR',
-				'=SITE_ID' => $params['SITE_ID'],
-				'==SITE_ID' => null
-			);
-		} */
+			$filterId['+SITE_ID'] = $params['SITE_ID'];
 
-		$filter = array('ACTIVE' => 'Y', 'SHIPPING_CENTER' => 'Y');
-		if (isset($params['SITE_ID']) && $params['SITE_ID'] != '')
-			$filter['+SITE_ID'] = $params['SITE_ID'];
-
-		$cacheId = md5(serialize($filter));
-		if (!($storeIds = static::getHitCache(self::CACHE_STORE, $cacheId)))
+		$cacheId = md5(serialize($filterId));
+		$storeIds = static::getHitCache(self::CACHE_STORE, $cacheId);
+		if (empty($storeIds))
 		{
 			$storeIds = array();
-			$iterator = CCatalogStore::GetList(
-				array('ID' => 'ASC'),
-				$filter,
-				false,
-				false,
-				array('ID')
-			);
-			while ($row = $iterator->Fetch())
+
+			$filter = Main\Entity\Query::filter();
+			$filter->where('ACTIVE', '=', 'Y');
+			$filter->where('SHIPPING_CENTER', '=', 'Y');
+			if (isset($params['SITE_ID']) && $params['SITE_ID'] != '')
+			{
+				$subFilter = Main\Entity\Query::filter();
+				$subFilter->logic('or')->where('SITE_ID', '=', $params['SITE_ID'])->where('SITE_ID', '=', '')->whereNull('SITE_ID');
+				$filter->where($subFilter);
+				unset($subFilter);
+			}
+
+			$iterator = Catalog\StoreTable::getList(array(
+				'select' => array('ID'),
+				'filter' => $filter,
+				'order' => array('ID' => 'ASC')
+			));
+			while ($row = $iterator->fetch())
 				$storeIds[] = (int)$row['ID'];
-			unset($row, $iterator);
+			unset($row, $iterator, $filter);
 			if (!empty($storeIds))
 				static::setHitCache(self::CACHE_STORE, $cacheId, $storeIds);
 		}
+		unset($cacheId, $filterId);
 
 		return $storeIds;
 	}

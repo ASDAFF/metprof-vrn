@@ -3,10 +3,9 @@ namespace Bitrix\Main\DB;
 
 use Bitrix\Main;
 use Bitrix\Main\ArgumentNullException;
-use Bitrix\Main\Config;
 use Bitrix\Main\Data;
 use Bitrix\Main\Diag;
-use Bitrix\Main\Entity;
+use Bitrix\Main\ORM\Fields\ScalarField;
 
 /**
  * Class Connection
@@ -33,6 +32,7 @@ abstract class Connection extends Data\Connection
 	protected $initCommand = 0;
 	protected $options = 0;
 	protected $nodeId = 0;
+	protected $utf8mb4 = array();
 
 	protected $tableColumnsCache = array();
 	protected $lastQueryResult;
@@ -72,6 +72,7 @@ abstract class Connection extends Data\Connection
 		$this->password = $configuration['password'];
 		$this->initCommand = isset($configuration['initCommand']) ? $configuration['initCommand'] : "";
 		$this->options = intval($configuration['options']);
+		$this->utf8mb4 = (isset($configuration['utf8mb4']) && is_array($configuration['utf8mb4'])? $configuration['utf8mb4'] : array());
 	}
 
 	/**
@@ -626,16 +627,16 @@ abstract class Connection extends Data\Connection
 	 *
 	 * @param string $tableName The table name.
 	 *
-	 * @return Entity\ScalarField[] An array of objects with columns information.
+	 * @return ScalarField[] An array of objects with columns information.
 	 * @throws \Bitrix\Main\Db\SqlQueryException
 	 */
 	abstract public function getTableFields($tableName);
 
 	/**
-	 * @param string $tableName Name of the new table.
-	 * @param \Bitrix\Main\Entity\ScalarField[] $fields Array with columns descriptions.
-	 * @param string[] $primary Array with primary key column names.
-	 * @param string[] $autoincrement Which columns will be auto incremented ones.
+	 * @param string        $tableName     Name of the new table.
+	 * @param ScalarField[] $fields        Array with columns descriptions.
+	 * @param string[]      $primary       Array with primary key column names.
+	 * @param string[]      $autoincrement Which columns will be auto incremented ones.
 	 *
 	 * @return void
 	 * @throws \Bitrix\Main\ArgumentException
@@ -707,7 +708,7 @@ abstract class Connection extends Data\Connection
 	 * @param string $tableName Name of the table.
 	 * @param string $columnName Name of the column.
 	 *
-	 * @return Entity\ScalarField | null
+	 * @return ScalarField | null
 	 * @throws \Bitrix\Main\Db\SqlQueryException
 	 */
 	public function getTableField($tableName, $columnName)
@@ -919,5 +920,32 @@ abstract class Connection extends Data\Connection
 		{
 			include($this->configuration["include_after_connected"]);
 		}
+	}
+
+	/**
+	 * Returns utfmb4 flag for the specific table/column.
+	 *
+	 * @param string|null $table
+	 * @param string|null $column
+	 * @return bool
+	 */
+	public function isUtf8mb4($table = null, $column = null)
+	{
+		if(isset($this->utf8mb4["global"]) && $this->utf8mb4["global"] === true)
+		{
+			return true;
+		}
+
+		if($table !== null && isset($this->utf8mb4["tables"][$table]) && $this->utf8mb4["tables"][$table] === true)
+		{
+			return true;
+		}
+
+		if($table !== null && $column !== null && isset($this->utf8mb4["tables"][$table][$column]) && $this->utf8mb4["tables"][$table][$column] === true)
+		{
+			return true;
+		}
+
+		return false;
 	}
 }

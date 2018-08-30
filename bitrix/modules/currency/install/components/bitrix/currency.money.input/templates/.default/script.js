@@ -72,6 +72,7 @@
 		if(!!this.resultInput)
 		{
 			this.resultInput.value = value.length > 0 ? (value + '|' + this.currency) : '';
+			BX.fireEvent(this.resultInput, 'change');
 		}
 	};
 

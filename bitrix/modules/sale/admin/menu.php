@@ -43,7 +43,7 @@ if ($APPLICATION->GetGroupRight("sale")!="D")
 {
 
 	/* Converter Begin */
-	if (Bitrix\Main\Config\Option::get("main", "~sale_converted_15", 'N') != 'Y')
+	if (Bitrix\Main\Config\Option::get("main", "~sale_converted_15", 'Y') == 'N')
 	{
 
 		$aMenu[] = array(
@@ -303,16 +303,19 @@ if ($APPLICATION->GetGroupRight("sale") == "W" || $discountView || $bViewAll)
 		"items" => array(),
 	);
 
-	if ($APPLICATION->GetGroupRight("sale") == "W")
+	if ($useSaleDiscountOnly)
 	{
-		if ($useSaleDiscountOnly)
+		if ($APPLICATION->GetGroupRight('sale') > 'D')
 		{
-			$arMenu["items"][] = array(
-				"text" => GetMessage("SALE_MENU_DISCOUNT_PRESETS_NEW"),
-				"title" => GetMessage("SALE_MENU_DISCOUNT_PRESETS_NEW"),
-				"url" => "sale_discount_preset_list.php?lang=".LANGUAGE_ID,
-				"more_url" => array("sale_discount_preset_detail.php"),
-			);
+			if ($APPLICATION->GetGroupRight('sale') >= 'W')
+			{
+				$arMenu["items"][] = array(
+					"text" => GetMessage("SALE_MENU_DISCOUNT_PRESETS_NEW"),
+					"title" => GetMessage("SALE_MENU_DISCOUNT_PRESETS_NEW"),
+					"url" => "sale_discount_preset_list.php?lang=".LANGUAGE_ID,
+					"more_url" => array("sale_discount_preset_detail.php"),
+				);
+			}
 			$arMenu["items"][] = array(
 				"text" => GetMessage("SALE_MENU_DISCOUNT"),
 				"title" => GetMessage("SALE_MENU_DISCOUNT_TITLE"),
@@ -326,7 +329,10 @@ if ($APPLICATION->GetGroupRight("sale") == "W" || $discountView || $bViewAll)
 				"more_url" => array("sale_discount_coupon_edit.php"),
 			);
 		}
-		else
+	}
+	else
+	{
+		if ($APPLICATION->GetGroupRight('sale') > 'D')
 		{
 			$arMenu["items"][] = array(
 				"text" => GetMessage("SALE_MENU_DISCOUNT"),
@@ -489,7 +495,7 @@ if ($APPLICATION->GetGroupRight("sale") == "W" ||
 
 	if ($APPLICATION->GetGroupRight("sale") == "W")
 	{
-		if (Bitrix\Main\Config\Option::get("main", "~sale_converted_15", 'N') == 'Y')
+		if (Bitrix\Main\Config\Option::get("main", "~sale_converted_15", 'Y') != 'N')
 		{
 			if (CModule::IncludeModule("sale"))
 			{
@@ -595,7 +601,7 @@ if ($APPLICATION->GetGroupRight("sale") == "W" ||
 			"more_url" => array("sale_status_edit.php"),
 		);
 
-		if (Bitrix\Main\Config\Option::get("main", "~sale_converted_15", 'N') == 'Y')
+		if (Bitrix\Main\Config\Option::get("main", "~sale_converted_15", 'Y') != 'N')
 		{
 			$arMenu["items"][] = array(
 				"text" => GetMessage("SALE_BUSINESS_VALUE"),
@@ -748,6 +754,13 @@ if ($APPLICATION->GetGroupRight("sale") == "W" ||
 			"title" => GetMessage("MAIN_MENU_1C_INTEGRATION_TITLE"),
 			"url" => "1c_admin.php?lang=".LANGUAGE_ID,
 			"more_url" => array("1c_admin.php"),
+			"items" => array(
+				array(
+					"text" => GetMessage("MAIN_MENU_1C_INTEGRATION_LOG"),
+					"title" => GetMessage("MAIN_MENU_1C_INTEGRATION_LOG_TITLE"),
+					"url" => "sale_exchange_log.php?lang=".LANGUAGE_ID,
+				)
+			),
 		);
 		$arMenu["items"][] = array(
 			"text" => GetMessage("MAIN_MENU_REPORT_EDIT"),

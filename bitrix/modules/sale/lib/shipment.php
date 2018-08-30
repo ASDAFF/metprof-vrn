@@ -361,17 +361,25 @@ class Shipment
 
 		$tryReserveResult = null;
 
+		$context = [
+			'USER_ID' => $order->getUserId(),
+			'SITE_ID' => $order->getSiteId(),
+			'CURRENCY' => $order->getCurrency(),
+		];
+
 		if ($quantity > 0)
 		{
 			if ($systemShipment->needReservation())
 			{
+
+
 				/** @var Result $tryReserveResult */
-				$tryReserveResult = Provider::tryReserveShipmentItem($systemShipmentItem);
+				$tryReserveResult = Internals\Catalog\Provider::tryReserveShipmentItem($systemShipmentItem, $context);
 			}
 			else
 			{
 				/** @var Result $tryReserveResult */
-				$tryReserveResult = Provider::tryUnreserveShipmentItem($systemShipmentItem);
+				$tryReserveResult = Internals\Catalog\Provider::tryUnreserveShipmentItem($systemShipmentItem);
 			}
 		}
 		elseif ($quantity < 0)  // transfer from system shipment
@@ -379,7 +387,7 @@ class Shipment
 			if ($sourceItemCollection->getShipment()->needReservation())
 			{
 				/** @var Result $tryReserveResult */
-				$tryReserveResult = Provider::tryReserveShipmentItem($sourceItem);
+				$tryReserveResult = Internals\Catalog\Provider::tryReserveShipmentItem($sourceItem, $context);
 			}
 		}
 
@@ -455,9 +463,60 @@ class Shipment
 		}
 
 		$shipmentReservedValue = $shipmentReserved ? "Y" : "N";
+		$currentValue = $shipment->getField('RESERVED');
 		if ($shipment->getField('RESERVED') != $shipmentReservedValue)
 		{
+			$eventManager = Main\EventManager::getInstance();
+			$eventsList = $eventManager->findEventHandlers('sale', EventActions::EVENT_ON_BEFORE_SHIPMENT_RESERVE);
+			if (!empty($eventsList))
+			{
+				/** @var Main\Entity\Event $event */
+				$event = new Main\Event('sale', EventActions::EVENT_ON_BEFORE_SHIPMENT_RESERVE, array(
+					'ENTITY' => $shipment,
+					'VALUE' => $shipmentReservedValue,
+				));
+
+				$event->send();
+
+				if ($event->getResults())
+				{
+					$result = new Result();
+					/** @var Main\EventResult $eventResult */
+					foreach($event->getResults() as $eventResult)
+					{
+						if($eventResult->getType() == Main\EventResult::ERROR)
+						{
+							$errorMsg = new ResultError(Main\Localization\Loc::getMessage('SALE_EVENT_ON_BEFORE_SHIPMENT_RESERVE_ERROR'), 'SALE_EVENT_ON_BEFORE_SHIPMENT_RESERVE_ERROR');
+
+							$eventResultData = $eventResult->getParameters();
+							if ($eventResultData)
+							{
+								if (isset($eventResultData) && $eventResultData instanceof ResultError)
+								{
+									/** @var ResultError $errorMsg */
+									$errorMsg = $eventResultData;
+								}
+							}
+
+							$result->addError($errorMsg);
+
+						}
+					}
+
+					if (!$result->isSuccess())
+					{
+						return $result;
+					}
+				}
+			}
+
 			$shipment->setFieldNoDemand('RESERVED', $shipmentReserved ? "Y" : "N");
+
+			Internals\EventsPool::addEvent('s'.$shipment->getInternalIndex(), EventActions::EVENT_ON_SHIPMENT_RESERVED, array(
+				'ENTITY' => $shipment,
+				'VALUE' => $shipmentReservedValue,
+				'OLD_VALUE' => $currentValue,
+			));
 		}
 
 		return new Result();
@@ -986,13 +1045,21 @@ class Shipment
 
 	/**
 	 * @param ShipmentCollection $collection
-	 * @param Delivery\Services\Base $deliveryService
+	 * @param Delivery\Services\Base|null $deliveryService
 	 * @return Shipment
+	 * @throws Main\ArgumentOutOfRangeException
+	 * @throws Main\SystemException
 	 */
 	public static function createSystem(ShipmentCollection $collection, Delivery\Services\Base $deliveryService = null)
 	{
 		$shipment = static::create($collection, $deliveryService);
 		$shipment->markSystem();
+
+		if ($deliveryService === null)
+		{
+			$shipment->setFieldNoDemand('DELIVERY_ID', Delivery\Services\Manager::getEmptyDeliveryServiceId());
+		}
+
 		return $shipment;
 	}
 
@@ -1239,6 +1306,11 @@ class Shipment
 		{
 			$result->addErrors( $r->getErrors() );
 		}
+
+		if ($r->hasWarnings())
+		{
+			$result->addWarnings( $r->getWarnings() );
+		}
 		return $result;
 	}
 
@@ -1303,7 +1375,59 @@ class Shipment
 	 */
 	public function deliver()
 	{
-		return Provider::deliverShipment($this);
+		$order = $this->getParentOrder();
+		if (!$order)
+		{
+			throw new Main\ObjectNotFoundException('Entity "Order" not found');
+		}
+
+		$result = new Result();
+
+		$context = array(
+			'USER_ID' => $order->getUserId(),
+			'SITE_ID' => $order->getSiteId(),
+		);
+
+		$creator = Internals\ProviderCreator::create($context);
+
+		$shipmentItemCollection = $this->getShipmentItemCollection();
+
+		/** @var ShipmentItemCollection $shipmentItemCollection */
+		if (!$shipmentItemCollection)
+		{
+			throw new Main\ObjectNotFoundException('Entity "ShipmentItemCollection" not found');
+		}
+
+		/** @var ShipmentItem $shipmentItem */
+		foreach ($shipmentItemCollection as $shipmentItem)
+		{
+			$creator->addShipmentItem($shipmentItem);
+		}
+
+		$r = $creator->deliver();
+		if ($r->isSuccess())
+		{
+			$r = $creator->createItemsResultAfterDeliver($r);
+			if ($r->isSuccess())
+			{
+				$data = $r->getData();
+				if (array_key_exists('RESULT_AFTER_DELIVER_LIST', $data))
+				{
+					$resultList = $data['RESULT_AFTER_DELIVER_LIST'];
+				}
+			}
+		}
+		else
+		{
+			$result->addErrors($r->getErrors());
+		}
+
+		if (!empty($resultList) && is_array($resultList))
+		{
+			Recurring::repeat($order, $resultList);
+		}
+
+		return $result;
 	}
 
 	/**
@@ -1458,6 +1582,11 @@ class Shipment
 			$result->addErrors($r->getErrors());
 		}
 
+		if ($r->hasWarnings())
+		{
+			$result->addWarnings($r->getWarnings());
+		}
+
 		if (($resultData = $r->getData()) && !empty($resultData))
 		{
 			$result->addData($resultData);
@@ -1500,14 +1629,39 @@ class Shipment
 
 		$deltaQuantity = $value - $oldValue;
 
+
+		/** @var Basket $basket */
+		$basket = $basketItem->getCollection();
+		if (!$basket)
+		{
+			throw new Main\ObjectNotFoundException('Entity "Basket" not found');
+		}
+
+		/** @var Order $order */
+		$order = $basket->getOrder();
+		if (!$order)
+		{
+			throw new Main\ObjectNotFoundException('Entity "Order" not found');
+		}
+
+		$context = [
+			'USER_ID' => $order->getUserId(),
+			'SITE_ID' => $order->getSiteId(),
+			'CURRENCY' => $order->getCurrency(),
+		];
+
 		if ($deltaQuantity > 0)     // plus
 		{
 			$shipmentItem->setFieldNoDemand(
 				"QUANTITY",
 				$shipmentItem->getField("QUANTITY") + $deltaQuantity
 			);
+
 			if ($this->needReservation())
-				Provider::tryReserveShipmentItem($shipmentItem);
+			{
+				/** @var Result $tryReserveResult */
+				Internals\Catalog\Provider::tryReserveShipmentItem($shipmentItem, $context);
+			}
 		}
 		else        // minus
 		{
@@ -1539,7 +1693,9 @@ class Shipment
 					$shipmentItem->getField("QUANTITY") + $deltaQuantity
 				);
 				if ($this->needReservation())
-					Provider::tryReserveShipmentItem($shipmentItem);
+				{
+					Internals\Catalog\Provider::tryReserveShipmentItem($shipmentItem, $context);
+				}
 			}
 			else
 			{
@@ -1664,17 +1820,7 @@ class Shipment
 			return new Delivery\CalculationResult();
 		}
 
-		/** @var Delivery\CalculationResult $deliveryCalculate */
-		$deliveryCalculate =  Delivery\Services\Manager::calculateDeliveryPrice($this);
-		if (!$deliveryCalculate->isSuccess())
-		{
-			return $deliveryCalculate;
-		}
-
-		$data = $deliveryCalculate->getData();
-		$deliveryCalculate->setData($data);
-
-		return $deliveryCalculate;
+		return Delivery\Services\Manager::calculateDeliveryPrice($this);
 	}
 
 
@@ -2233,6 +2379,34 @@ class Shipment
 		$price = $this->getPrice() * $vatRate / (1 + $vatRate);
 		
 		return PriceMaths::roundPrecision($price);
+	}
+
+	/**
+	 * @param $value
+	 * @param bool $custom
+	 *
+	 * @return Result
+	 * @throws Main\ArgumentOutOfRangeException
+	 * @throws Main\NotSupportedException
+	 * @throws \Exception
+	 */
+	public function setBasePriceDelivery($value, $custom = false)
+	{
+		$result = new Result();
+
+		$r = $this->setField('CUSTOM_PRICE_DELIVERY', ($custom ? 'Y' : 'N'));
+		if (!$r->isSuccess())
+		{
+			$result->addErrors($r->getErrors());
+		}
+
+		$r = $this->setField('BASE_PRICE_DELIVERY', $value);
+		if (!$r->isSuccess())
+		{
+			$result->addErrors($r->getErrors());
+		}
+
+		return $result;
 	}
 }
 

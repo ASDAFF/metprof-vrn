@@ -126,7 +126,7 @@ class CPullChannel
 					'extra' => Array(
 						'server_time' => date('c'),
 						'server_name' => COption::GetOptionString('main', 'server_name', $_SERVER['SERVER_NAME']),
-						'revision' => PULL_REVISION,
+						'revision_web' => PULL_REVISION_WEB,
 						'revision_mobile' => PULL_REVISION_MOBILE,
 					),
 				)));
@@ -204,7 +204,7 @@ class CPullChannel
 						'server_time' => date('c'),
 						'server_time_unix' => microtime(true),
 						'server_name' => COption::GetOptionString('main', 'server_name', $_SERVER['SERVER_NAME']),
-						'revision' => PULL_REVISION,
+						'revision_web' => PULL_REVISION_WEB,
 						'revision_mobile' => PULL_REVISION_MOBILE,
 					),
 				)));
@@ -235,7 +235,7 @@ class CPullChannel
 						'server_time' => date('c'),
 						'server_time_unix' => microtime(true),
 						'server_name' => COption::GetOptionString('main', 'server_name', $_SERVER['SERVER_NAME']),
-						'revision' => PULL_REVISION,
+						'revision_web' => PULL_REVISION_WEB,
 						'revision_mobile' => PULL_REVISION_MOBILE,
 					),
 				)));
@@ -656,7 +656,7 @@ class CPullChannel
 					$arSend[$userId] = Array(
 						'id' => $userId,
 						'status' => $users[$userId]['STATUS'],
-						'color' => $users[$userId]['COLOR']? \Bitrix\Im\Color::getColor($users[$userId]['COLOR']): '',
+						'color' => $users[$userId]['COLOR']? \Bitrix\Im\Color::getColor($users[$userId]['COLOR']): \Bitrix\Im\Color::getColorByNumber($userId),
 						'idle' => $users[$userId]['IDLE'] instanceof \Bitrix\Main\Type\DateTime? $users[$userId]['IDLE']: false,
 						'mobile_last_date' => $users[$userId]['MOBILE_LAST_DATE'] instanceof \Bitrix\Main\Type\DateTime? $users[$userId]['MOBILE_LAST_DATE']: false,
 						'last_activity_date' => new \Bitrix\Main\Type\DateTime(),
@@ -670,7 +670,7 @@ class CPullChannel
 					$arSend[$userId] = Array(
 						'id' => $userId,
 						'status' => 'online',
-						'color' => '',
+						'color' => '#556574',
 						'idle' => false,
 						'mobile_last_date' => false,
 						'last_activity_date' => new \Bitrix\Main\Type\DateTime(),
@@ -750,7 +750,7 @@ class CPullChannel
 			'PATH_WS' => $pullPathWs,
 			'PATH_COMMAND' => defined('BX_PULL_COMMAND_PATH')? BX_PULL_COMMAND_PATH: '',
 			'METHOD' => ($nginxStatus? 'LONG': 'PULL'),
-			'REVISION' => PULL_REVISION,
+			'REVISION' => PULL_REVISION_WEB,
 			'ERROR' => '',
 		);
 	}

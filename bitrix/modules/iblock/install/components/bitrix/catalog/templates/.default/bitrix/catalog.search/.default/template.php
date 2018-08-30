@@ -78,7 +78,7 @@ if (!empty($arElements) && is_array($arElements))
 			"CACHE_TYPE" => $arParams["CACHE_TYPE"],
 			"CACHE_TIME" => $arParams["CACHE_TIME"],
 			"DISPLAY_COMPARE" => $arParams["DISPLAY_COMPARE"],
-			"PRICE_CODE" => $arParams["PRICE_CODE"],
+			"PRICE_CODE" => $arParams["~PRICE_CODE"],
 			"USE_PRICE_COUNT" => $arParams["USE_PRICE_COUNT"],
 			"SHOW_PRICE_COUNT" => $arParams["SHOW_PRICE_COUNT"],
 			"PRICE_VAT_INCLUDE" => $arParams["PRICE_VAT_INCLUDE"],
@@ -154,7 +154,8 @@ if (!empty($arElements) && is_array($arElements))
 			'ADD_TO_BASKET_ACTION' => (isset($arParams['ADD_TO_BASKET_ACTION']) ? $arParams['ADD_TO_BASKET_ACTION'] : ''),
 			'SHOW_CLOSE_POPUP' => (isset($arParams['SHOW_CLOSE_POPUP']) ? $arParams['SHOW_CLOSE_POPUP'] : ''),
 			'COMPARE_PATH' => $arParams['COMPARE_PATH'],
-			'COMPARE_NAME' => $arParams['COMPARE_NAME']
+			'COMPARE_NAME' => $arParams['COMPARE_NAME'],
+			'USE_COMPARE_LIST' => $arParams['USE_COMPARE_LIST']
 		),
 		$arResult["THEME_COMPONENT"],
 		array('HIDE_ICONS' => 'Y')

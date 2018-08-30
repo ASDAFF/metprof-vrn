@@ -32,6 +32,27 @@ $isSidebar = ($arParams['SIDEBAR_DETAIL_SHOW'] == 'Y' && !empty($arParams['SIDEB
 <div class='row'>
 	<div class='<?=($isSidebar ? 'col-md-9 col-sm-8' : 'col-xs-12')?>'>
 		<?
+		if ($arParams["USE_COMPARE"] === "Y")
+		{
+			$APPLICATION->IncludeComponent(
+				"bitrix:catalog.compare.list",
+				"",
+				array(
+					"IBLOCK_TYPE" => $arParams["IBLOCK_TYPE"],
+					"IBLOCK_ID" => $arParams["IBLOCK_ID"],
+					"NAME" => $arParams["COMPARE_NAME"],
+					"DETAIL_URL" => $arResult["FOLDER"].$arResult["URL_TEMPLATES"]["element"],
+					"COMPARE_URL" => $arResult["FOLDER"].$arResult["URL_TEMPLATES"]["compare"],
+					"ACTION_VARIABLE" => (!empty($arParams["ACTION_VARIABLE"]) ? $arParams["ACTION_VARIABLE"] : "action"),
+					"PRODUCT_ID_VARIABLE" => $arParams["PRODUCT_ID_VARIABLE"],
+					'POSITION_FIXED' => isset($arParams['COMPARE_POSITION_FIXED']) ? $arParams['COMPARE_POSITION_FIXED'] : '',
+					'POSITION' => isset($arParams['COMPARE_POSITION']) ? $arParams['COMPARE_POSITION'] : ''
+				),
+				$component,
+				array("HIDE_ICONS" => "Y")
+			);
+		}
+
 		$componentElementParams = array(
 			'IBLOCK_TYPE' => $arParams['IBLOCK_TYPE'],
 			'IBLOCK_ID' => $arParams['IBLOCK_ID'],
@@ -56,7 +77,7 @@ $isSidebar = ($arParams['SIDEBAR_DETAIL_SHOW'] == 'Y' && !empty($arParams['SIDEB
 			'SET_STATUS_404' => $arParams['SET_STATUS_404'],
 			'SHOW_404' => $arParams['SHOW_404'],
 			'FILE_404' => $arParams['FILE_404'],
-			'PRICE_CODE' => $arParams['PRICE_CODE'],
+			'PRICE_CODE' => $arParams['~PRICE_CODE'],
 			'USE_PRICE_COUNT' => $arParams['USE_PRICE_COUNT'],
 			'SHOW_PRICE_COUNT' => $arParams['SHOW_PRICE_COUNT'],
 			'PRICE_VAT_INCLUDE' => $arParams['PRICE_VAT_INCLUDE'],
@@ -146,6 +167,7 @@ $isSidebar = ($arParams['SIDEBAR_DETAIL_SHOW'] == 'Y' && !empty($arParams['SIDEB
 			'SHOW_CLOSE_POPUP' => isset($arParams['COMMON_SHOW_CLOSE_POPUP']) ? $arParams['COMMON_SHOW_CLOSE_POPUP'] : '',
 			'DISPLAY_COMPARE' => (isset($arParams['USE_COMPARE']) ? $arParams['USE_COMPARE'] : ''),
 			'COMPARE_PATH' => $arResult['FOLDER'].$arResult['URL_TEMPLATES']['compare'],
+			'USE_COMPARE_LIST' => 'Y',
 			'BACKGROUND_IMAGE' => (isset($arParams['DETAIL_BACKGROUND_IMAGE']) ? $arParams['DETAIL_BACKGROUND_IMAGE'] : ''),
 			'COMPATIBLE_MODE' => (isset($arParams['COMPATIBLE_MODE']) ? $arParams['COMPATIBLE_MODE'] : ''),
 			'DISABLE_INIT_JS_IN_COMPONENT' => (isset($arParams['DISABLE_INIT_JS_IN_COMPONENT']) ? $arParams['DISABLE_INIT_JS_IN_COMPONENT'] : ''),
@@ -339,7 +361,7 @@ $isSidebar = ($arParams['SIDEBAR_DETAIL_SHOW'] == 'Y' && !empty($arParams['SIDEB
 									'SHOW_OLD_PRICE' => $arParams['SHOW_OLD_PRICE'],
 									'SHOW_DISCOUNT_PERCENT' => $arParams['SHOW_DISCOUNT_PERCENT'],
 									'DISCOUNT_PERCENT_POSITION' => $arParams['DISCOUNT_PERCENT_POSITION'],
-									'PRICE_CODE' => $arParams['PRICE_CODE'],
+									'PRICE_CODE' => $arParams['~PRICE_CODE'],
 									'USE_PRICE_COUNT' => $arParams['USE_PRICE_COUNT'],
 									'SHOW_PRICE_COUNT' => $arParams['SHOW_PRICE_COUNT'],
 									'PRODUCT_SUBSCRIPTION' => $arParams['PRODUCT_SUBSCRIPTION'],
@@ -445,7 +467,7 @@ $isSidebar = ($arParams['SIDEBAR_DETAIL_SHOW'] == 'Y' && !empty($arParams['SIDEB
 									'CACHE_FILTER' => $arParams['CACHE_FILTER'],
 									'CACHE_GROUPS' => $arParams['CACHE_GROUPS'],
 									'DISPLAY_COMPARE' => $arParams['USE_COMPARE'],
-									'PRICE_CODE' => $arParams['PRICE_CODE'],
+									'PRICE_CODE' => $arParams['~PRICE_CODE'],
 									'USE_PRICE_COUNT' => $arParams['USE_PRICE_COUNT'],
 									'SHOW_PRICE_COUNT' => $arParams['SHOW_PRICE_COUNT'],
 									'PAGE_ELEMENT_COUNT' => 4,
@@ -567,7 +589,7 @@ $isSidebar = ($arParams['SIDEBAR_DETAIL_SHOW'] == 'Y' && !empty($arParams['SIDEB
 									'PROPERTY_CODE_'.$recommendedData['OFFER_IBLOCK_ID'] => $arParams['LIST_OFFERS_PROPERTY_CODE'],
 									'PROPERTY_CODE_MOBILE'.$arParams['IBLOCK_ID'] => $arParams['LIST_PROPERTY_CODE_MOBILE'],
 									'BASKET_URL' => $arParams['BASKET_URL'],
-									'ACTION_VARIABLE' => $arParams['ACTION_VARIABLE'].'_cpv',
+									'ACTION_VARIABLE' => $arParams['ACTION_VARIABLE'],
 									'PRODUCT_ID_VARIABLE' => $arParams['PRODUCT_ID_VARIABLE'],
 									'PRODUCT_QUANTITY_VARIABLE' => $arParams['PRODUCT_QUANTITY_VARIABLE'],
 									'PRODUCT_PROPS_VARIABLE' => $arParams['PRODUCT_PROPS_VARIABLE'],
@@ -576,7 +598,7 @@ $isSidebar = ($arParams['SIDEBAR_DETAIL_SHOW'] == 'Y' && !empty($arParams['SIDEB
 									'CACHE_FILTER' => $arParams['CACHE_FILTER'],
 									'CACHE_GROUPS' => $arParams['CACHE_GROUPS'],
 									'DISPLAY_COMPARE' => $arParams['USE_COMPARE'],
-									'PRICE_CODE' => $arParams['PRICE_CODE'],
+									'PRICE_CODE' => $arParams['~PRICE_CODE'],
 									'USE_PRICE_COUNT' => $arParams['USE_PRICE_COUNT'],
 									'SHOW_PRICE_COUNT' => $arParams['SHOW_PRICE_COUNT'],
 									'PAGE_ELEMENT_COUNT' => 4,
@@ -641,7 +663,8 @@ $isSidebar = ($arParams['SIDEBAR_DETAIL_SHOW'] == 'Y' && !empty($arParams['SIDEB
 									'ADD_TO_BASKET_ACTION' => $basketAction,
 									'SHOW_CLOSE_POPUP' => isset($arParams['COMMON_SHOW_CLOSE_POPUP']) ? $arParams['COMMON_SHOW_CLOSE_POPUP'] : '',
 									'COMPARE_PATH' => $arResult['FOLDER'].$arResult['URL_TEMPLATES']['compare'],
-									'COMPARE_NAME' => $arParams['COMPARE_NAME']
+									'COMPARE_NAME' => $arParams['COMPARE_NAME'],
+									'USE_COMPARE_LIST' => 'Y'
 								),
 								$component
 							);

@@ -200,8 +200,8 @@ if ($page<=0) $page = 1;
 							?>
 						</td>
 						<td align="center"><?echo Bitrix\Sale\BasketItem::formatQuantity($arQuantities[$i]) ?></td>
-						<td align="right" nowrap><?echo number_format($arBasket["PRICE"], 2, ',', ' ');?></td>
-						<td align="right" nowrap><?echo number_format($arBasket["PRICE"]*$arQuantities[$i], 2, ',', ' ');?></td>
+						<td align="right" nowrap><?=CCurrencyLang::CurrencyFormat($arBasket["PRICE"], $arOrder["CURRENCY"], false);?></td>
+						<td align="right" nowrap><?=CCurrencyLang::CurrencyFormat($arBasket["PRICE"]*$arQuantities[$i], $arOrder["CURRENCY"], false);?></td>
 					</tr>
 					<?
 
@@ -217,7 +217,7 @@ if ($page<=0) $page = 1;
 							Сумма:
 						</td>
 						<td align="right" nowrap>
-							<?echo number_format($total_sum, 2, ',', ' ');?>
+							<?=CCurrencyLang::CurrencyFormat($total_sum, $arOrder["CURRENCY"], false);?>
 						</td>
 					</tr>
 
@@ -241,7 +241,7 @@ if ($page<=0) $page = 1;
 								?>:
 							</td>
 							<td align="right" nowrap>
-								<?=number_format($total_nds, 2, ',', ' ')?>
+								<?=CCurrencyLang::CurrencyFormat($total_nds, $arOrder["CURRENCY"], false);?>
 							</td>
 						</tr>
 						<?
@@ -253,7 +253,7 @@ if ($page<=0) $page = 1;
 							Итого (без стоимости доставки):
 						</td>
 						<td align="right" nowrap>
-							<?echo number_format($total_sum, 2, ',', ' ');?>
+							<?=CCurrencyLang::CurrencyFormat($total_sum, $arOrder["CURRENCY"], false);?>
 						</td>
 					</tr>
 				</table>

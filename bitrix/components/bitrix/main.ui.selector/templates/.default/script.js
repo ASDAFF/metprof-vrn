@@ -4,6 +4,15 @@
 	BX.namespace('BX.Main');
 
 	BX.Main.selectorManager = {
+		getById: function (id)
+		{
+			if (typeof this.controls[id] != 'undefined')
+			{
+				return this.controls[id];
+			}
+
+			return null;
+		},
 		controls: {}
 	};
 
@@ -57,7 +66,11 @@
 		BX.Main.selectorManager.controls[self.getId()] = self;
 
 		return self;
+	};
 
+	BX.Main.Selector.proxyCallback = function(callback, data)
+	{
+		callback(data);
 	};
 
 	BX.Main.Selector.prototype = {
@@ -103,6 +116,7 @@
 					offsetLeft: '15px'
 				},
 				userSearchArea: this.getOption('userSearchArea'),
+				lazyLoad: (this.getOption('lazyLoad') == 'Y'),
 				useClientDatabase: (this.getOption('useClientDatabase') == 'Y'),
 				sendAjaxSearch: (this.getOption('sendAjaxSearch') != 'N'),
 				showSearchInput: (this.getOption('useSearch') == 'Y'),
@@ -118,14 +132,70 @@
 				enableProjects: (this.getOption('enableProjects') == 'Y'),
 				isCrmFeed: (this.getOption('isCrmFeed') == 'Y'),
 				callback : {
-					select : this.callback.select,
-					unSelect: this.callback.unSelect,
-					openDialog: this.callback.openDialog,
-					closeDialog: this.callback.closeDialog,
-					openSearch: this.callback.openSearch,
-					closeSearch: this.callback.closeSearch,
-					openEmailAdd: this.callback.openEmailAdd,
-					closeEmailAdd: this.callback.closeEmailAdd
+					select : this.callback.select != null ? BX.delegate(function(item, type, search, bUndeleted, name, state) {
+						this.getOption('useNewCallback') == 'Y'
+							? BX.Main.Selector.proxyCallback(this.callback.select, {
+								name: name,
+								item: item,
+								type: type,
+								search: search,
+								bUndeleted: bUndeleted,
+								state: state
+							})
+							: this.callback.select(item, type, search, bUndeleted, name, state)
+					}, this) : null,
+					unSelect: this.callback.unSelect != null ? BX.delegate(function(item, type, search, name) {
+						this.getOption('useNewCallback') == 'Y'
+							? BX.Main.Selector.proxyCallback(this.callback.unSelect, {
+								name: name,
+								item: item,
+								type: type,
+								search: search
+							})
+							: this.callback.unSelect(item, type, search, name)
+					}, this) : null,
+					openDialog: this.callback.openDialog != null ? BX.delegate(function(name) {
+						this.getOption('useNewCallback') == 'Y'
+							? BX.Main.Selector.proxyCallback(this.callback.openDialog, {
+								name: name
+							})
+							: this.callback.openDialog(name)
+					}, this) : null,
+					closeDialog: this.callback.closeDialog != null ? BX.delegate(function(name) {
+						this.getOption('useNewCallback') == 'Y'
+							? BX.Main.Selector.proxyCallback(this.callback.closeDialog, {
+								name: name
+							})
+							: this.callback.closeDialog(name)
+					}, this) : null,
+					openSearch: this.callback.openSearch != null ? BX.delegate(function(name) {
+						this.getOption('useNewCallback') == 'Y'
+							? BX.Main.Selector.proxyCallback(this.callback.openSearch, {
+								name: name
+							})
+							: this.callback.openSearch(name)
+					}, this) : null,
+					closeSearch: this.callback.closeSearch != null ? BX.delegate(function(name) {
+						this.getOption('useNewCallback') == 'Y'
+							? BX.Main.Selector.proxyCallback(this.callback.closeSearch, {
+								name: name
+							})
+							: this.callback.closeSearch(name)
+					}, this) : null,
+					openEmailAdd: this.callback.openEmailAdd != null ? BX.delegate(function(name) {
+						this.getOption('useNewCallback') == 'Y'
+							? BX.Main.Selector.proxyCallback(this.callback.openEmailAdd, {
+								name: name
+							})
+							: this.callback.openEmailAdd(name)
+					}, this) : null,
+					closeEmailAdd: this.callback.closeEmailAdd != null ? BX.delegate(function(name) {
+						this.getOption('useNewCallback') == 'Y'
+							? BX.Main.Selector.proxyCallback(this.callback.closeEmailAdd, {
+								name: name
+							})
+							: this.callback.closeEmailAdd(name)
+					}, this) : null
 				},
 				allowSonetGroupsAjaxSearchFeatures: this.getOption('allowSonetGroupsAjaxSearchFeatures')
 			};
@@ -146,7 +216,10 @@
 
 			if (this.input)
 			{
-				this.initDialog();
+				if (!this.options.lazyLoad)
+				{
+					this.initDialog()
+				}
 
 				if (this.tag)
 				{
@@ -173,15 +246,19 @@
 
 				this.auxObject = {
 					formName: this.id,
-					inputName: params.inputId,
+					inputNode: BX(params.inputId),
 					tagInputName: params.tagId
 				};
 
 				BX.bind(this.input, "bxchange", BX.proxy(BX.SocNetLogDestination.BXfpSearch, this.auxObject));
+				this.input.setAttribute('data-bxchangehandler', 'Y');
 			}
 			else if(parameters.showSearchInput)
 			{
-				this.initDialog()
+				if (!this.options.lazyLoad)
+				{
+					this.initDialog()
+				}
 			}
 
 			if (this.items.hidden)
@@ -204,6 +281,11 @@
 					}
 				}
 			}
+		},
+
+		show: function()
+		{
+			this.initDialog();
 		},
 
 		initDialog: function(openDialogParams)
@@ -262,6 +344,7 @@
 							if (typeof this.options.eventOpen != 'undefined')
 							{
 								BX.addCustomEvent(window, this.options.eventOpen, BX.delegate(function(params) {
+
 									if (
 										typeof params.id == 'undefined'
 										|| params.id != this.id
@@ -281,35 +364,26 @@
 												inputNode: inputNode
 											}));
 
-											if (
-												true
-												|| !this.auxObject
-												|| (
-													(
-														!BX.type.isNotEmptyString(this.auxObject.inputName)
-														|| !BX(this.auxObject.inputName)
-													)
-													&& !BX(this.auxObject.inputNode)
-												)
-											)
-											{
-												this.auxObject = {
-													formName: this.id,
-													inputName: null,
-													inputNode: inputNode,
-													tagInputName: params.tagId
-												};
+											this.auxObject = {
+												formName: this.id,
+												inputNode: inputNode,
+												tagInputName: params.tagId
+											};
 
-												BX.SocNetLogDestination.obElementBindMainPopup[this.id].node = inputNode;
-												BX.SocNetLogDestination.obElementBindSearchPopup[this.id].node = inputNode;
-												BX.SocNetLogDestination.obItemsSelected[this.id] = {};
-											}
+											BX.SocNetLogDestination.obElementBindMainPopup[this.id].node = inputNode;
+											BX.SocNetLogDestination.obElementBindSearchPopup[this.id].node = inputNode;
 
-											if (this.auxObject)
+											if (inputNode.getAttribute('data-bxchangehandler') !== 'Y')
 											{
 												BX.bind(inputNode, "bxchange", BX.proxy(BX.SocNetLogDestination.BXfpSearch, this.auxObject));
+												BX.SocNetLogDestination.obItemsSelected[this.id] = {};
+												inputNode.setAttribute('data-bxchangehandler', 'Y');
 											}
 
+											if (typeof params.value != 'undefined')
+											{
+												BX.SocNetLogDestination.obItemsSelected[this.id] = params.value;
+											}
 										}
 
 										this.openDialog({
@@ -385,12 +459,17 @@
 				}
 			}
 
+			__mergeData(BX.SocNetLogDestination.obItems[this.id]['groups'], data.ITEMS.GROUPS);
 			__mergeData(BX.SocNetLogDestination.obItems[this.id]['users'], data.ITEMS.USERS);
+			__mergeData(BX.SocNetLogDestination.obItems[this.id]['emails'], data.ITEMS.EMAILS);
+			__mergeData(BX.SocNetLogDestination.obItems[this.id]['crmemails'], data.ITEMS.CRMEMAILS);
 			__mergeData(BX.SocNetLogDestination.obItems[this.id]['sonetgroups'], data.ITEMS.SONETGROUPS);
 			__mergeData(BX.SocNetLogDestination.obItems[this.id]['department'], data.ITEMS.DEPARTMENT);
 			BX.SocNetLogDestination.obItems[this.id]["departmentRelation"] = BX.SocNetLogDestination.buildDepartmentRelation(BX.SocNetLogDestination.obItems[this.id]['department']);
 
 			BX.SocNetLogDestination.obItemsLast[this.id]['users'] = (typeof data['ITEMS_LAST']['USERS'] != 'undefined' ? data['ITEMS_LAST']['USERS'] : {});
+			BX.SocNetLogDestination.obItemsLast[this.id]['emails'] = (typeof data['ITEMS_LAST']['EMAILS'] != 'undefined' ? data['ITEMS_LAST']['EMAILS'] : {});
+			BX.SocNetLogDestination.obItemsLast[this.id]['crmemails'] = (typeof data['ITEMS_LAST']['CRMEMAILS'] != 'undefined' ? data['ITEMS_LAST']['CRMEMAILS'] : {});
 			BX.SocNetLogDestination.obItemsLast[this.id]['sonetgroups'] = (typeof data['ITEMS_LAST']['SONETGROUPS'] != 'undefined' ? data['ITEMS_LAST']['SONETGROUPS'] : {});
 			BX.SocNetLogDestination.obItemsLast[this.id]['department'] = (typeof data['ITEMS_LAST']['DEPARTMENT'] != 'undefined' ? data['ITEMS_LAST']['DEPARTMENT'] : {});
 			BX.SocNetLogDestination.obItemsLast[this.id]['groups'] = (typeof data['ITEMS_LAST']['GROUPS'] != 'undefined' ? data['ITEMS_LAST']['GROUPS'] : {});

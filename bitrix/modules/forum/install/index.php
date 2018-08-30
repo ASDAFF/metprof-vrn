@@ -149,8 +149,8 @@ Class forum extends CModule
 	var $MODULE_DESCRIPTION;
 	var $MODULE_CSS;
 	var $MODULE_GROUP_RIGHTS = "Y";
-	
-	function forum()
+
+	function __construct()
 	{
 		$arModuleVersion = array();
 
@@ -223,6 +223,7 @@ Class forum extends CModule
 		RegisterModuleDependences("im", "OnGetNotifySchema", "forum", "CForumNotifySchema", "OnGetNotifySchema");
 
 		RegisterModuleDependences("main", "OnAfterRegisterModule", "main", "forum", "InstallUserFields", 100, "/modules/forum/install/index.php");
+		RegisterModuleDependences("rest", "OnRestServiceBuildDescription", "forum", "CForumRestService", "OnRestServiceBuildDescription");
 
 		RegisterModuleDependences('conversion', 'OnGetCounterTypes' , 'forum', '\Bitrix\Forum\Internals\ConversionHandlers', 'onGetCounterTypes');
 		RegisterModuleDependences('conversion', 'OnGetRateTypes' , 'forum', '\Bitrix\Forum\Internals\ConversionHandlers', 'onGetRateTypes');
@@ -232,6 +233,7 @@ Class forum extends CModule
 		$eventManager = \Bitrix\Main\EventManager::getInstance();
 		$eventManager->registerEventHandler('socialnetwork', 'onLogIndexGetContent', 'forum', '\Bitrix\Forum\Integration\Socialnetwork\Log', 'onIndexGetContent');
 		$eventManager->registerEventHandler('socialnetwork', 'onLogCommentIndexGetContent', 'forum', '\Bitrix\Forum\Integration\Socialnetwork\LogComment', 'onIndexGetContent');
+		$eventManager->registerEventHandler('socialnetwork', 'onContentViewed', 'forum', '\Bitrix\Forum\Integration\Socialnetwork\ContentViewHandler', 'onContentViewed');
 
 		if ($GLOBALS["DB"]->TableExists("b_forum_pm_folder") || $GLOBALS["DB"]->TableExists("B_FORUM_PM_FOLDER"))
 		{
@@ -359,10 +361,12 @@ Class forum extends CModule
 		UnRegisterModuleDependences('forum', 'onAfterMessageAdd', 'forum', '\Bitrix\Forum\Internals\ConversionHandlers', 'onMessageAdd');
 
 		UnRegisterModuleDependences("main", "OnAfterUserUpdate", "forum", "CForumUser", "OnAfterUserUpdate");
+		UnRegisterModuleDependences("rest", "OnRestServiceBuildDescription", "forum", "CForumRestService", "OnRestServiceBuildDescription");
 
 		$eventManager = \Bitrix\Main\EventManager::getInstance();
 		$eventManager->unregisterEventHandler('socialnetwork', 'onLogIndexGetContent', 'forum', '\Bitrix\Forum\Integration\Socialnetwork\Log', 'onIndexGetContent');
 		$eventManager->unregisterEventHandler('socialnetwork', 'onLogCommentIndexGetContent', 'forum', '\Bitrix\Forum\Integration\Socialnetwork\LogComment', 'onIndexGetContent');
+		$eventManager->unregisterEventHandler('socialnetwork', 'onContentViewed', 'forum', '\Bitrix\Forum\Integration\Socialnetwork\ContentViewHandler', 'onContentViewed');
 
 		CAgent::RemoveAgent("CForumTopic::CleanUp();","forum");
 		CAgent::RemoveAgent("CForumStat::CleanUp();","forum");

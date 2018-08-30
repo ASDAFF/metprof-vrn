@@ -1564,7 +1564,9 @@ class CAdminSubResult extends CAdminResult
 
 	function NavStart($nPageSize=20, $bShowAll=true, $iNumPage=false)
 	{
-		$nSize = CAdminSubResult::GetNavSize($this->table_id, $nPageSize, $this->list_url.('' != $this->list_url_params ? '?'.$this->list_url_params : ''));
+		$navResult = new CAdminSubResult(null, '', '');
+		$nSize = $navResult->GetNavSize($this->table_id, $nPageSize, $this->list_url.('' != $this->list_url_params ? '?'.$this->list_url_params : ''));
+		unset($navResult);
 
 		if(!is_array($nPageSize))
 			$nPageSize = array();

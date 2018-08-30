@@ -9,6 +9,10 @@
  * @var CBitrixComponent $component
  */
 
+use \Bitrix\Main\UI;
+
+UI\Extension::load("ui.buttons");
+
 include_once($_SERVER["DOCUMENT_ROOT"].$templateFolder."/functions.php");
 include_once($_SERVER["DOCUMENT_ROOT"].$templateFolder."/message.php");
 include($_SERVER["DOCUMENT_ROOT"].$templateFolder."/file.php");
@@ -116,7 +120,7 @@ foreach($arParams["BUTTONS"] as $val)
 			<?
 			include($_SERVER["DOCUMENT_ROOT"].$templateFolder."/lhe.php");
 			?>
-			<div style="display:none;"><input type="text" tabindex="<?=($arParams["TEXT"]["TABINDEX"]++)?>" onFocus="LHEPostForm.getEditor('<?=$arParams["LHE"]["id"]?>').SetFocus()" name="hidden_focus" /></div>
+			<div style="display:none;"><input type="text" tabindex="<?=($arParams["TEXT"]["TABINDEX"]++)?>" onFocus="LHEPostForm.getEditor('<?=$arParams["LHE"]["id"]?>').Focus()" name="hidden_focus" /></div>
 		</div>
 		<div class="feed-add-post-form-but-wrap" id="post-buttons-bottom"><?=implode("", $arButtonsHTML);
 			if(!empty($arParams["ADDITIONAL"]))
@@ -314,9 +318,7 @@ foreach($arParams["BUTTONS"] as $val)
 	?><?=$arParams["URL_PREVIEW_HTML"]?><?
 	?>
 	<div class="feed-add-post-buttons" id="lhe_buttons_<?=$arParams["FORM_ID"]?>">
-		<a class="feed-add-button feed-add-com-button" id="lhe_button_submit_<?=$arParams["FORM_ID"]?>" ><?
-			?><?=GetMessage("MPF_BUTTON_SEND")?><?
-		?></a>
-		<a class="feed-cancel-com" id="lhe_button_cancel_<?=$arParams["FORM_ID"]?>"><?=GetMessage("MPF_BUTTON_CANCEL")?></a>
+		<button class="ui-btn ui-btn-sm ui-btn-primary" id="lhe_button_submit_<?=$arParams["FORM_ID"]?>"><?=GetMessage("MPF_BUTTON_SEND")?></button>
+		<button class="ui-btn ui-btn-sm ui-btn-link" id="lhe_button_cancel_<?=$arParams["FORM_ID"]?>"><?=GetMessage("MPF_BUTTON_CANCEL")?></button>
 	</div>
 </div>

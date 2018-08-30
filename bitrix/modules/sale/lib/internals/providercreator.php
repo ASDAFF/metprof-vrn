@@ -94,6 +94,10 @@ class ProviderCreator
 	public function addBasketItemBarcodeData(Sale\BasketItem $basketItem, array $barcodeParams)
 	{
 		$providerName = $basketItem->getProviderName();
+		if (empty($providerName))
+		{
+			$providerName = $basketItem->getCallbackFunction();
+		}
 		$builder = $this->createBuilder($providerName);
 		$builder->addBasketItemBarcodeData($barcodeParams);
 	}
@@ -247,7 +251,14 @@ class ProviderCreator
 		/** @var ProviderBuilderBase $builder */
 		foreach ($this->pool as $builder)
 		{
-			$r = $builder->setItemsResultAfterTryShip($pool, $productTryShipList);
+			$providerName = $builder->getProviderName();
+
+			if (!$productTryShipList[$providerName])
+			{
+				continue;
+			}
+
+			$r = $builder->setItemsResultAfterTryShip($pool, $productTryShipList[$providerName]);
 			if (!$r->isSuccess())
 			{
 				$result->addErrors($r->getErrors());
@@ -412,17 +423,37 @@ class ProviderCreator
 				$r = $builder->$method($methodParameters);
 			}
 
-			if ($r->isSuccess())
-			{
-				$data = $r->getData();
-				if (!empty($data[$outputName]))
-				{
-					$resultList = $data[$outputName] + $resultList;
-				}
-			}
-			else
+			if (!$r->isSuccess())
 			{
 				$result->addErrors($r->getErrors());
+			}
+
+			if ($r->hasWarnings())
+			{
+				$result->addWarnings($r->getWarnings());
+			}
+
+			$data = $r->getData();
+			if (!empty($data))
+			{
+				$providerName = null;
+
+				$providerClass = $builder->getProviderClass();
+				if ($providerClass)
+				{
+					$reflect = new \ReflectionClass($providerClass);
+					$providerName = $this->clearProviderName($reflect->getName());
+				}
+
+				if (strval($providerName) == '')
+				{
+					$providerName = $builder->getCallbackFunction();
+				}
+
+				if (!empty($data[$outputName]))
+				{
+					$resultList[$providerName] = $data[$outputName];
+				}
 			}
 		}
 
@@ -452,6 +483,11 @@ class ProviderCreator
 			if (class_exists($providerName))
 			{
 				$providerClass = new $providerName($this->getContext());
+			}
+
+			if (!$providerClass)
+			{
+				$providerClass = $providerName;
 			}
 
 			$builder = ProviderBuilderBase::createBuilder($providerClass, $this->getContext());

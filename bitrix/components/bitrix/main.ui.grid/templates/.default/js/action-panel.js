@@ -708,7 +708,7 @@
 			var dropdown = BX(id);
 			var container = dropdown.parentNode;
 			var onChange = dataItem && ('ONCHANGE' in dataItem) ? dataItem.ONCHANGE : null;
-			var isPseudo = ('PSEUDO' in dataItem && dataItem.PSEUDO !== false);
+			var isPseudo = dataItem && ('PSEUDO' in dataItem && dataItem.PSEUDO !== false);
 
 			this.onChangeHandler(container, onChange, isPseudo);
 		},

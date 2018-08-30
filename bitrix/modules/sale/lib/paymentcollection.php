@@ -142,7 +142,7 @@ class PaymentCollection
 			break;
 
 			case "PRICE":
-				if (($order = $this->getOrder()) && $order->getId() > 0 && !$order->isCanceled())
+				if (($order = $this->getOrder()) && !$order->isCanceled())
 				{
 					$currentPayment = false;
 					$allowQuantityChange = false;
@@ -371,7 +371,9 @@ class PaymentCollection
 							$order->getId(),
 							"PAYMENT_SAVED",
 							$payment->getId(),
-							$payment
+							$payment,
+							array(),
+							OrderHistory::SALE_ORDER_HISTORY_ACTION_LOG_LEVEL_1
 						);
 					}
 
@@ -453,13 +455,32 @@ class PaymentCollection
 				if ($payment->getPaymentSystemId() == $paySystemId)
 					return $payment;
 			}
+		}
 
+		return false;
+	}
+
+	/**
+	 * @return Payment|bool
+	 * @throws Main\ObjectNotFoundException
+	 */
+	public function createInnerPayment()
+	{
+		$payment = $this->getInnerPayment();
+		if ($payment)
+		{
+			return $payment;
+		}
+
+		$paySystemId = PaySystem\Manager::getInnerPaySystemId();
+		if (!empty($paySystemId))
+		{
 			/** @var Service $paySystem */
-			if ($paySystem = Manager::getObjectById($paySystemId))
+			$paySystem = Manager::getObjectById($paySystemId);
+			if ($paySystem)
 			{
 				return $this->createItem($paySystem);
 			}
-
 		}
 
 		return false;

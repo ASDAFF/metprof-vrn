@@ -603,7 +603,9 @@ class CAllIBlock
 	{
 		/** @global CDatabase $DB */
 		global $DB;
-		$ID = intval($ID);
+		$ID = (int)$ID;
+		if ($ID <= 0)
+			return false;
 
 		if(CACHED_b_iblock === false)
 		{
@@ -678,11 +680,20 @@ class CAllIBlock
 				$arResult = false;
 			}
 		}
+		if (empty($arResult))
+			return false;
 
-		if($FIELD)
-			return $arResult[$FIELD];
+		if ($FIELD)
+		{
+			if (array_key_exists($FIELD, $arResult))
+				return $arResult[$FIELD];
+			else
+				return null;
+		}
 		else
+		{
 			return $arResult;
+		}
 	}
 
 	public static function CleanCache($ID)
@@ -1549,9 +1560,7 @@ REQ
 		static $res = false;
 		if (!$res)
 		{
-			$jpgQuality = intval(COption::GetOptionString('main', 'image_resize_quality', '95'));
-			if($jpgQuality <= 0 || $jpgQuality > 100)
-				$jpgQuality = 95;
+			$jpgQuality = self::getDefaultJpegQuality();
 
 			$res = array(
 				"IBLOCK_SECTION" => array(
@@ -2732,8 +2741,11 @@ REQ
 			}
 		}
 
+		$id = (int)$arr["ID"];
+		$preparedId = $id > 0 ? $id : '';
+
 		if(strpos($url, "#PRODUCT_URL#") !== false)
-			$url = str_replace("#PRODUCT_URL#", CIBlock::_GetProductUrl($arr["ID"], $arr["IBLOCK_ID"], $server_name, $arrType), $url);
+			$url = str_replace("#PRODUCT_URL#", CIBlock::_GetProductUrl($id, $arr["IBLOCK_ID"], $server_name, $arrType), $url);
 
 		static $arSearch = array(
 			/*Thees come from GetNext*/
@@ -2754,7 +2766,7 @@ REQ
 		);
 		$arReplace = array(
 			$arr["LANG_DIR"],
-			intval($arr["ID"]) > 0? intval($arr["ID"]): "",
+			$preparedId,
 			rawurlencode(isset($arr["~CODE"])? $arr["~CODE"]: $arr["CODE"]),
 			rawurlencode(isset($arr["~EXTERNAL_ID"])? $arr["~EXTERNAL_ID"]: $arr["EXTERNAL_ID"]),
 			rawurlencode(isset($arr["~IBLOCK_TYPE_ID"])? $arr["~IBLOCK_TYPE_ID"]: $arr["IBLOCK_TYPE_ID"]),
@@ -2765,7 +2777,7 @@ REQ
 
 		if($arrType === "E")
 		{
-			$arReplace[] = intval($arr["ID"]) > 0? intval($arr["ID"]): "";
+			$arReplace[] = $preparedId;
 			$arReplace[] = rawurlencode(isset($arr["~CODE"])? $arr["~CODE"]: $arr["CODE"]);
 			#Deal with symbol codes
 			$SECTION_ID = intval($arr["IBLOCK_SECTION_ID"]);
@@ -2794,7 +2806,7 @@ REQ
 		}
 		elseif($arrType === "S")
 		{
-			$SECTION_ID = intval($arr["ID"]);
+			$SECTION_ID = $id;
 			$SECTION_CODE_PATH = "";
 			if(
 				$SECTION_ID > 0
@@ -3397,9 +3409,7 @@ REQ
 				break;
 
 			case IMAGETYPE_JPEG:
-				$jpgQuality = intval(COption::GetOptionString('main', 'image_resize_quality', '95'));
-				if ($jpgQuality <= 0 || $jpgQuality > 100)
-					$jpgQuality = 95;
+				$jpgQuality = self::getDefaultJpegQuality();
 
 				imagejpeg($picture, $filePath, $jpgQuality);
 				break;
@@ -3928,5 +3938,13 @@ REQ
 	public static function isEnabledClearTagCache()
 	{
 		return (self::$enableClearTagCache >= 0);
+	}
+
+	public static function getDefaultJpegQuality()
+	{
+		$jpgQuality = (int)Main\Config\Option::get('main', 'image_resize_quality', '95');
+		if ($jpgQuality <= 0 || $jpgQuality > 100)
+			$jpgQuality = 95;
+		return $jpgQuality;
 	}
 }

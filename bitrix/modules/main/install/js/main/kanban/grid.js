@@ -331,6 +331,10 @@ BX.Kanban.Grid.prototype =
 			this.moveItem(item, this.getColumn(options.columnId), this.getItem(options.targetId));
 		}
 
+		var eventArgs = ['UPDATE', { task: item, options: options }];
+
+		BX.onCustomEvent(window, 'tasksTaskEvent', eventArgs);
+
 		item.setOptions(options);
 		item.render();
 
@@ -890,7 +894,7 @@ BX.Kanban.Grid.prototype =
 		var scroll = grid.scrollLeft;
 
 		var isLeftVisible = scroll > 0;
-		var isRightVisible = grid.scrollWidth > (scroll + grid.offsetWidth);
+		var isRightVisible = grid.scrollWidth > (Math.round(scroll + grid.offsetWidth));
 
 		this.getOuterContainer().classList[isLeftVisible ? "add" : "remove"]("main-kanban-left-ear-shown");
 		this.getOuterContainer().classList[isRightVisible ? "add" : "remove"]("main-kanban-right-ear-shown");

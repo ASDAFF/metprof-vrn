@@ -102,7 +102,7 @@ $arSiteMenu = array();
 foreach($documentTypes as $type => $class)
 	$arSiteMenu[] = array(
 		"TEXT" => GetMessage("CAT_DOC_".$type),
-		"ACTION" => "window.location = 'cat_store_document_edit.php?lang=".LANGUAGE_ID."&DOCUMENT_TYPE=".$type."';"
+		"ACTION" => "window.location = 'cat_store_document_edit.php?lang=".LANGUAGE_ID."&DOCUMENT_TYPE=".$type.GetFilterParams("filter_", false)."';"
 	);
 
 $aContext = array(
@@ -515,7 +515,14 @@ while($arRes = $dbResultList->Fetch())
 
 
 	$arActions = array();
-	$arActions[] = array("ICON"=>"edit", "TEXT"=>GetMessage("CAT_DOC_".$strForAction), "ACTION"=>$lAdmin->ActionRedirect("cat_store_document_edit.php?ID=".$arRes['ID']."&lang=".LANGUAGE_ID/*."&".GetFilterParams("filter_").""*/), "DEFAULT"=>true);
+	$arActions[] = array(
+		"ICON" => "edit",
+		"TEXT" => GetMessage("CAT_DOC_".$strForAction),
+		"ACTION" => $lAdmin->ActionRedirect(
+			"cat_store_document_edit.php?ID=".$arRes['ID']."&lang=".LANGUAGE_ID."&".GetFilterParams("filter_")
+		),
+		"DEFAULT" => true
+	);
 
 	if (!$bReadOnly)
 	{

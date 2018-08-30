@@ -3,29 +3,19 @@
 	BX.namespace("BX.MobileApp");
 
 	BX.MobileApp.Gesture = {
-		addLongTapListener:function (node, callback)
+		addLongTapListener:function (node, callback, customDuration)
 		{
-			var touchDuration = 100;
+			var touchDuration = customDuration|| 500;
 			var timerInterval;
 
 			function timer(interval, targetNode)
 			{
-				interval--;
-
-				if (interval >= 0)
-				{
-					timerInterval = setTimeout(function ()
-					{
-						timer(interval, targetNode);
-					});
-				}
-				else
-				{
+				timerInterval = setTimeout(function(){
 					tapHold(targetNode);
-				}
+				}, interval);
 			}
 
-			var startPostition = {x: 0, y: 0};
+			var startPosition = {x: 0, y: 0};
 
 			function touchStart(e)
 			{
@@ -34,13 +24,13 @@
 					return;
 				}
 
-				startPostition = {x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY};
+				startPosition = {x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY};
 				timer(touchDuration, e.target);
 			}
 
 			function touchEnd()
 			{
-				startPostition = {x: 0, y: 0};
+				startPosition = {x: 0, y: 0};
 				clearTimeout(timerInterval);
 			}
 
@@ -48,9 +38,9 @@
 			{
 				var x = e.changedTouches[0].clientX;
 				var y = e.changedTouches[0].clientY;
-				if (Math.abs(startPostition.x - x) > 5 || Math.abs(startPostition.y - y) > 5)
+				if (Math.abs(startPosition.x - x) > 5 || Math.abs(startPosition.y - y) > 5)
 				{
-					startPostition = {x: 0, y: 0};
+					startPosition = {x: 0, y: 0};
 					clearTimeout(timerInterval);
 				}
 			}

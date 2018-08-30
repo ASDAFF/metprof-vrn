@@ -64,7 +64,7 @@ $arJSCoreConfig = array(
 	'tooltip' => array(
 		'js' => $pathJS.'/core_tooltip.js',
 		'css' => $pathCSS.'/core_tooltip.css',
-		'rel' => array('ajax'),
+		'rel' => array('ajax', 'ui.tooltip'),
 		'lang_additional' => array('TOOLTIP_ENABLED' => (IsModuleInstalled("socialnetwork") && COption::GetOptionString("socialnetwork", "allow_tooltip", "Y") == "Y" ? "Y" : "N")),
 	),
 	'translit' => array(
@@ -82,7 +82,7 @@ $arJSCoreConfig = array(
 		'js' => $pathJS.'/core_viewer.js',
 		'css' => $pathCSS.'/core_viewer.css',
 		'lang' => $pathLang.'/js_core_viewer.php',
-		'rel' => array('ls', 'ajax', 'popup'),
+		'rel' => array('ls', 'ajax', 'popup', 'loader'),
 		'lang_additional' => array('DISK_MYOFFICE' => COption::GetOptionString('disk', 'demo_myoffice', false))
 	),
 	'window' => array(
@@ -281,8 +281,15 @@ $arJSCoreConfig = array(
 		),
 		'css' => '/bitrix/js/main/sidepanel/css/sidepanel.css',
 		'rel' => array('ajax', 'fx'),
+		'lang' => $pathLang.'/js/sidepanel.php',
 		'bundle_js' => 'sidepanel',
 		'bundle_css' => 'sidepanel'
+	),
+	'admin_sidepanel' => array(
+		'js' => array(
+			'/bitrix/js/main/admin_sidepanel.js',
+		),
+		'rel' => array('admin_interface', 'sidepanel'),
 	),
 
 	/* external libs */
@@ -355,6 +362,7 @@ $arJSCoreConfig = array(
 	'helper' => array(
 		'js' => '/bitrix/js/main/helper/helper.js',
 		'css' => '/bitrix/js/main/helper/css/helper.css',
+		'rel' => array('sidepanel', 'ajax')
 	),
 	'webrtc_adapter' => array(
 		'js' => '/bitrix/js/main/webrtc/adapter.js'
@@ -395,6 +403,10 @@ $arJSCoreConfig = array(
 			);
 		},
 		'rel' => array('popup'),
+	),
+	'loader' => array(
+		'js' => '/bitrix/js/main/loader/loader.js',
+		'css' => '/bitrix/js/main/loader/loader.css'
 	)
 );
 

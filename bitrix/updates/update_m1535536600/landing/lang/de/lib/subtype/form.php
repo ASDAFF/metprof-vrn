@@ -1,0 +1,10 @@
+<?
+$MESS["LANDING_BLOCK_WEBFORM"] = "CRM-Formular";
+$MESS["LANDING_BLOCK_WEBFORM_SHOW_HEADER"] = "Formularüberschrift";
+$MESS["LANDING_BLOCK_WEBFORM_SHOW_HEADER_Y"] = "Anzeigen";
+$MESS["LANDING_BLOCK_WEBFORM_SHOW_HEADER_N"] = "Ausblenden";
+$MESS["LANDING_BLOCK_WEBFORM_USE_STYLE"] = "Formularstil";
+$MESS["LANDING_BLOCK_WEBFORM_USE_STYLE_Y"] = "Container-Stil nutzen";
+$MESS["LANDING_BLOCK_WEBFORM_USE_STYLE_N"] = "Stil des CRM-Formulars nutzen";
+$MESS["LANDING_BLOCK_WEBFORM_NO_FORM"] = "Es gibt keine aktiven CRM-Formulare";
+?>

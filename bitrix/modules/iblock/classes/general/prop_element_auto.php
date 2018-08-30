@@ -393,6 +393,7 @@ class CIBlockPropertyElementAutoComplete
 				}
 				$rsElements = CIBlockElement::GetList(array(), $arFilter, false, false, array('ID', 'XML_ID', 'IBLOCK_ID', 'NAME', 'DETAIL_PAGE_URL'));
 				$cache[$arValue['VALUE']] = $rsElements->GetNext(true, true);
+				unset($rsElements);
 			}
 			if (!empty($cache[$arValue['VALUE']]) && is_array($cache[$arValue['VALUE']]))
 			{

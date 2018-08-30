@@ -185,23 +185,24 @@ class CTextParser
 
 		$text = preg_replace(array("#([?&;])PHPSESSID=([0-9a-zA-Z]{32})#is", "/\\x{00A0}/".BX_UTF_PCRE_MODIFIER), array("\\1PHPSESSID1=", " "), $text);
 
-		$this->serverName = "";
 		$this->defended_urls = array();
 
-		if($this->type == "rss")
+		if($this->serverName == '' && $this->type == "rss")
 		{
 			$dbSite = CSite::GetByID(SITE_ID);
 			$arSite = $dbSite->Fetch();
 			$serverName = $arSite["SERVER_NAME"];
-			if (strlen($serverName) <=0)
+			if ($serverName == '')
 			{
-				if (defined("SITE_SERVER_NAME") && strlen(SITE_SERVER_NAME)>0)
+				if (defined("SITE_SERVER_NAME") && SITE_SERVER_NAME <> '')
 					$serverName = SITE_SERVER_NAME;
 				else
-					$serverName = COption::GetOptionString("main", "server_name", "www.bitrixsoft.com");
+					$serverName = COption::GetOptionString("main", "server_name");
 			}
-			$serverName = htmlspecialcharsbx($serverName);
-			$this->serverName = "http://".$serverName;
+			if ($serverName <> '')
+			{
+				$this->serverName = "http://".$serverName;
+			}
 		}
 
 		$this->preg = array("counter" => 0, "pattern" => array(), "replace" => array(), "cache" => array());
@@ -989,7 +990,12 @@ class CTextParser
 		}
 		elseif (in_array($arParams["TYPE"], $trustedProviders))
 		{
-			$uri = new \Bitrix\Main\Web\Uri('http:'.$arParams["PATH"]);
+			// add missing protocol to get host
+			if(substr($arParams['PATH'], 0, 2) == '//')
+			{
+				$arParams['PATH'] = 'http:'.$arParams['PATH'];
+			}
+			$uri = new \Bitrix\Main\Web\Uri($arParams["PATH"]);
 			if(\Bitrix\Main\UrlPreview\UrlPreview::isHostTrusted($uri) || $uri->getHost() == \Bitrix\Main\Application::getInstance()->getContext()->getServer()->getServerName())
 			{
 				// Replace http://someurl, https://someurl by //someurl
@@ -999,7 +1005,7 @@ class CTextParser
 
 				if ($this->bMobile)
 				{
-					?><a href="<?=$pathEncoded?>"><?=$pathEncoded?></a><?
+					?><iframe class="bx-mobile-video-frame" src="<?=$pathEncoded?>" allowfullscreen="" frameborder="0" height="100%" width="100%" style="max-width: 600px; min-height: 300px;"></iframe><?
 				}
 				else
 				{
@@ -1009,56 +1015,21 @@ class CTextParser
 		}
 		else
 		{
+			$playerParams = $arParams;
+			$playerParams['TYPE'] = $arParams['MIME_TYPE'];
+			$playerComponent = 'bitrix:player';
 			if ($this->bMobile)
 			{
-				?><div onclick="return BX.eventCancelBubble(event);"><?
+				$playerComponent = 'bitrix:mobile.player';
 			}
 
 			$APPLICATION->IncludeComponent(
-				"bitrix:player", "",
-				array(
-					"PLAYER_TYPE" => "auto",
-					"USE_PLAYLIST" => "N",
-					"PATH" => $arParams["PATH"],
-					"WIDTH" => $arParams["WIDTH"],
-					"HEIGHT" => $arParams["HEIGHT"],
-					"PREVIEW" => $arParams["PREVIEW"],
-					"LOGO" => "",
-					"FULLSCREEN" => "Y",
-					"SKIN_PATH" => "/bitrix/components/bitrix/player/mediaplayer/skins",
-					"SKIN" => "bitrix.swf",
-					"CONTROLBAR" => "bottom",
-					"WMODE" => "transparent",
-					"HIDE_MENU" => "N",
-					"SHOW_CONTROLS" => "Y",
-					"SHOW_STOP" => "N",
-					"SHOW_DIGITS" => "Y",
-					"CONTROLS_BGCOLOR" => "FFFFFF",
-					"CONTROLS_COLOR" => "000000",
-					"CONTROLS_OVER_COLOR" => "000000",
-					"SCREEN_COLOR" => "000000",
-					"AUTOSTART" => "N",
-					"REPEAT" => "N",
-					"VOLUME" => "90",
-					"DISPLAY_CLICK" => "play",
-					"MUTE" => "N",
-					"HIGH_QUALITY" => "Y",
-					"ADVANCED_MODE_SETTINGS" => "N",
-					"BUFFER_LENGTH" => "10",
-					"DOWNLOAD_LINK" => "",
-					"DOWNLOAD_LINK_TARGET" => "_self",
-					"TYPE" => $arParams['MIME_TYPE'],
-				),
+				$playerComponent, "", $playerParams,
 				null,
 				array(
 					"HIDE_ICONS" => "Y"
 				)
 			);
-
-			if ($this->bMobile)
-			{
-				?></div><?
-			}
 		}
 
 		return ob_get_clean();
@@ -1094,7 +1065,7 @@ class CTextParser
 		if ($descriptionDecode)
 			$description = htmlspecialcharsback($description);
 
-		$html = '<img src="'.$this->serverName.$this->pathToSmile.$image.'" border="0" data-code="'.$code.'" data-definition="'.$imageDefinition.'" alt="'.$code.'"'.' style="'.($width > 0 ? 'width:'.$width.'px;' : '').($height > 0 ? 'height:'.$height.'px;' : '').'"'.' title="'.$description.'" class="bx-smile" />';
+		$html = '<img src="'.htmlspecialcharsbx($this->serverName).$this->pathToSmile.$image.'" border="0" data-code="'.$code.'" data-definition="'.$imageDefinition.'" alt="'.$code.'"'.' style="'.($width > 0 ? 'width:'.$width.'px;' : '').($height > 0 ? 'height:'.$height.'px;' : '').'"'.' title="'.$description.'" class="bx-smile" />';
 		$cacheKey = md5($html);
 		if (!isset($this->preg["cache"][$cacheKey]))
 			$this->preg["cache"][$cacheKey] = $this->defended_tags($html, 'replace');
@@ -1207,9 +1178,10 @@ class CTextParser
 		if($height > 0)
 			$strPar .= " height=\"".$height."\"";
 
-		$image = '<img src="'.$this->serverName.$url.'" border="0"'.$strPar.' data-bx-image="'.$this->serverName.$url.'" />';
-		if(strlen($this->serverName) <= 0 || preg_match("/^(http|https|ftp)\\:\\/\\//i".BX_UTF_PCRE_MODIFIER, $url))
-			$image = '<img src="'.$url.'" border="0"'.$strPar.' data-bx-image="'.$url.'" />';
+		$serverName = htmlspecialcharsbx($this->serverName);
+		$image = '<img src="'.$serverName.$url.'" border="0"'.$strPar.' data-bx-image="'.$serverName.$url.'" data-bx-onload="Y" />';
+		if($this->serverName == '' || preg_match("/^(http|https|ftp)\\:\\/\\//i".BX_UTF_PCRE_MODIFIER, $url))
+			$image = '<img src="'.$url.'" border="0"'.$strPar.' data-bx-image="'.$url.'" data-bx-onload="Y" />';
 		return $this->defended_tags($image, 'replace');
 	}
 
@@ -1226,6 +1198,11 @@ class CTextParser
 	public function convertFontColor($matches)
 	{
 		return $this->convert_font_attr('color', $matches[1], $matches[2]);
+	}
+
+	public function stripAllTags($text)
+	{
+		return preg_replace('|[[\\/\\!]*?[^\\[\\]]*?]|si', '', $text);
 	}
 
 	function convert_font_attr($attr, $value = "", $text = "")
@@ -1245,7 +1222,7 @@ class CTextParser
 				$value = intVal(substr($value, 0, -2));
 				if ($value <= 0)
 					return $text;
-				return '<span style="font-size:'.$value.'pt; line-height: normal;">'.$text.'</span>';
+				return '<span class="bx-font" style="font-size:'.$value.'pt; line-height: normal;">'.$text.'</span>';
 			}
 
 			$count = count($this->arFontSize);
@@ -1254,17 +1231,17 @@ class CTextParser
 			$value = intval($value > $count ? ($count - 1) : $value);
 			//compatibility with old percent values
 			$size = (is_numeric($this->arFontSize[$value])? $this->arFontSize[$value].'%' : $this->arFontSize[$value]);
-			return '<span style="font-size:'.$size.';">'.$text.'</span>';
+			return '<span class="bx-font" style="font-size:'.$size.';">'.$text.'</span>';
 		}
 		elseif ($attr == 'color')
 		{
 			$value = preg_replace("/[^\\w#]/", "" , $value);
-			return '<span style="color:'.$value.'">'.$text.'</span>';
+			return '<span class="bx-font" style="color:'.$value.'">'.$text.'</span>';
 		}
 		elseif ($attr == 'font')
 		{
 			$value = preg_replace("/[^\\w\\s\\-\\,]/", "" , $value);
-			return '<span style="font-family:'.$value.'">'.$text.'</span>';
+			return '<span class="bx-font" style="font-family:'.$value.'">'.$text.'</span>';
 		}
 		return '';
 	}
@@ -1374,12 +1351,26 @@ class CTextParser
 					$classAdditional = '';
 			}
 
-			$res = $this->render_user(array(
+			$renderParams = array(
 				'CLASS_ADDITIONAL' => $classAdditional,
 				'PATH_TO_USER' => $pathToUser,
 				'USER_ID' => $userId,
 				'USER_NAME' => $userName
-			));
+			);
+
+			if (
+				$type == 'email'
+				&& !empty($this->pathToUserEntityType)
+				&& !empty($this->pathToUserEntityId)
+			)
+			{
+				$renderParams['TOOLTIP_PARAMS'] = \Bitrix\Main\Web\Json::encode(array(
+					'entityType' => $this->pathToUserEntityType,
+					'entityId' => intval($this->pathToUserEntityId)
+				));
+			}
+
+			$res = $this->render_user($renderParams);
 		}
 
 		return $this->defended_tags($res, "replace");
@@ -1394,7 +1385,7 @@ class CTextParser
 
 		$res = (
 			!$this->bPublic
-				? '<a class="blog-p-user-name'.$classAdditional.'" href="'.CComponentEngine::MakePathFromTemplate($pathToUser, array("user_id" => $userId)).'">'.$userName.'</a>'
+				? '<a class="blog-p-user-name'.$classAdditional.'" href="'.CComponentEngine::MakePathFromTemplate($pathToUser, array("user_id" => $userId)).'" bx-tooltip-user-id="'.(!$this->bMobile ? $userId : '').'"'.(!empty($fields['TOOLTIP_PARAMS']) ? ' bx-tooltip-params="'.htmlspecialcharsbx($fields['TOOLTIP_PARAMS']).'"' : '').'>'.$userName.'</a>'
 				: $userName
 		);
 

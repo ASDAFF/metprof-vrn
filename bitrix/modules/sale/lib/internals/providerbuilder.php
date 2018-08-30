@@ -18,12 +18,14 @@ class ProviderBuilder extends ProviderBuilderBase
 	{
 		$fields = array(
 			'ITEM_CODE' => $basketItem->getProductId(),
+			'BASKET_ID' => $basketItem->getId(),
 			'BASKET_CODE' => $basketItem->getBasketCode(),
 			'PRODUCT_ID' => $basketItem->getProductId(),
 			'QUANTITY' => $basketItem->getQuantity(),
 			'RESERVED_QUANTITY' => $basketItem->getReservedQuantity(),
 			'IS_BARCODE_MULTI' => $basketItem->isBarcodeMulti(),
 			'BUNDLE_CHILD' => false,
+			'SUBSCRIBE' => ($basketItem->getField('SUBSCRIBE') == 'Y'),
 		);
 
 		if ($basketItem instanceof Sale\BasketItem)
@@ -229,66 +231,6 @@ class ProviderBuilder extends ProviderBuilderBase
 		}
 
 		return new Sale\Result();
-	}
-
-	/**
-	 * @param Sale\Result $resultAfterDeliver
-	 *
-	 * @return Sale\Result
-	 * @throws Main\ObjectNotFoundException
-	 */
-	public function createItemsResultAfterDeliver(Sale\Result $resultAfterDeliver)
-	{
-		$result = new Sale\Result();
-		$resultList = array();
-		$products = $this->getItems();
-
-		if (empty($products))
-		{
-			return $result;
-		}
-
-		$resultDeliverData = $resultAfterDeliver->getData();
-
-		foreach ($products as $productId => $productData)
-		{
-			if (empty($resultDeliverData['DELIVER_PRODUCTS_LIST']) || !array_key_exists($productId, $resultDeliverData['DELIVER_PRODUCTS_LIST']))
-			{
-				continue;
-			}
-
-			if (empty($productData['SHIPMENT_ITEM_LIST']))
-			{
-				continue;
-			}
-
-			/**
-			 * @var int $shipmentItemIndex
-			 * @var Sale\ShipmentItem $shipmentItem
-			 */
-			foreach ($productData['SHIPMENT_ITEM_LIST'] as $shipmentItemIndex => $shipmentItem)
-			{
-				$basketItem = $shipmentItem->getBasketItem();
-
-				if (!$basketItem)
-				{
-					throw new Main\ObjectNotFoundException('Entity "BasketItem" not found');
-				}
-
-				$resultList[$basketItem->getBasketCode()] = $resultDeliverData['DELIVER_PRODUCTS_LIST'][$productId];
-			}
-		}
-
-		if (!empty($resultList))
-		{
-			$result->setData(
-				array(
-					'RESULT_AFTER_DELIVER_LIST' => $resultList
-				)
-			);
-		}
-
-		return $result;
 	}
 
 	/**

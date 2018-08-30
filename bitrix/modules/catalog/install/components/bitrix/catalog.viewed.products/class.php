@@ -410,6 +410,11 @@ class CCatalogViewedProductsComponent extends CBitrixComponent
 	 */
 	public function onPrepareComponentParams($params)
 	{
+		if (isset($params['CUSTOM_SITE_ID']))
+		{
+			$this->setSiteId($params['CUSTOM_SITE_ID']);
+		}
+
 		$params["DETAIL_URL"] = trim($params["DETAIL_URL"]);
 		$params["BASKET_URL"] = trim($params["BASKET_URL"]);
 
@@ -1389,8 +1394,6 @@ class CCatalogViewedProductsComponent extends CBitrixComponent
 	 */
 	protected function prepareFilter()
 	{
-		$prices = $this->data['CATALOG_PRICES'];
-
 		$this->filter = array(
 			"ID" => empty($this->productIdsMap) ? -1 : array_values($this->productIdsMap),
 			"IBLOCK_LID" => $this->getSiteId(),
@@ -1405,12 +1408,18 @@ class CCatalogViewedProductsComponent extends CBitrixComponent
 		if ($this->arParams['HIDE_NOT_AVAILABLE'] == 'Y')
 			$this->filter['CATALOG_AVAILABLE'] = 'Y';
 
-		foreach ($prices as $value)
+		$prices = $this->data['CATALOG_PRICES'];
+		if (!empty($prices) && is_array($prices))
 		{
-			if (!$value['CAN_VIEW'] && !$value['CAN_BUY'])
-				continue;
-			$this->filter["CATALOG_SHOP_QUANTITY_" . $value["ID"]] = $this->arParams["SHOW_PRICE_COUNT"];
+			foreach ($prices as $value)
+			{
+				if (!$value['CAN_VIEW'] && !$value['CAN_BUY'])
+					continue;
+				$this->filter["CATALOG_SHOP_QUANTITY_".$value["ID"]] = $this->arParams["SHOW_PRICE_COUNT"];
+			}
+			unset($value);
 		}
+		unset($prices);
 	}
 
 	/**

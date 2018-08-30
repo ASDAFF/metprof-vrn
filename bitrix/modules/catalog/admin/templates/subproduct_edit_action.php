@@ -53,7 +53,7 @@ if ($USER->CanDoOperation('catalog_price'))
 
 					for ($i = 0; $i < $intBasePriceCount; $i++)
 					{
-						${"SUBCAT_PRICE_".$arCatGroups["ID"]."_".$arCatalogBasePrices[$i]["IND"]} = str_replace(",", ".", ${"SUBCAT_PRICE_".$arCatGroups["ID"]."_".$arCatalogBasePrices[$i]["IND"]});
+						${"SUBCAT_PRICE_".$arCatGroups["ID"]."_".$arCatalogBasePrices[$i]["IND"]} = str_replace([' ', ','], ['', '.'], ${"SUBCAT_PRICE_".$arCatGroups["ID"]."_".$arCatalogBasePrices[$i]["IND"]});
 						$arCatalogPrice_tmp[$i] = array(
 							"ID" => (int)(${"SUBCAT_ID_".$arCatGroups["ID"]}[$arCatalogBasePrices[$i]["IND"]]),
 							"EXTRA_ID" => ${"SUBCAT_EXTRA_".$arCatGroups["ID"]."_".$arCatalogBasePrices[$i]["IND"]}
@@ -203,6 +203,8 @@ if ($USER->CanDoOperation('catalog_price'))
 					"MEASURE" => $SUBCAT_MEASURE,
 					"TYPE" => \Bitrix\Catalog\ProductTable::TYPE_OFFER
 				);
+				if ($arFields['WEIGHT'] === '' || $arFields['WEIGHT'] === null)
+					unset($arFields['WEIGHT']);
 				if ($USER->CanDoOperation('catalog_purchas_info') && !$bUseStoreControl)
 				{
 					if (
@@ -224,15 +226,19 @@ if ($USER->CanDoOperation('catalog_price'))
 				}
 
 				if (isset($_POST['SUBSUBSCRIBE']))
-				{
 					$arFields['SUBSCRIBE'] = strval($_POST['SUBSUBSCRIBE']);
-				}
 
 				if(!$bUseStoreControl)
 				{
-					$arFields["QUANTITY"] = $SUBCAT_BASE_QUANTITY;
+					$arFields['QUANTITY'] = $SUBCAT_BASE_QUANTITY;
+					if ($arFields['QUANTITY'] === '' || $arFields['QUANTITY'] === null)
+						unset($arFields['QUANTITY']);
 					if ($bEnableReservation)
-						$arFields["QUANTITY_RESERVED"] = $SUBCAT_BASE_QUANTITY_RESERVED;
+					{
+						$arFields['QUANTITY_RESERVED'] = $SUBCAT_BASE_QUANTITY_RESERVED;
+						if ($arFields['QUANTITY_RESERVED'] === '' || $arFields['QUANTITY_RESERVED'] === null)
+							unset($arFields['QUANTITY_RESERVED']);
+					}
 				}
 
 				if ($arCatalog["SUBSCRIPTION"] == "Y")
@@ -244,7 +250,27 @@ if ($USER->CanDoOperation('catalog_price'))
 					$arFields["WITHOUT_ORDER"] = $SUBCAT_WITHOUT_ORDER;
 				}
 
-				$productResult = CCatalogProduct::Add($arFields);
+				$iterator = Catalog\Model\Product::getList(array(
+					'select' => ['ID'],
+					'filter' => ['=ID' => $arFields['ID']]
+				));
+				$row = $iterator->fetch();
+				unset($iterator);
+				if (!empty($row))
+				{
+					$productResult = CCatalogProduct::Update($arFields['ID'], $arFields);
+				}
+				else
+				{
+					if ($bUseStoreControl)
+					{
+						$arFields['QUANTITY'] = 0;
+						$arFields['QUANTITY_RESERVED'] = 0;
+					}
+					$productResult = CCatalogProduct::Add($arFields, false);
+				}
+				unset($row);
+
 				if (!$productResult)
 				{
 					if ($ex = $APPLICATION->GetException())
@@ -259,38 +285,61 @@ if ($USER->CanDoOperation('catalog_price'))
 				}
 				unset($productResult);
 
-				$arMeasureRatio = array('PRODUCT_ID' => $PRODUCT_ID, 'RATIO' => $SUBCAT_MEASURE_RATIO);
+				$arMeasureRatio = [
+					'PRODUCT_ID' => $PRODUCT_ID,
+					'RATIO' => $SUBCAT_MEASURE_RATIO,
+					'IS_DEFAULT' => 'Y'
+				];
 				$newRatio = true;
 				$currentRatioID = 0;
 				if (isset($_POST['SUBCAT_MEASURE_RATIO_ID']))
 					$currentRatioID = (int)$_POST['SUBCAT_MEASURE_RATIO_ID'];
-				$ratioFilter = array('PRODUCT_ID' => $PRODUCT_ID);
-				if ($currentRatioID > 0)
-					$ratioFilter['ID'] = $currentRatioID;
-				$ratioIterator = CCatalogMeasureRatio::getList(
-					array(),
-					$ratioFilter,
-					false,
-					false,
-					array('ID', 'PRODUCT_ID')
-				);
-				if ($currentRatio = $ratioIterator->Fetch())
+				$ratioFilter = ['=PRODUCT_ID' => $PRODUCT_ID, '=RATIO' => $SUBCAT_MEASURE_RATIO];
+				$ratioIterator = Catalog\MeasureRatioTable::getList([
+					'select' => ['*'],
+					'filter' => $ratioFilter
+				]);
+				$currentRatio = $ratioIterator->fetch();
+				if (empty($currentRatio) && $currentRatioID > 0)
 				{
-					if ($currentRatioID <= 0)
-						$currentRatioID = $currentRatio['ID'];
+					$ratioFilter = ['=PRODUCT_ID' => $PRODUCT_ID, '=ID' => $currentRatioID];
+					$ratioIterator = Catalog\MeasureRatioTable::getList([
+						'select' => ['*'],
+						'filter' => $ratioFilter
+					]);
+					$currentRatio = $ratioIterator->fetch();
+				}
+				unset($ratioIterator, $ratioFilter);
+				if (!empty($currentRatio))
+				{
+					$currentRatioID = $currentRatio['ID'];
 					$newRatio = false;
 				}
-				unset($currentRatio, $ratioIterator, $ratioFilter);
+				unset($currentRatio);
 				if ($newRatio)
-				{
-					$arMeasureRatio['IS_DEFAULT'] = 'Y';
 					CCatalogMeasureRatio::add($arMeasureRatio);
-				}
 				else
-				{
 					CCatalogMeasureRatio::update($currentRatioID, $arMeasureRatio);
+				unset($newRatio, $arMeasureRatio);
+
+				if ($currentRatioID > 0)
+				{
+					$iterator = CCatalogMeasureRatio::getList(
+						[],
+						['PRODUCT_ID' => $PRODUCT_ID],
+						false,
+						false,
+						['ID']
+					);
+					while ($row = $iterator->Fetch())
+					{
+						if ($row['ID'] == $currentRatioID)
+							continue;
+						CCatalogMeasureRatio::delete($row['ID']);
+					}
+					unset($row, $iterator);
 				}
-				unset($currentRatioID, $newRatio, $arMeasureRatio);
+				unset($currentRatioID);
 
 				$intCountBasePrice = count($arCatalogBasePrices);
 				for ($i = 0; $i < $intCountBasePrice; $i++)

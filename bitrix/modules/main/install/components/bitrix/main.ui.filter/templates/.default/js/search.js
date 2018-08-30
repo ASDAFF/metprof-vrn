@@ -70,7 +70,10 @@
 
 		selectSquare: function(square)
 		{
-			!!square && BX.addClass(square, this.parent.settings.classSquareSelected);
+			if (!!square && !BX.hasClass(square, 'main-ui-search-square-required'))
+			{
+				BX.addClass(square, this.parent.settings.classSquareSelected);
+			}
 		},
 
 		selectSquares: function()
@@ -385,6 +388,10 @@
 			if (utils.isKey(event, 'enter'))
 			{
 				this.apply();
+
+				this.firstInit = false;
+				this.lastSearchString = this.getSearchString();
+
 				parent.closePopup();
 			}
 
@@ -427,7 +434,17 @@
 				clearTimeout(this.timeout);
 				var square = this.getLastSquare();
 
-				this.isSquareSelected(square) ? this.complexSquareRemove(square) : this.selectSquare(square);
+				if (!BX.hasClass(square, 'main-ui-search-square-required'))
+				{
+					if (this.isSquareSelected(square))
+					{
+						this.complexSquareRemove(square);
+					}
+					else
+					{
+						this.selectSquare(square)
+					}
+				}
 			}
 
 			if (!utils.isKey(event, 'backspace') && !event.metaKey && this.isSquaresSelected())
@@ -465,7 +482,7 @@
 		{
 			if (this.isResolvedRequest())
 			{
-				this.lastPromise = this.parent.applyFilter(null, true);
+				this.lastPromise = this.parent._onFindButtonClick();
 			}
 
 			return this.lastPromise;
@@ -727,7 +744,19 @@
 						isPreset: true
 					});
 
-					BX.prepend(square, container);
+					var requiredSquires = presetData.FIELDS.filter(function(field) {
+						return field.REQUIRED === true;
+					});
+
+					if (requiredSquires.length)
+					{
+						this.squares(requiredSquires, 1);
+						BX.insertAfter(square, this.getLastSquare());
+					}
+					else
+					{
+						BX.prepend(square, container);
+					}
 
 					if ('ADDITIONAL' in presetData && BX.type.isArray(presetData.ADDITIONAL) && presetData.ADDITIONAL.length)
 					{
@@ -900,8 +929,20 @@
 						break;
 					}
 
+					case this.parent.types.CUSTOM_DATE : {
+						if (
+							(BX.type.isArray(current.VALUE.days) && current.VALUE.days.length) ||
+							(BX.type.isArray(current.VALUE.months) && current.VALUE.months.length) ||
+							(BX.type.isArray(current.VALUE.years) && current.VALUE.years.length)
+						)
+						{
+							value = current.LABEL;
+						}
+						break;
+					}
+
 					case this.parent.types.SELECT : {
-						if (BX.type.isPlainObject(current.VALUE) && current.VALUE.VALUE)
+						if ((BX.type.isPlainObject(current.VALUE) && current.VALUE.VALUE) || current.REQUIRED)
 						{
 							value = current.LABEL + ': ' + current.VALUE.NAME;
 						}
@@ -909,7 +950,7 @@
 					}
 
 					case this.parent.types.MULTI_SELECT : {
-						if (BX.type.isArray(current.VALUE) && current.VALUE.length)
+						if ((BX.type.isArray(current.VALUE) && current.VALUE.length) || current.REQUIRED)
 						{
 							tmpValues = [];
 							value = current.LABEL + ': ';
@@ -1042,6 +1083,7 @@
 				{
 					result.push({
 						block: 'main-ui-search-square',
+						required: current.REQUIRED,
 						name: value,
 						value: current.NAME,
 						item: {type: 'control', name: current.NAME},

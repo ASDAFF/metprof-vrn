@@ -8,7 +8,6 @@ use Bitrix\Main;
 use Bitrix\Sale;
 use Bitrix\Sale\Internals\PoolQuantity;
 use Bitrix\Sale\Internals\ShipmentRules;
-use Bitrix\Sale\Internals\TransferDataProvider;
 
 /**
  * Class Provider
@@ -22,6 +21,8 @@ final class Provider
 	const SALE_TRANSFER_PROVIDER_SHIPMENT_NEED_NOT_SHIP = false;
 	const SALE_TRANSFER_PROVIDER_SHIPMENT_NEED_EMPTY = null;
 
+	private static $ignoreErrors = false;
+
 
 	/**
 	 * @param $basketList
@@ -34,7 +35,6 @@ final class Provider
 	public static function getProductData($basketList, array $context)
 	{
 		$result = new Sale\Result();
-		$resultList = array();
 
 		if (empty($context))
 		{
@@ -59,22 +59,12 @@ final class Provider
 			$data = $r->getData();
 			if (array_key_exists('PRODUCT_DATA_LIST', $data))
 			{
-				$resultList = $data['PRODUCT_DATA_LIST'];
+				$result->setData($data);
 			}
 		}
 		else
 		{
 			$result->addErrors($r->getErrors());
-		}
-
-
-		if (!empty($resultList))
-		{
-			$result->setData(
-				array(
-					'PRODUCT_DATA_LIST' => $resultList
-				)
-			);
 		}
 
 		return $result;
@@ -247,6 +237,12 @@ final class Provider
 		}
 
 		$order = $basket->getOrder();
+
+		if (empty($context) && !$order)
+		{
+			$context = $basket->getContext();
+		}
+
 		if (empty($context) && $order)
 		{
 			$context = static::prepareContext($order, $context);
@@ -268,7 +264,6 @@ final class Provider
 		$r = $creator->getAvailableQuantityAndPrice();
 		if ($r->isSuccess())
 		{
-			$providerName = null;
 			$providerName = $basketItem->getProviderName();
 
 			if (strval($providerName) == '')
@@ -450,7 +445,7 @@ final class Provider
 
 			if (!empty($applyItemsList))
 			{
-				$shipmentProductIndex = static::createProductShipmentItemMap($shipmentItemCollection);
+				$shipmentProductIndex = static::createProductShipmentItemMapByShipmentItemCollection($shipmentItemCollection);
 
 				/** @var Sale\Shipment $shipment */
 				if (!$shipment = $shipmentItemCollection->getShipment())
@@ -472,9 +467,269 @@ final class Provider
 
 				$pool = PoolQuantity::getInstance($order->getInternalId());
 
-				//$applyItemsList
 				static::setAvailableQuantityToShipmentItemCollection($pool, $shipmentProductIndex, $applyItemsList);
 			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * @param Sale\ShipmentItem $shipmentItem
+	 * @param array $context
+	 *
+	 * @return Sale\Result
+	 * @throws Main\ArgumentNullException
+	 * @throws Main\ArgumentOutOfRangeException
+	 * @throws Main\NotSupportedException
+	 * @throws Main\ObjectNotFoundException
+	 * @throws \Exception
+	 */
+	public static function tryReserveShipmentItem(Sale\ShipmentItem $shipmentItem, array $context = array())
+	{
+		$result = new Sale\Result();
+
+		/** @var Sale\ShipmentItemCollection $shipmentItemCollection */
+		$shipmentItemCollection = $shipmentItem->getCollection();
+		if (!$shipmentItemCollection)
+		{
+			throw new Main\ObjectNotFoundException('Entity "ShipmentItemCollection" not found');
+		}
+
+		/** @var Sale\Shipment $shipment */
+		$shipment = $shipmentItemCollection->getShipment();
+		if (!$shipment)
+		{
+			throw new Main\ObjectNotFoundException('Entity "Shipment" not found');
+		}
+
+		/** @var Sale\ShipmentCollection $shipmentCollection */
+		$shipmentCollection = $shipment->getCollection();
+		if (!$shipmentCollection)
+		{
+			throw new Main\ObjectNotFoundException('Entity "ShipmentCollection" not found');
+		}
+
+		/** @var Sale\Order $order */
+		$order = $shipmentCollection->getOrder();
+		if (!$order)
+		{
+			throw new Main\ObjectNotFoundException('Entity "Order" not found');
+		}
+
+		$context = static::prepareContext($order, $context);
+		$r = static::checkContext($context);
+		if (!$r->isSuccess())
+		{
+			return $r;
+		}
+
+		$pool = PoolQuantity::getInstance($order->getInternalId());
+
+		/** @var Sale\ShipmentItemCollection $shipmentCollection */
+		$shipmentItemCollection = $shipment->getShipmentItemCollection();
+
+		$availableQuantityList = [];
+		$needQuantityList = [];
+
+		$r = static::getNeedQuantityByShipmentItem($shipmentItem);
+		if (!$r->isSuccess())
+		{
+			$result->addErrors($r->getErrors());
+		}
+		else
+		{
+			$data = $r->getData();
+			if (!empty($data['NEED_QUANTITY_LIST']))
+			{
+				$needQuantityList = $data['NEED_QUANTITY_LIST'];
+			}
+		}
+
+		$creator = Sale\Internals\ProviderCreator::create($context);
+
+		$shipmentProductData = $creator->createItemForReserve($shipmentItem);
+		$creator->addShipmentProductData($shipmentProductData);
+
+		$r = $creator->getAvailableQuantity();
+		if ($r->isSuccess())
+		{
+			$data = $r->getData();
+			if (array_key_exists('AVAILABLE_QUANTITY_LIST', $data))
+			{
+				$availableQuantityList = $data['AVAILABLE_QUANTITY_LIST'];
+			}
+		}
+		else
+		{
+			$result->addErrors($r->getErrors());
+		}
+
+		if ($r->hasWarnings())
+		{
+			$result->addWarnings($r->getWarnings());
+		}
+
+		if (!empty($needQuantityList) && $result->isSuccess())
+		{
+			$applyItemsList = [];
+
+			foreach ($availableQuantityList as $providerName => $productAvailableQuantityList)
+			{
+				$providerName = trim($providerName);
+				foreach ($productAvailableQuantityList as $productId => $productAvailableQuantity)
+				{
+					if (array_key_exists($productId, $needQuantityList[$providerName]))
+					{
+						if (Sale\Configuration::getProductReservationCondition() != Sale\Configuration::RESERVE_ON_SHIP)
+						{
+							$poolQuantity = 0;
+							if ($order->getId() > 0)
+							{
+								$poolQuantity = (float)$pool->get(PoolQuantity::POOL_RESERVE_TYPE, $productId);
+							}
+							$needQuantity = $needQuantityList[$providerName][$productId];
+
+							$productAvailableQuantity -= $poolQuantity;
+							$reservedQuantity = ($needQuantity >= $productAvailableQuantity ? $productAvailableQuantity : $needQuantity);
+
+							$applyItemsList[$providerName][$productId] = $reservedQuantity;
+						}
+					}
+					else
+					{
+						/** @var Sale\ShipmentItem $shipmentItem */
+						$basketItem = $shipmentItem->getBasketItem();
+
+						if ($basketItem->getProductId() == $productId)
+						{
+							$result->addWarning( new Sale\ResultWarning(Main\Localization\Loc::getMessage('SALE_PROVIDER_RESERVE_SHIPMENT_ITEM_WRONG_AVAILABLE_QUANTITY', array(
+								'#PRODUCT_NAME#' => $basketItem->getField('NAME')
+							)), 'SALE_PROVIDER_RESERVE_SHIPMENT_ITEM_WRONG_AVAILABLE_QUANTITY') );
+							break;
+						}
+					}
+				}
+
+			}
+
+			if (!empty($applyItemsList))
+			{
+				$shipmentProductIndex = static::createProductShipmentItemMapByShipmentItem($shipmentItem);
+
+				/** @var Sale\Shipment $shipment */
+				if (!$shipment = $shipmentItemCollection->getShipment())
+				{
+					throw new Main\ObjectNotFoundException('Entity "ShipmentItemCollectionCollection" not found');
+				}
+
+				/** @var Sale\ShipmentCollection $shipmentCollection */
+				if (!$shipmentCollection = $shipment->getCollection())
+				{
+					throw new Main\ObjectNotFoundException('Entity "ShipmentCollection" not found');
+				}
+
+				/** @var Sale\Order $order */
+				if (!$order = $shipmentCollection->getOrder())
+				{
+					throw new Main\ObjectNotFoundException('Entity "Order" not found');
+				}
+
+				$pool = PoolQuantity::getInstance($order->getInternalId());
+				static::setAvailableQuantityToShipmentItemCollection($pool, $shipmentProductIndex, $applyItemsList);
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * @param Sale\ShipmentItem $shipmentItem
+	 *
+	 * @return Sale\Result
+	 * @throws Main\ArgumentOutOfRangeException
+	 * @throws Main\NotSupportedException
+	 * @throws Main\ObjectNotFoundException
+	 * @throws \Exception
+	 */
+	public static function tryUnreserveShipmentItem(Sale\ShipmentItem $shipmentItem)
+	{
+		$result = new Sale\Result();
+
+		/** @var Sale\ShipmentItemCollection $shipmentItemCollection */
+		$shipmentItemCollection = $shipmentItem->getCollection();
+		if (!$shipmentItemCollection)
+		{
+			throw new Main\ObjectNotFoundException('Entity "ShipmentItemCollection" not found');
+		}
+
+		/** @var Sale\Shipment $shipment */
+		$shipment = $shipmentItemCollection->getShipment();
+		if (!$shipment)
+		{
+			throw new Main\ObjectNotFoundException('Entity "Shipment" not found');
+		}
+
+		/** @var Sale\ShipmentCollection $shipmentCollection */
+		$shipmentCollection = $shipment->getCollection();
+		if (!$shipmentCollection)
+		{
+			throw new Main\ObjectNotFoundException('Entity "ShipmentCollection" not found');
+		}
+
+		/** @var Sale\Order $order */
+		$order = $shipmentCollection->getOrder();
+		if (!$order)
+		{
+			throw new Main\ObjectNotFoundException('Entity "Order" not found');
+		}
+
+		$pool = PoolQuantity::getInstance($order->getInternalId());
+
+		/** @var Sale\BasketItem $basketItem */
+		$basketItem = $shipmentItem->getBasketItem();
+		if (!$basketItem)
+		{
+			throw new Main\ObjectNotFoundException('Entity "BasketItem" not found');
+		}
+
+		$productId = $basketItem->getProductId();
+
+		$reservedQuantity = $shipmentItem->getReservedQuantity();
+
+		if ($reservedQuantity == 0)
+		{
+			return $result;
+		}
+
+		$pool->add(Sale\Internals\PoolQuantity::POOL_RESERVE_TYPE, $productId, -1 * $reservedQuantity);
+		if ($shipmentItem)
+		{
+			$foundItem = false;
+			$poolItems = Sale\Internals\ItemsPool::get($order->getInternalId(), $productId);
+			if (!empty($poolItems))
+			{
+				/** @var Sale\Shipment $poolItem */
+				foreach ($poolItems as $poolItem)
+				{
+					if ($poolItem->getInternalIndex() == $shipmentItem->getInternalIndex())
+					{
+						$foundItem = true;
+						break;
+					}
+				}
+			}
+
+			if (!$foundItem)
+			{
+				Sale\Internals\ItemsPool::add($order->getInternalId(), $productId, $shipmentItem);
+			}
+		}
+
+		$r = $shipmentItem->setField('RESERVED_QUANTITY', $shipmentItem->getReservedQuantity() + -1 * $reservedQuantity);
+		if (!$r->isSuccess())
+		{
+			$result->addErrors($r->getErrors());
 		}
 
 		return $result;
@@ -525,13 +780,42 @@ final class Provider
 		return $result;
 	}
 
+	/**
+	 * @param Sale\ShipmentItem $shipmentItem
+	 *
+	 * @return Sale\Result
+	 */
+	private static function getNeedQuantityByShipmentItem(Sale\ShipmentItem $shipmentItem)
+	{
+		$result = new Sale\Result();
+		$needQuantityData = array();
+
+		$basketItem = $shipmentItem->getBasketItem();
+
+		$productId = $basketItem->getProductId();
+
+		$providerName = $basketItem->getProviderName();
+		$providerName = static::clearProviderName($providerName);
+
+		$needQuantityData[$providerName][$productId] = ($shipmentItem->getQuantity() - $shipmentItem->getReservedQuantity());
+
+		$result->setData(
+			array(
+				'NEED_QUANTITY_LIST' => $needQuantityData,
+			)
+		);
+
+		return $result;
+	}
 
 	/**
 	 * @param Sale\Shipment $shipment
 	 *
 	 * @return Sale\Result
-	 * @throws Main\ArgumentNullException
+	 * @throws Main\ArgumentOutOfRangeException
+	 * @throws Main\NotSupportedException
 	 * @throws Main\ObjectNotFoundException
+	 * @throws \Exception
 	 */
 	public static function tryUnreserveShipment(Sale\Shipment $shipment)
 	{
@@ -626,25 +910,39 @@ final class Provider
 	 *
 	 * @return array
 	 */
-	private static function createProductShipmentItemMap(Sale\ShipmentItemCollection $shipmentItemCollection)
+	private static function createProductShipmentItemMapByShipmentItemCollection(Sale\ShipmentItemCollection $shipmentItemCollection)
 	{
 		static $shipmentProductIndex = array();
+
 		/** @var Sale\ShipmentItem $shipmentItem */
 		foreach ($shipmentItemCollection as $shipmentItem)
 		{
-			$basketItem = $shipmentItem->getBasketItem();
-
-			$providerName = $basketItem->getProviderName();
-			$providerName = static::clearProviderName($providerName);
-
-			$productId = $basketItem->getProductId();
-			$index = $shipmentItem->getInternalIndex();
-
-			if (empty($shipmentProductIndex[$providerName][$productId]) || !in_array($index, $shipmentProductIndex[$providerName][$productId]))
-			{
-				$shipmentProductIndex[$providerName][$productId][$index] = $shipmentItem;
-			}
+			$shipmentProductIndexData = static::createProductShipmentItemMapByShipmentItem($shipmentItem);
+			$shipmentProductIndex = array_merge($shipmentProductIndex,  $shipmentProductIndexData);
 		}
+
+		return $shipmentProductIndex;
+	}
+
+	/**
+	 * @param Sale\ShipmentItem $shipmentItem
+	 *
+	 * @return array
+	 */
+	private static function createProductShipmentItemMapByShipmentItem(Sale\ShipmentItem $shipmentItem)
+	{
+		static $shipmentProductIndex = array();
+
+		/** @var Sale\ShipmentItem $shipmentItem */
+		$basketItem = $shipmentItem->getBasketItem();
+
+		$providerName = $basketItem->getProviderName();
+		$providerName = static::clearProviderName($providerName);
+
+		$productId = $basketItem->getProductId();
+		$index = $shipmentItem->getInternalIndex();
+
+		$shipmentProductIndex[$providerName][$productId][$index] = $shipmentItem;
 
 		return $shipmentProductIndex;
 	}
@@ -655,7 +953,10 @@ final class Provider
 	 * @param array $items
 	 *
 	 * @return Sale\Result
+	 * @throws Main\ArgumentOutOfRangeException
+	 * @throws Main\NotSupportedException
 	 * @throws Main\ObjectNotFoundException
+	 * @throws \Exception
 	 */
 	private static function setAvailableQuantityToShipmentItemCollection(PoolQuantity $pool, array $shipmentProductIndex, array $items)
 	{
@@ -732,7 +1033,6 @@ final class Provider
 					}
 
 
-
 					$r = $shipmentItem->setField('RESERVED_QUANTITY', $shipmentItem->getReservedQuantity() + $setQuantity);
 					if (!$r->isSuccess())
 					{
@@ -745,13 +1045,11 @@ final class Provider
 		return $result;
 	}
 
-
 	/**
 	 * @param Sale\Shipment $shipment
 	 * @param array $context
 	 *
 	 * @return Sale\Result
-	 * @throws Main\ArgumentNullException
 	 * @throws Main\ObjectNotFoundException
 	 */
 	public static function tryShipShipment(Sale\Shipment $shipment, array $context = array())
@@ -806,21 +1104,56 @@ final class Provider
 
 		$tryShipProductList = array();
 
+		$isIgnoreErrors = false;
+
 		$r = $creator->tryShip();
+
+		$needSetAfterResult = false;
 		if ($r->isSuccess())
 		{
-			$data = $r->getData();
-			if (array_key_exists('TRY_SHIP_PRODUCTS_LIST', $data))
+			if ($r->hasWarnings())
 			{
-				$tryShipProductList = $data['TRY_SHIP_PRODUCTS_LIST'] + $tryShipProductList;
-
-				$creator->setItemsResultAfterTryShip($pool, $tryShipProductList);
-
+				$result->addWarnings($r->getWarnings());
+			}
+			else
+			{
+				$needSetAfterResult = true;
 			}
 		}
 		else
 		{
-			$result->addErrors($r->getErrors());
+			$result->addWarnings($r->getErrors());
+
+			if (static::isIgnoreErrors())
+			{
+				$isIgnoreErrors = true;
+				$needSetAfterResult = true;
+			}
+			else
+			{
+				$result->addErrors($r->getErrors());
+			}
+
+		}
+
+		$data = $r->getData();
+		if (array_key_exists('TRY_SHIP_PRODUCTS_LIST', $data))
+		{
+			$tryShipProductList = $data['TRY_SHIP_PRODUCTS_LIST'] + $tryShipProductList;
+		}
+
+		if ($needSetAfterResult && !empty($tryShipProductList))
+		{
+
+			if ($isIgnoreErrors)
+			{
+				foreach ($tryShipProductList as $providerName => &$productList)
+				{
+					$productList = array_fill_keys(array_keys($productList), true);
+				}
+			}
+
+			$creator->setItemsResultAfterTryShip($pool, $tryShipProductList);
 		}
 
 		return $result;
@@ -830,6 +1163,7 @@ final class Provider
 	 * @param Sale\ShipmentItemCollection $shipmentItemCollection
 	 *
 	 * @return array
+	 * @throws Main\LoaderException
 	 * @throws Main\ObjectNotFoundException
 	 */
 	public static function createProviderItemsMap(Sale\ShipmentItemCollection $shipmentItemCollection)
@@ -1018,6 +1352,7 @@ final class Provider
 	 *
 	 * @return array
 	 * @throws Main\ObjectNotFoundException
+	 * @throws Main\SystemException
 	 */
 	public static function createMapShipmentItemCollectionStoreData($shipmentItemList)
 	{
@@ -1085,6 +1420,11 @@ final class Provider
 		if (!$r->isSuccess())
 		{
 			$result->addErrors($r->getErrors());
+		}
+
+		if ($r->hasWarnings())
+		{
+			$result->addWarnings($r->getWarnings());
 		}
 
 		$pool->reset(PoolQuantity::POOL_QUANTITY_TYPE);
@@ -1225,7 +1565,8 @@ final class Provider
 	 * @param $module
 	 * @param $name
 	 *
-	 * @return null
+	 * @return string|null
+	 * @throws Main\LoaderException
 	 */
 	public static function getProviderName($module, $name)
 	{
@@ -1297,7 +1638,7 @@ final class Provider
 	 *
 	 * @return string
 	 */
-	private function clearProviderName($providerName)
+	private static function clearProviderName($providerName)
 	{
 		if (substr($providerName, 0, 1) == "\\")
 		{
@@ -1305,6 +1646,24 @@ final class Provider
 		}
 
 		return trim($providerName);
+	}
+
+	/**
+	 * @internal
+	 * @param $value
+	 */
+	public static function setIgnoreErrors($value)
+	{
+		static::$ignoreErrors = ($value === true);
+	}
+
+	/**
+	 * @internal
+	 * @return bool
+	 */
+	public static function isIgnoreErrors()
+	{
+		return static::$ignoreErrors;
 	}
 
 }

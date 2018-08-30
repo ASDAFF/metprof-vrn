@@ -522,7 +522,7 @@ class Payment
 					/** @var PaymentCollection $col */
 					$col = $this->getCollection();
 					$order = $col->getOrder();
-					if ($ps->getField("CAN_PRINT_CHECK") == "Y")
+					if (isset($ps) && $ps->getField("CAN_PRINT_CHECK") == "Y")
 					{
 						Cashbox\Internals\Pool::addDoc($order->getInternalId(), $this);
 					}

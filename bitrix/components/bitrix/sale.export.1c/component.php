@@ -1,6 +1,10 @@
 <?
 if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true) die();
 
+$instance = \Bitrix\Main\Application::getInstance();
+$context = $instance->getContext();
+$request = $context->getRequest();
+
 if(!is_array($arParams["GROUP_PERMISSIONS"]))
 	$arParams["GROUP_PERMISSIONS"] = array(1);
 if(empty($arParams["SITE_LIST"]))
@@ -188,9 +192,11 @@ else
 				$_SESSION["BX_CML2_EXPORT"]["version"] = $_GET["version"];
 			}
 		}
+		$_SESSION["BX_CML2_EXPORT"]["cmlVersion"] = doubleval($request->get('cmlVersion'));
 	}
 	elseif($_GET["mode"] == "query" || $_POST["mode"] == "query")
 	{
+	    \Bitrix\Sale\Exchange\ManagerExport::deleteLoggingDate();
 
 		$arFilter = Array();
 		$nTopCount = false;
@@ -231,7 +237,7 @@ else
 				$arFilter["LID"] = $arParams["SITE_LIST"];
 
 			if(strlen(COption::GetOptionString("sale", "last_export_time_committed_".$curPage, ""))>0)
-				$arFilter[">DATE_UPDATE"] = ConvertTimeStamp(COption::GetOptionString("sale", "last_export_time_committed_".$curPage, ""), "FULL");
+				$arFilter[">=DATE_UPDATE"] = ConvertTimeStamp(COption::GetOptionString("sale", "last_export_time_committed_".$curPage, ""), "FULL");
 			COption::SetOptionString("sale", "last_export_time_".$curPage, time());
 		}
 		else
@@ -278,10 +284,25 @@ else
 		}
 
 		CTimeZone::Disable();
-		$arResultStat = $export::ExportOrders2Xml(
-			$arFilter, $nTopCount, $arParams["REPLACE_CURRENCY"], $bCrmMode, $arParams["INTERVAL"],
-			$_SESSION["BX_CML2_EXPORT"]["version"], $options
-		);
+
+		if($_SESSION["BX_CML2_EXPORT"]["cmlVersion"] >= doubleval(\Bitrix\Sale\Exchange\ExportOneCBase::SHEM_VERSION_2_10))
+		{
+			//region schema Documents or Document.Subordinate
+		    $r = $export->export(array(
+					'filter'=>$arFilter,
+					'limit'=>$arParams["INTERVAL"])
+			);
+		    echo $r->getData()[0];
+			//endregion
+        }
+        else
+        {
+            $arResultStat = $export::ExportOrders2Xml(
+                $arFilter, $nTopCount, $arParams["REPLACE_CURRENCY"], $bCrmMode, $arParams["INTERVAL"],
+                $_SESSION["BX_CML2_EXPORT"]["version"], $options
+            );
+        }
+
 		CTimeZone::Enable();
 
 		if (!$bCrmMode)
@@ -430,7 +451,10 @@ else
 
 			$o = new CXMLFileStream;
 			$o->registerElementHandler("/".GetMessage("CC_BSC1_COM_INFO"), array($loader, "elementHandler"));
-			$o->registerNodeHandler("/".GetMessage("CC_BSC1_COM_INFO")."/".GetMessage("CC_BSC1_DOCUMENT"), array($loader, "nodeHandler"));
+			$o->registerNodeHandler("/".GetMessage("CC_BSC1_COM_INFO")."/".GetMessage("CC_BSC1_DOCUMENT"), function (CDataXML $xmlObject) use ($o, $loader)
+			{
+				$loader->nodeHandler($xmlObject, $o);
+			});
 
 			$o->setPosition(false);
 
@@ -514,6 +538,8 @@ else
 	{
 		if(file_exists($ABS_FILE_NAME) && filesize($ABS_FILE_NAME)>0)
 		{
+		    \Bitrix\Sale\Exchange\ManagerImport::deleteLoggingDate();
+
 			if(!is_array($_SESSION["BX_CML2_EXPORT"]) || !array_key_exists("last_xml_entry", $_SESSION["BX_CML2_EXPORT"]))
 				$_SESSION["BX_CML2_EXPORT"]["last_xml_entry"] = "";
 
@@ -521,53 +547,62 @@ else
 			$startTime = time();
 
 			$loader = new CSaleOrderLoader;
-
-			if(!function_exists('getImporter'))
-            {
-				function getImporter($loader, $params=array())
-				{
-					$class='';
-					if(isset($params['CLASS']))
-						$class = $params['CLASS'];
-					if(isset($params['PARAMS']))
-						$arParams = $params['PARAMS'];
-					if(isset($params['CRM_COMPATIBLE_MODE']))
-						$bExportFromCrm = $params['CRM_COMPATIBLE_MODE'];
-
-					$loader->arParams = $arParams;
-
-					switch($class)
-					{
-						case 'ImportOneCPackageSale':
-							if(CModule::IncludeModule('CRM'))
-							{
-								\Bitrix\Sale\Exchange\ImportOneCPackageCRM::configuration();
-								$loader->importer = \Bitrix\Sale\Exchange\ImportOneCPackageCRM::getInstance();
-							}
-							else
-							{
-								\Bitrix\Sale\Exchange\ImportOneCPackageSale::configuration();
-								$loader->importer = \Bitrix\Sale\Exchange\ImportOneCPackageSale::getInstance();
-							}
-							break;
-                        case 'ImportOneCContragent':
-							$loader->importerContragent = new \Bitrix\Sale\Exchange\ImportOneCContragent();
-							break;
-						default;
-							$loader->bNewVersion = true;
-							$loader->crmCompatibleMode = $bExportFromCrm;
-					}
-
-					return $loader;
-				};
-            }
+			$loader->arParams = $arParams;
+			$loader->bNewVersion = true;
+			$loader->crmCompatibleMode = $bExportFromCrm;
+			$startTime = time();
 
 			$o = new CXMLFileStream;
 
-			$o->registerElementHandler("/".GetMessage("CC_BSC1_COM_INFO"), array(getImporter($loader, array('PARAMS'=>$arParams,'CRM_COMPATIBLE_MODE'=>$bExportFromCrm)), "elementHandler"));
-			$o->registerNodeHandler("/".GetMessage("CC_BSC1_COM_INFO")."/".GetMessage("CC_BSC1_DOCUMENT"), array(getImporter($loader, array('PARAMS'=>$arParams,'CRM_COMPATIBLE_MODE'=>$bExportFromCrm)), "nodeHandler"));
-			$o->registerNodeHandler("/".GetMessage("CC_BSC1_COM_INFO")."/".GetMessage("CC_BSC1_CONTAINER"), array(getImporter($loader, array('CLASS'=>'ImportOneCPackageSale', 'PARAMS'=>$arParams)), "nodeHandler"));
-			$o->registerNodeHandler("/".GetMessage("CC_BSC1_COM_INFO")."/".GetMessage("CC_BSC1_AGENTS")."/".GetMessage("CC_BSC1_AGENT"), array(getImporter($loader, array('CLASS'=>'ImportOneCContragent','PARAMS'=>$arParams,'CRM_COMPATIBLE_MODE'=>$bExportFromCrm)), "nodeHandler"));
+			$o->registerElementHandler("/".GetMessage("CC_BSC1_COM_INFO"), array($loader, "elementHandler"));
+
+			//region schema Documents or Document.Subordinate
+			if($_SESSION["BX_CML2_EXPORT"]["cmlVersion"] >= doubleval(\Bitrix\Sale\Exchange\ExportOneCBase::SHEM_VERSION_2_10))
+			{
+				$o->registerNodeHandler("/".GetMessage("CC_BSC1_COM_INFO")."/".GetMessage("CC_BSC1_DOCUMENT"), function (CDataXML $xmlObject) use ($o, $loader)
+				{
+					\Bitrix\Sale\Exchange\ImportOneCSubordinateSale::configuration();
+					$loader->importer = \Bitrix\Sale\Exchange\ImportOneCSubordinateSale::getInstance();
+					$loader->nodeHandler($xmlObject, $o);
+				});
+			}
+			else
+			{
+				$o->registerNodeHandler("/".GetMessage("CC_BSC1_COM_INFO")."/".GetMessage("CC_BSC1_DOCUMENT"), function (CDataXML $xmlObject) use ($o, $loader)
+				{
+					$loader->nodeHandler($xmlObject, $o);
+				});
+			}
+			//endregion
+			//region schema Contragents
+			$o->registerNodeHandler("/".GetMessage("CC_BSC1_COM_INFO")."/".GetMessage("CC_BSC1_AGENTS")."/".GetMessage("CC_BSC1_AGENT"), function (CDataXML $xmlObject) use ($o, $loader)
+			{
+				\Bitrix\Sale\Exchange\ImportOneCContragent::configuration();
+				$loader->importer = new \Bitrix\Sale\Exchange\ImportOneCContragent();
+				$loader->nodeHandler($xmlObject, $o);
+
+			});
+			//endregion
+			//region schema Package.CRM or Package.Sale
+			if(CModule::IncludeModule('CRM'))
+            {
+				$o->registerNodeHandler("/".GetMessage("CC_BSC1_COM_INFO")."/".GetMessage("CC_BSC1_CONTAINER"), function (CDataXML $xmlObject) use ($o, $loader)
+                {
+					\Bitrix\Sale\Exchange\ImportOneCPackageCRM::configuration();
+					$loader->importer = \Bitrix\Sale\Exchange\ImportOneCPackageCRM::getInstance();
+					$loader->nodeHandler($xmlObject, $o);
+				});
+            }
+            else
+            {
+                $o->registerNodeHandler("/".GetMessage("CC_BSC1_COM_INFO")."/".GetMessage("CC_BSC1_CONTAINER"), function (CDataXML $xmlObject) use ($o, $loader)
+                {
+					\Bitrix\Sale\Exchange\ImportOneCPackageSale::configuration();
+					$loader->importer = \Bitrix\Sale\Exchange\ImportOneCPackageSale::getInstance();
+					$loader->nodeHandler($xmlObject, $o);
+				});
+            }
+            //endregion
 
 			$o->setPosition($_SESSION["BX_CML2_EXPORT"]["last_xml_entry"]);
 			if ($o->openFile($ABS_FILE_NAME))
@@ -621,13 +656,16 @@ else
 			</<?=GetMessage("CC_BSC1_DI_STATUSES")?>>
 			<<?=GetMessage("CC_BSC1_DI_PS")?>>
 			<?
-			$dbPS = CSalePaySystem::GetList(array("SORT" => "ASC"), array("ACTIVE" => "Y"));
+			$dbPS = CSalePaySystem::GetList(array("SORT" => "ASC"), array("ACTIVE" => "Y"), false, false, array('ID', 'NAME', 'ACTIVE', 'SORT', 'DESCRIPTION', 'IS_CASH'));
 			while ($arPS = $dbPS->Fetch())
 			{
-				?>
+				$typeId = \Bitrix\Sale\Exchange\Entity\PaymentImport::resolveEntityTypeIdByCodeType($arPS["IS_CASH"]);
+				$typeName = \Bitrix\Sale\Exchange\EntityType::getDescription($typeId);
+			    ?>
 				<<?=GetMessage("CC_BSC1_DI_ELEMENT")?>>
 					<<?=GetMessage("CC_BSC1_DI_ID")?>><?=$arPS["ID"]?></<?=GetMessage("CC_BSC1_DI_ID")?>>
 					<<?=GetMessage("CC_BSC1_DI_NAME")?>><?=htmlspecialcharsbx($arPS["NAME"])?></<?=GetMessage("CC_BSC1_DI_NAME")?>>
+					<<?=GetMessage("CC_BSC1_DI_IS_CASH")?>><?=htmlspecialcharsbx($typeName)?></<?=GetMessage("CC_BSC1_DI_IS_CASH")?>>
 				</<?=GetMessage("CC_BSC1_DI_ELEMENT")?>>
 				<?
 			}

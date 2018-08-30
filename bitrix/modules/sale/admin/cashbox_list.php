@@ -178,7 +178,7 @@ $headers = array(
 	array("id" => "SORT", "content" => GetMessage("SALE_CASHBOX_SORT"), "sort" => "SORT", "default" => true),
 	array("id" => "DATE_CREATE", "content" => GetMessage("SALE_CASHBOX_DATE_CREATE"), "sort" => "DATE_CREATE", "default" => true),
 	array("id" => "NUMBER_KKM", "content" => GetMessage("SALE_CASHBOX_NUMBER_KKM"), "sort" => "KKM_NUMBER", "default" => true),
-	array("id" => "ENABLED", "content" => GetMessage("SALE_CASHBOX_LAST_CHECK_STATUS"), "sort" => "ENABLED", "default" => false),
+	array("id" => "ENABLED", "content" => GetMessage("SALE_CASHBOX_LAST_CHECK_STATUS"), "sort" => "ENABLED", "default" => true),
 	array("id" => "DATE_LAST_CHECK", "content" => GetMessage("SALE_CASHBOX_DATE_LAST_CHECK"), "default" => true),
 );
 

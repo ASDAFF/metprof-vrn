@@ -2,12 +2,34 @@
 namespace Bitrix\Sale\Exchange\Entity;
 
 
+use Bitrix\Main\ArgumentException;
 use Bitrix\Main\UserTable;
 use Bitrix\Sale\Exchange\ImportBase;
+use Bitrix\Sale\IBusinessValueProvider;
+use Bitrix\Sale\Order;
 
 abstract class UserImportBase extends ImportBase
 {
 	const EXTERNAL_AUTH_ID = 'sale';
+
+	/** @var  ImportBase */
+	protected $entity;
+
+	/**
+	 * @param ImportBase $entity
+	 */
+	public function setEntity(ImportBase $entity)
+	{
+		$this->entity = $entity;
+	}
+
+	/**
+	 * @return ImportBase
+	 */
+	public function getEntity()
+	{
+		return $this->entity;
+	}
 
 	/**
 	 * @param $personalTypeId
@@ -233,5 +255,24 @@ abstract class UserImportBase extends ImportBase
 		}
 
 		return $result;
+	}
+
+	public function initFields()
+	{
+		$this->setFields(array(
+			'TRAITS'=> $this->getFieldsTraits(),
+		));
+	}
+
+	/**
+	 * @param IBusinessValueProvider $entity
+	 * @return Order
+	 */
+	static protected function getBusinessValueOrderProvider(IBusinessValueProvider $entity)
+	{
+		if(!($entity instanceof Order))
+			throw new ArgumentException("entity must be instanceof Order");
+
+		return $entity;
 	}
 }

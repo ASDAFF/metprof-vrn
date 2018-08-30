@@ -14,8 +14,8 @@ Loc::loadMessages(__FILE__);
  * <li> LID string(2) mandatory primary
  * <li> FORMAT_STRING string(50) mandatory
  * <li> FULL_NAME string(50) optional
- * <li> DEC_POINT string(5) optional default '.'
- * <li> THOUSANDS_SEP string(5) optional default ' '
+ * <li> DEC_POINT string(16) optional default '.'
+ * <li> THOUSANDS_SEP string(16) optional default ' '
  * <li> DECIMALS int optional default 2
  * <li> THOUSANDS_VARIANT string(1) optional
  * <li> HIDE_ZERO bool optional default 'N'
@@ -97,6 +97,7 @@ class CurrencyLangTable extends Main\Entity\DataManager
 				'title' => Loc::getMessage('CURRENCY_LANG_ENTITY_CREATED_BY_FIELD')
 			)),
 			'DATE_CREATE' => new Main\Entity\DatetimeField('DATE_CREATE', array(
+				'default_value' => function(){ return new Main\Type\DateTime(); },
 				'title' => Loc::getMessage('CURRENCY_LANG_ENTITY_DATE_CREATE_FIELD')
 			)),
 			'MODIFIED_BY' => new Main\Entity\IntegerField('MODIFIED_BY', array(
@@ -104,7 +105,7 @@ class CurrencyLangTable extends Main\Entity\DataManager
 			)),
 			'TIMESTAMP_X' => new Main\Entity\DatetimeField('TIMESTAMP_X', array(
 				'required' => true,
-				'default_value' => new Main\Type\DateTime(),
+				'default_value' => function(){ return new Main\Type\DateTime(); },
 				'title' => Loc::getMessage('CURRENCY_LANG_ENTITY_TIMESTAMP_X_FIELD')
 			)),
 			'CREATED_BY_USER' => array(
@@ -178,7 +179,7 @@ class CurrencyLangTable extends Main\Entity\DataManager
 	public static function validateDecPoint()
 	{
 		return array(
-			new Main\Entity\Validator\Length(null, 5),
+			new Main\Entity\Validator\Length(null, 16),
 		);
 	}
 
@@ -190,7 +191,7 @@ class CurrencyLangTable extends Main\Entity\DataManager
 	public static function validateThousandsSep()
 	{
 		return array(
-			new Main\Entity\Validator\Length(null, 5),
+			new Main\Entity\Validator\Length(null, 16),
 		);
 	}
 

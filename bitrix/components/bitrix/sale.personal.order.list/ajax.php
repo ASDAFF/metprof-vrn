@@ -24,9 +24,15 @@ if (!check_bitrix_sessid() && !$request->isPost())
 }
 
 $orderData = $request->get("orderData");
+$templateName = $request->get("templateName");
+if(empty($templateName))
+{
+	$templateName = "";
+}
 
 $params['ACCOUNT_NUMBER'] = $orderData['order'];
 $params['PAYMENT_NUMBER'] = $orderData['payment'];
+$params['PATH_TO_PAYMENT'] = strlen($orderData['path_to_payment']) > 0 ? htmlspecialcharsbx($orderData['path_to_payment']) : "";
 $params['REFRESH_PRICES'] = ($orderData['refresh_prices'] === 'Y') ? 'Y' : 'N';
 if (CBXFeatures::IsFeatureEnabled('SaleAccounts'))
 {
@@ -43,7 +49,7 @@ CBitrixComponent::includeComponentClass("bitrix:sale.order.payment.change");
 
 $orderPayment = new SaleOrderPaymentChange();
 $orderPayment->initComponent('bitrix:sale.order.payment.change');
-$orderPayment->includeComponent("", $params, null);
+$orderPayment->includeComponent($templateName, $params, null);
 
 require_once($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/main/include/epilog_after.php');
 ?>

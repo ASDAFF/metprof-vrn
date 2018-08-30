@@ -33,6 +33,9 @@ class Tax
 	/** @var bool  */
 	protected $isClone = false;
 
+	/** @var bool  */
+	protected $isExternal = false;
+
 	/**
 	 * Tax constructor.
 	 */
@@ -83,7 +86,10 @@ class Tax
 	public function initTaxList(array $list)
 	{
 		if (!empty($list))
+		{
 			$this->list = $list;
+			$this->isExternal = true;
+		}
 	}
 
 	/**
@@ -110,12 +116,6 @@ class Tax
 		if (!$order = $this->getOrder())
 		{
 			throw new Main\ObjectNotFoundException('Entity "Order" not found');
-		}
-
-		/** @var Basket $basket */
-		if (!$basket = $order->getBasket())
-		{
-			throw new Main\ObjectNotFoundException('Entity "Basket" not found');
 		}
 
 		$taxResult = array();
@@ -530,7 +530,12 @@ class Tax
 	public function refreshData()
 	{
 		$result = new Result();
-		$this->resetTaxList();
+
+		if (!$this->isExternal)
+		{
+			$this->resetTaxList();
+		}
+
 		$this->resetAvailableTaxList();
 
 		/** @var Result $r */

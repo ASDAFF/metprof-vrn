@@ -44,4 +44,5 @@ $MESS["CP_CC_ALLOW_IMAGE_UPLOAD_VALUE_A"] = "Всім";
 $MESS["CP_CC_ALLOW_IMAGE_UPLOAD_VALUE_R"] = "Зареєстрованим користувачам";
 $MESS["CP_CC_ALLOW_IMAGE_UPLOAD_VALUE_N"] = "Нікому";
 $MESS["CATALOG_SC_SHOW_DEACTIVATED"] = "Показувати коментарі до деактивованих товарів";
+$MESS["CATALOG_SC_CHECK_DATES"] = "Показувати коментарі тільки для активних на даний момент елементів";
 ?>

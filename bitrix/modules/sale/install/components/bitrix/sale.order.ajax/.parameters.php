@@ -152,7 +152,7 @@ $arComponentParameters = array(
 			"NAME" => GetMessage("SOA_PATH_TO_BASKET1"),
 			"TYPE" => "STRING",
 			"MULTIPLE" => "N",
-			"DEFAULT" => "basket.php",
+			"DEFAULT" => "/personal/cart/",
 			"COLS" => 25,
 			"PARENT" => "ADDITIONAL_SETTINGS",
 		),
@@ -295,6 +295,12 @@ $arComponentParameters = array(
 			"NAME" => GetMessage('SOA_DISABLE_BASKET_REDIRECT2'),
 			"TYPE" => "CHECKBOX",
 			"DEFAULT" => "N"
+		),
+		"USE_PHONE_NORMALIZATION" => array(
+			"NAME" => GetMessage("SOA_USE_PHONE_NORMALIZATION"),
+			"TYPE" => "CHECKBOX",
+			"DEFAULT" => "Y",
+			"PARENT" => "ADDITIONAL_SETTINGS"
 		)
 	)
 );

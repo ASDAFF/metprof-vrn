@@ -21,7 +21,7 @@ class CCatalogAdmin
 	protected static $catalogImportEdit = false;
 	protected static $catalogImportExec = false;
 
-	function get_other_elements_menu($IBLOCK_TYPE_ID, $IBLOCK_ID, $arSection, &$more_url)
+	public static function get_other_elements_menu($IBLOCK_TYPE_ID, $IBLOCK_ID, $arSection, &$more_url)
 	{
 		$urlSectionAdminPage = CIBlock::GetAdminSectionListLink($IBLOCK_ID, array('catalog' => null));
 		$more_url[] = $urlSectionAdminPage."&find_section_section=".(int)$arSection["ID"];
@@ -43,7 +43,7 @@ class CCatalogAdmin
 		}
 	}
 
-	function get_sections_menu($IBLOCK_TYPE_ID, $IBLOCK_ID, $DEPTH_LEVEL, $SECTION_ID, $arSectionsChain = false)
+	public static function get_sections_menu($IBLOCK_TYPE_ID, $IBLOCK_ID, $DEPTH_LEVEL, $SECTION_ID, $arSectionsChain = false)
 	{
 		global $adminMenu;
 		if ($arSectionsChain === false)

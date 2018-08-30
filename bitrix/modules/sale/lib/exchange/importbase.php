@@ -12,16 +12,36 @@ abstract class ImportBase
 
 	protected $collisionErrors = false;
 	protected $collisionWarnings = false;
+	protected $logging = false;
 
     /** @var Sale\Internals\Fields */
     protected $fields;
     /** @var ISettings */
+
     protected $settings = null;
+
     /** @var Exchange\ICriterion */
     protected $loadCriterion = null;
-
+    /** @var Exchange\Internals\LoggerDiag  */
+    protected $loadLogger = null;
     /** @var ICollision  */
     protected $loadCollision = null;
+
+    /** @var  Exchange\Internals\LoggerDiag $logger */
+    protected $logger = array();
+
+	/**
+	 * @return string
+	 */
+	static public function getFieldExternalId()
+	{
+		throw new Main\NotImplementedException('The method is not implemented.');
+	}
+
+	/**
+	 * @return Sale\Internals\Entity $entity|ImportBase|null
+	 */
+    abstract public function getEntity();
 
     /**
      * @return int
@@ -77,6 +97,8 @@ abstract class ImportBase
             $result = $this->add($params);
         }
 
+		$this->initLogger();
+
         return $result;
     }
 
@@ -84,6 +106,20 @@ abstract class ImportBase
      * @return int|null
      */
     abstract public function getId();
+
+	/**
+	 * @return null|string
+	 */
+	public function getExternalId()
+	{
+		$entity = $this->getEntity();
+		if(!empty($entity))
+		{
+			return $entity->getField(static::getFieldExternalId());
+		}
+
+		return null;
+	}
 
     /**
      * @return bool
@@ -132,6 +168,25 @@ abstract class ImportBase
      * @param array $fields
      */
     abstract public function refreshData(array $fields);
+
+	/**
+	 * @return array
+	 */
+	protected function getFieldsTraits()
+	{
+		$entity = $this->getEntity();
+		return $entity->getFieldValues();
+	}
+
+	abstract public function initFields();
+
+	/**
+	 * @param $fields
+	 */
+	public function initFieldsFromArray($fields)
+	{
+		$this->setFields($fields);
+	}
 
     /**
      * @param ISettings $settings
@@ -208,6 +263,38 @@ abstract class ImportBase
         return $collision::getCurrent($typeId);
     }
 
+	public function loadLogger(Exchange\Internals\Logger $logger)
+	{
+		$this->loadLogger = $logger;
+	}
+
+	public function getLoadedLogger()
+	{
+		return $this->loadLogger;
+	}
+
+	public function getCurrentLogger()
+	{
+		$logger = $this->getLoadedLogger();
+		return $logger::getCurrent();
+	}
+
+	public function initLogger()
+	{
+		$this->logging = true;
+
+		$logger = $this->getCurrentLogger();
+		$this->logger = $logger;
+	}
+
+	/**
+	 * @return Internals\LoggerDiag
+	 */
+	public function getLogger()
+	{
+		return $this->logger;
+	}
+
 	/**
 	 * @return bool
 	 */
@@ -222,5 +309,106 @@ abstract class ImportBase
 	public function hasCollisionWarnings()
 	{
 		return $this->collisionWarnings;
+	}
+
+	public function hasLogging()
+	{
+		return $this->logging;
+	}
+
+	/**
+	 * @return array|null
+	 * @deprecated
+	 */
+	static private function getSaleExport()
+	{
+		static $exportProfiles = null;
+
+		if($exportProfiles === null)
+		{
+			$exportProfiles = \CSaleExport::getSaleExport();
+		}
+		return $exportProfiles;
+
+	}
+
+	/**
+	 * @param Sale\Order $order
+	 * @return array
+	 * @deprecated
+	 */
+	static public function getBusinessValue(\Bitrix\Sale\IBusinessValueProvider $entity)
+	{
+		$order = static::getBusinessValueOrderProvider($entity);
+
+		$orderFields = $order->getFieldValues();
+		$paymentList = array();
+		$shipmentList = array();
+
+		if($paymentCollection = $order->getPaymentCollection())
+		{
+			/** @var Sale\Payment $payment */
+			foreach ($paymentCollection as $payment)
+			{
+				$paymentList[$payment->getId()] = $payment->getPaymentSystemName();
+			}
+		}
+		if($shipmentCollection = $order->getShipmentCollection())
+		{
+			/** @var Sale\Shipment $shipment */
+			foreach ($shipmentCollection as $shipment)
+			{
+				$shipmentList[$shipment->getId()] = $shipment->getDeliveryName();
+			}
+		}
+
+		$arProp = \CSaleExport::prepareSaleProperty(
+			$orderFields,
+			false,
+			false,
+			$paymentList,
+			$shipmentList,
+			$locationStreetPropertyValue
+		);
+
+		$exportProfiles = static::getSaleExport();
+		$exportProfile = (array_key_exists($order->getPersonTypeId(), $exportProfiles) ? $exportProfiles[$order->getPersonTypeId()]: array());
+
+		$properties = \CSaleExport::prepareSalePropertyRekv(
+			$entity,
+			$exportProfile,
+			$arProp,
+			$locationStreetPropertyValue
+		);
+		$properties['REKV'] = static::modifyRekv($properties['REKV'], $exportProfile);
+
+		return $properties;
+	}
+
+	/**
+	 * @param $rekv
+	 * @param array $exportProfile
+	 * @return array
+	 */
+	static private function modifyRekv($rekv, array $exportProfile)
+	{
+		$result = array();
+		foreach ($rekv as $k=>$v)
+		{
+			if(isset($exportProfile[$k]) && strlen($exportProfile[$k]['NAME'])>0 && strlen($v)>0)
+			{
+				$result[$exportProfile[$k]['NAME']] = $v;
+			}
+		}
+		return $result;
+	}
+
+	/**
+	 * @param Sale\IBusinessValueProvider $entity
+	 * @return Sale\Order
+	 */
+	static protected function getBusinessValueOrderProvider(\Bitrix\Sale\IBusinessValueProvider $entity)
+	{
+		throw new Main\NotImplementedException('The method is not implemented.');
 	}
 }

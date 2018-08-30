@@ -19,7 +19,7 @@ abstract class BaseValues
 	 */
 	public function __construct($iblockId)
 	{
-		$this->iblockId = intval($iblockId);
+		$this->iblockId = (int)$iblockId;
 	}
 
 	/**
@@ -170,7 +170,7 @@ abstract class BaseValues
 	 */
 	public function deleteValues($ipropertyId)
 	{
-		$ipropertyId = intval($ipropertyId);
+		$ipropertyId = (int)$ipropertyId;
 		$connection = \Bitrix\Main\Application::getConnection();
 		$connection->query("
 			DELETE FROM b_iblock_iblock_iprop

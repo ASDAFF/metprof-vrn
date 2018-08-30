@@ -7,30 +7,26 @@ use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\Request;
 use Bitrix\Main\Type\Date;
 use Bitrix\Sale;
-use Bitrix\Sale\Delivery\Services;
 use Bitrix\Sale\PaySystem;
 
 Loc::loadMessages(__FILE__);
 
+/**
+ * Class BillHandler
+ * @package Sale\Handlers\PaySystem
+ */
 class BillHandler extends PaySystem\BaseServiceHandler
 {
 	/**
 	 * @param Sale\Payment $payment
 	 * @param Request|null $request
 	 * @return PaySystem\ServiceResult
+	 * @throws \Bitrix\Main\ArgumentNullException
+	 * @throws \Bitrix\Main\LoaderException
 	 */
 	public function initiatePay(Sale\Payment $payment, Request $request = null)
 	{
 		$template = 'template';
-
-		/** @var \Bitrix\Sale\PaymentCollection $paymentCollection */
-		$paymentCollection = $payment->getCollection();
-
-		/** @var \Bitrix\Sale\Order $order */
-		$order = $paymentCollection->getOrder();
-
-//		if ($paymentCollection->getPaidSum() + $payment->getSum() < $order->getPrice())
-//			$template .= '_prepay';
 
 		if (array_key_exists('pdf', $_REQUEST))
 			$template .= '_pdf';
@@ -57,6 +53,8 @@ class BillHandler extends PaySystem\BaseServiceHandler
 	 * @param Sale\Payment $payment
 	 * @param Request|null $request
 	 * @return array
+	 * @throws \Bitrix\Main\ArgumentNullException
+	 * @throws \Bitrix\Main\LoaderException
 	 */
 	protected function getPreparedParams(Sale\Payment $payment, Request $request = null)
 	{
@@ -70,9 +68,9 @@ class BillHandler extends PaySystem\BaseServiceHandler
 			'ACCOUNT_NUMBER' => (IsModuleInstalled('intranet')) ? $order->getField('ACCOUNT_NUMBER') : $payment->getField('ACCOUNT_NUMBER'),
 			'CURRENCY' => $payment->getField('CURRENCY'),
 			'DATE_BILL' => $payment->getField('DATE_BILL'),
-			'SUM' => $payment->getSum(),
-			'SUM_PAID' => (float)$paymentCollection->getPaidSum(),
-			'DISCOUNT_PRICE' => (float)$order->getDiscountPrice()
+			'SUM' => Sale\PriceMaths::roundPrecision($payment->getSum()),
+			'SUM_PAID' => Sale\PriceMaths::roundPrecision($paymentCollection->getPaidSum()),
+			'DISCOUNT_PRICE' => Sale\PriceMaths::roundPrecision($order->getDiscountPrice())
 		);
 
 		$taxes = $order->getTax();
@@ -88,6 +86,7 @@ class BillHandler extends PaySystem\BaseServiceHandler
 			{
 				$extraParams['DELIVERY_NAME'] = $shipment->getDeliveryName();
 				$extraParams['DELIVERY_PRICE'] = $shipment->getPrice();
+				$extraParams['DELIVERY_VAT_RATE'] = $shipment->getVatRate();
 				break;
 			}
 		}
@@ -115,12 +114,16 @@ class BillHandler extends PaySystem\BaseServiceHandler
 			}
 		}
 
+		$productProps = [];
 		/** @var \Bitrix\Sale\BasketItem $basketItem */
 		foreach ($basket->getBasketItems() as $basketItem)
 		{
+			$productProps[$basketItem->getProductId()] = array();
+
 			$item = array(
 				'NAME' => $basketItem->getField("NAME"),
 				'IS_VAT_IN_PRICE' => $basketItem->isVatInPrice(),
+				'PRODUCT_ID' => $basketItem->getProductId(),
 				'PRICE' => $basketItem->getPrice(),
 				'VAT_RATE' => $basketItem->getVatRate(),
 				'QUANTITY' => $basketItem->getQuantity(),
@@ -138,27 +141,39 @@ class BillHandler extends PaySystem\BaseServiceHandler
 				);
 			}
 
-			if ($ids && Loader::includeModule('crm') && Loader::includeModule('iblock'))
+			$extraParams['BASKET_ITEMS'][$basketItem->getProductId()] = $item;
+		}
+
+		if ($ids && Loader::includeModule('crm') && Loader::includeModule('iblock'))
+		{
+			$productIdsByCatalogMap = [];
+			$dbRes = \CCrmProduct::GetList([], ['ID' => array_keys($productProps)], ['ID', 'CATALOG_ID']);
+			while ($data = $dbRes->Fetch())
 			{
-				$product = \CCrmProduct::GetByID($basketItem->getProductId(), true);
-
-				$rsProperties = \CIBlockElement::GetProperty(
-					isset($product['CATALOG_ID']) ? intval($product['CATALOG_ID']) : \CCrmCatalog::EnsureDefaultExists(),
-					$basketItem->getProductId(),
-					array(),
-					array('ACTIVE' => 'Y', 'EMPTY' => 'N', 'CHECK_PERMISSIONS' => 'N')
-				);
-
-				while ($arProperty = $rsProperties->Fetch())
+				$catalogId = isset($data['CATALOG_ID']) ? intval($data['CATALOG_ID']) : \CCrmCatalog::EnsureDefaultExists();
+				if (!isset($productIdsByCatalogMap[$catalogId]))
 				{
-					$value = $arProperty['VALUE'];
-					if (is_array($value))
-						$value = implode("\n", $value);
-					$item['PROPERTY_'.$arProperty['ID']] = $value;
+					$productIdsByCatalogMap[$catalogId] = [];
+				}
+
+				$productIdsByCatalogMap[$catalogId][] = $data['ID'];
+			}
+
+			if ($productIdsByCatalogMap)
+			{
+				foreach ($productIdsByCatalogMap as $catalogId => $ids)
+				{
+					\CIBlockElement::GetPropertyValuesArray($productProps, $catalogId, array('ID' => $ids));
 				}
 			}
 
-			$extraParams['BASKET_ITEMS'][] = $item;
+			foreach ($extraParams['BASKET_ITEMS'] as $i => $row)
+			{
+				foreach ($productProps[$row['PRODUCT_ID']] as $property)
+				{
+					$extraParams['BASKET_ITEMS'][$i]['PROPERTY_'.$property['ID']] = $property['VALUE'];
+				}
+			}
 		}
 
 		return $extraParams;
@@ -182,6 +197,8 @@ class BillHandler extends PaySystem\BaseServiceHandler
 
 	/**
 	 * @return array
+	 * @throws \Bitrix\Main\LoaderException
+	 * @throws \Bitrix\Main\ObjectException
 	 */
 	public function getDemoParams()
 	{

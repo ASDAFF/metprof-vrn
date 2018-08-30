@@ -120,4 +120,6 @@ $MESS["CP_BCE_TPL_MESS_PRICE_RANGES_TITLE"] = "Назва блоку c розш�
 $MESS["CP_BCE_TPL_MESS_PRICE_RANGES_TITLE_DEFAULT"] = "Ціни";
 $MESS["CP_BCE_TPL_PRODUCT_BLOCK_PRICE_RANGES"] = "Діапазони цін";
 $MESS["CP_BCE_TPL_USE_RATIO_IN_RANGES"] = "Враховувати коефіцієнти для діапазонів цін";
+$MESS["CP_BCE_TPL_IMAGE_RESOLUTION_16_BY_9"] = "16:9";
+$MESS["CP_BCE_TPL_IMAGE_RESOLUTION_1_BY_1"] = "1:1";
 ?>

@@ -28,6 +28,10 @@ class CBlogNotifySchema
 				"NAME" => GetMessage('BLG_NS_MENTION'),
 				"PUSH" => 'N'
 			),
+			"mention_comment" => Array(
+				"NAME" => GetMessage('BLG_NS_MENTION_COMMENT'),
+				"PUSH" => 'Y'
+			),
 			"share" => Array(
 				"NAME" => GetMessage('BLG_NS_SHARE'),
 				"PUSH" => 'N'
@@ -164,6 +168,11 @@ class CBlogNotifySchema
 				{
 					$perm = CBlogComment::getSocNetUserPerms($post["ID"], $post["AUTHOR_ID"]);
 				}
+			}
+
+			if ($perm == \Bitrix\Blog\Item\Permissions::DENY)
+			{
+				return Loc::getMessage('BLG_NS_IM_ANSWER_ERROR');
 			}
 
 			if (!\Bitrix\Blog\Item\Comment::checkDuplicate(array(

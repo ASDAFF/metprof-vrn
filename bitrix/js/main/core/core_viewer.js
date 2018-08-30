@@ -1430,7 +1430,7 @@ BX.CViewEditableElement.prototype.setDataForCommit = function(data)
 	{
 		this.dataForCommit = data;
 	}
-	else if((BX.browser.IsIE() || BX.browser.IsIE11() || /Edge\/12./i.test(navigator.userAgent)))
+	else if((BX.browser.IsIE() || BX.browser.IsIE11() || /Edge\/./i.test(navigator.userAgent)))
 	{
 		//IE and garbage collector delete all objects (from modal window). This is half-hack.
 		for(var key in arguments)
@@ -2122,21 +2122,29 @@ BX.CViewIframeElement.prototype.load = function(successLoadCallback, errorLoadCa
 						return;
 					}
 
-					this.domElement = BX.create('iframe', {
-						props: {
-							className: 'bx-viewer-image',
-							src: data.viewUrl || data.viewerUrl
-						},
-						events: {
-							load: !BX.CViewer.browserWithDeferredCheckIframeError()? BX.proxy(function(){
-								BX.proxy(this.onLoad, this);
-								checkIframeError();
-							}, this) : BX.proxy(this.onLoad, this)
-						},
-						style: {
-							border: 'none'
-						}
-					});
+					if (data.neededOpenWindow)
+					{
+						window.open(data.viewUrl, '_blank');
+						this.domElement = BX.create('span');
+					}
+					else
+					{
+						this.domElement = BX.create('iframe', {
+							props: {
+								className: 'bx-viewer-image',
+								src: data.viewUrl || data.viewerUrl
+							},
+							events: {
+								load: !BX.CViewer.browserWithDeferredCheckIframeError()? BX.proxy(function(){
+									BX.proxy(this.onLoad, this);
+									checkIframeError();
+								}, this) : BX.proxy(this.onLoad, this)
+							},
+							style: {
+								border: 'none'
+							}
+						});
+					}
 					var transformationInProcessMessage = BX.findChildByClassName(this.contentWrap, 'bx-viewer-file-transformation-in-process-message');
 					if(transformationInProcessMessage)
 					{
@@ -3838,10 +3846,13 @@ BX.CViewer.prototype.adjustPos = function()
 	}
 	else
 	{
-		if (!this.CONTENT_WRAP.style.height)
-			this.CONTENT_WRAP.style.height = "100px";
-		if (!this.CONTENT_WRAP.style.width)
-			this.CONTENT_WRAP.style.width = "100px";
+		if (this.CONTENT_WRAP)
+		{
+			if (!this.CONTENT_WRAP.style.height){}
+				this.CONTENT_WRAP.style.height = "100px";
+			if (!this.CONTENT_WRAP.style.width)
+				this.CONTENT_WRAP.style.width = "100px";
+		}
 
 		//this._adjustPosByElement();
 		this.getCurrent().addTimeoutId(
@@ -5244,7 +5255,7 @@ BX.CViewer.prototype.createIframeElement = function(element, params)
 		pdfFallback: element.getAttribute('data-bx-pdfFallback'),
 		previewImage: element.getAttribute('data-bx-previewImage'),
 		transformTimeout: params.transformTimeout,
-		getLastVersionUri: params.getLastVersionUri,
+		getLastVersionUri: params.getLastVersionUri || element.getAttribute('data-bx-getLastVersionUri'),
 		buttons: []
 	});
 	if(iframeElement.isConverted())

@@ -117,6 +117,8 @@ if(!defined("CACHED_b_forum_user"))
 		"CForumAutosave" => "classes/general/functions.php",
 		"CForumDBTools" => "tools/dbtools.php",
 		"CForumNotifySchema" => "classes/general/forum_notify_schema.php",
+
+		"CForumRestService" => "classes/general/rest.php",
 	));
 
 new CForumCacheManager();
@@ -591,6 +593,7 @@ function ForumAddMessage(
 			}
 			else
 			{
+				$arFields["MESSAGE_ID"] = $MID;
 				if (is_set($arFieldsG, "AUTHOR_NAME")):
 					if ($arTopic["LAST_MESSAGE_ID"] == $MID && $arMessage["LAST_POSTER_NAME"] != $arFieldsG["AUTHOR_NAME"]):
 						$arFields["LAST_POSTER_NAME"] = $arFieldsG["AUTHOR_NAME"];

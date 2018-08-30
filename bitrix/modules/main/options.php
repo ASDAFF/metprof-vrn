@@ -95,10 +95,12 @@ $arAllOptions = array(
 		Array("CONVERT_UNIX_NEWLINE_2_WINDOWS", GetMessage("MAIN_CONVERT_UNIX_NEWLINE_2_WINDOWS"), "N", Array("checkbox", "Y")),
 		Array("convert_mail_header", GetMessage("MAIN_OPTION_CONVERT_8BIT"), "Y", Array("checkbox", "Y")),
 		Array("attach_images", GetMessage("MAIN_OPTION_ATTACH_IMAGES"), "N", array("checkbox", "Y")),
+		Array("mail_gen_text_version", GetMessage("MAIN_OPTION_MAIL_GEN_TEXT_VERSION"), "Y", array("checkbox", "Y")),
 		Array("max_file_size", GetMessage("MAIN_OPTION_MAX_FILE_SIZE"), "0", Array("text", 10)),
 		Array("mail_event_period", GetMessage("main_option_mail_period"), "14", Array("text", 10)),
 		Array("mail_event_bulk", GetMessage("main_option_mail_bulk"), "5", Array("text", 10)),
 		Array("mail_additional_parameters", GetMessage("MAIN_OPTION_MAIL_ADDITIONAL_PARAMETERS"), "", Array("text", 30)),
+		Array("mail_link_protocol", GetMessage("MAIN_OPTION_MAIL_LINK_PROTOCOL"), "", Array("text", 10)),
 
 		GetMessage("main_options_files"),
 		Array("disk_space", GetMessage("MAIN_DISK_SPACE"), "", Array("text", 30)),
@@ -176,6 +178,9 @@ $arAllOptions = array(
 		Array("event_log_file_access", GetMessage("MAIN_EVENT_LOG_FILE_ACCESS"), "N", Array("checkbox", "Y")),
 		Array("event_log_task", GetMessage("MAIN_EVENT_LOG_TASK"), "N", Array("checkbox", "Y")),
 		Array("event_log_marketplace", GetMessage("MAIN_EVENT_LOG_MARKETPLACE"), "Y", Array("checkbox", "Y")),
+
+		GetMessage("MAIN_OPT_PROFILE"),
+		Array("user_profile_history", GetMessage("MAIN_OPT_PROFILE_HYSTORY"), "N", Array("checkbox", "Y")),
 	),
 	"controller_auth" => Array(
 		Array("auth_controller_prefix", GetMessage("MAIN_OPTION_CTRL_PREF"), "controller", Array("text", "30")),
@@ -197,7 +202,7 @@ foreach ($countriesReference['reference_id'] as $k => $v)
 $arAllOptions["main"][] = GetMessage("MAIN_OPTIONS_PHONE_NUMBER_FORMAT");
 $arAllOptions["main"][] = array("phone_number_default_country", GetMessage("MAIN_OPTIONS_PHONE_NUMBER_DEFAULT_COUNTRY"), "", array("selectbox", $countriesArray));
 
-if (\Bitrix\Main\Analytics\SiteSpeed::isLicenseAccepted())
+if (\Bitrix\Main\Analytics\SiteSpeed::isRussianSiteManager())
 {
 	$arAllOptions["main"][] = GetMessage("MAIN_CATALOG_STAT_SETTINGS");
 	$arAllOptions["main"][] = array("gather_catalog_stat", GetMessage("MAIN_GATHER_CATALOG_STAT"), "Y", Array("checkbox", "Y"));
@@ -416,6 +421,7 @@ if($_SERVER["REQUEST_METHOD"]=="POST" && strlen($_POST["Update"])>0 && ($USER->C
 	COption::SetOptionString($module_id, "GROUP_DEFAULT_RIGHT", $letter, "Right for groups by default");
 
 	$nID = COperation::GetIDByName('edit_subordinate_users');
+	$nID2 = COperation::GetIDByName('view_subordinate_users');
 	$arTasksInModule = Array();
 	foreach($arGROUPS as $value)
 	{
@@ -423,7 +429,8 @@ if($_SERVER["REQUEST_METHOD"]=="POST" && strlen($_POST["Update"])>0 && ($USER->C
 		$arTasksInModule[$value["ID"]] = Array('ID' => $tid);
 
 		$subOrdGr = false;
-		if (strlen($tid) > 0 && in_array($nID,CTask::GetOperations($tid)) && isset($_POST['subordinate_groups_'.$value["ID"]]))
+		$operations = CTask::GetOperations($tid);
+		if (strlen($tid) > 0 && (in_array($nID, $operations) || in_array($nID2, $operations)) && isset($_POST['subordinate_groups_'.$value["ID"]]))
 			$subOrdGr = $_POST['subordinate_groups_'.$value["ID"]];
 
 		CGroup::SetSubordinateGroups($value["ID"], $subOrdGr);
@@ -541,6 +548,7 @@ if ($GROUP_DEFAULT_TASK == '')
 		<?
 		$arTasksInModule = CTask::GetTasksInModules(true,$module_id,'module');
 		$nID = COperation::GetIDByName('edit_subordinate_users');
+		$nID2 = COperation::GetIDByName('view_subordinate_users');
 		$arTasks = $arTasksInModule['main'];
 		echo SelectBoxFromArray("GROUP_DEFAULT_TASK", $arTasks, htmlspecialcharsbx($GROUP_DEFAULT_TASK));
 
@@ -551,7 +559,7 @@ if ($GROUP_DEFAULT_TASK == '')
 		for ($i=0;$i<$l;$i++)
 		{
 			$arOpInTask = CTask::GetOperations($arTaskIds[$i]);
-			if (in_array($nID,$arOpInTask))
+			if (in_array($nID, $arOpInTask) || in_array($nID2, $arOpInTask))
 			{
 				$arSubordTasks[] = $arTaskIds[$i];
 				?><script>
@@ -1000,6 +1008,7 @@ if(COption::GetOptionString("main", "controller_member", "N")!="Y"):
 		{
 			$res = array("size" => COption::GetOptionString("main_size", "~".$name));
 		}
+		$res["size"] = (float)$res["size"];
 		$res["status"] = (($res["status"] == "d") && (intVal(time() - $res["time"]) < 86400)) ? "done" : ($res["status"] == "c" ? "c" : "");
 		$res["size_in_per"] = ($diskSpace > 0) ? round(($res["size"]/$diskSpace), 2) : 0;
 		$arParam[$name] = $res;

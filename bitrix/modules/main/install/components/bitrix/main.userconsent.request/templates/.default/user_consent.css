@@ -153,6 +153,13 @@
 	stroke-linecap: round;
 }
 
+.main-user-consent-request-announce{
+	cursor: pointer;
+	color: #333;
+	font-size:13px;
+	line-height: 15px;
+}
+
 @keyframes rotate {
 	100% {
 		transform: rotate(360deg);
@@ -161,6 +168,6 @@
 
 @-webkit-keyframes rotate {
 	100% {
-		transform: rotate(360deg);
+		-webkit-transform: rotate(360deg);
 	}
 }

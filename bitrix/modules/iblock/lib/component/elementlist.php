@@ -81,6 +81,14 @@ abstract class ElementList extends Base
 			$params['PAGE_ELEMENT_COUNT'] = $params['ELEMENT_COUNT'];
 		}
 
+		// PREDICT_ELEMENT_COUNT - hidden parameter to get elements count from "PRODUCT_ROW_VARIANTS" instead of "PAGE_ELEMENT_COUNT"
+		if (isset($params['PREDICT_ELEMENT_COUNT']) && $params['PREDICT_ELEMENT_COUNT'] === 'Y' && !empty($params['PRODUCT_ROW_VARIANTS']))
+		{
+			$isBigData = $this->request->get('bigData') === 'Y';
+			$params['PRODUCT_ROW_VARIANTS'] = static::parseJsonParameter($params['PRODUCT_ROW_VARIANTS']);
+			$params['PAGE_ELEMENT_COUNT'] = static::predictElementCountByVariants($params['PRODUCT_ROW_VARIANTS'], $isBigData);
+		}
+
 		$params['PAGE_ELEMENT_COUNT'] = (int)$params['PAGE_ELEMENT_COUNT'];
 		$params['ELEMENT_COUNT'] = (int)$params['ELEMENT_COUNT'];
 		$params['LINE_ELEMENT_COUNT'] = (int)$params['LINE_ELEMENT_COUNT'];
@@ -191,6 +199,36 @@ abstract class ElementList extends Base
 		$this->getSpecificIblockParams($params);
 
 		return $params;
+	}
+
+	protected static function predictElementCountByVariants($variants, $isBigData = false)
+	{
+		$count = 0;
+		$templateVariantsMap = static::getTemplateVariantsMap();
+
+		if (!empty($variants))
+		{
+			foreach ($variants as $variant)
+			{
+				foreach ($templateVariantsMap as $variantInfo)
+				{
+					if ((int)$variantInfo['VARIANT'] === (int)$variant['VARIANT'])
+					{
+						if (
+							($isBigData && $variant['BIG_DATA'])
+							|| (!$isBigData && !$variant['BIG_DATA'])
+						)
+						{
+							$count += (int)$variantInfo['COUNT'];
+						}
+
+						break;
+					}
+				}
+			}
+		}
+
+		return $count;
 	}
 
 	private function makeMagicWithPageNavigation()
@@ -1067,7 +1105,18 @@ abstract class ElementList extends Base
 	protected function prepareDeferredParams()
 	{
 		$this->arParams['~PRODUCT_ROW_VARIANTS'] = $this->arParams['~DEFERRED_PRODUCT_ROW_VARIANTS'];
-		$this->arParams['PAGE_ELEMENT_COUNT'] = $this->arParams['DEFERRED_PAGE_ELEMENT_COUNT'];
+		$this->arParams['PRODUCT_ROW_VARIANTS'] = static::parseJsonParameter($this->arParams['~PRODUCT_ROW_VARIANTS']);
+
+		if (isset($this->arParams['PREDICT_ELEMENT_COUNT']) && $this->arParams['PREDICT_ELEMENT_COUNT'] === 'Y')
+		{
+			$this->arParams['PAGE_ELEMENT_COUNT'] = static::predictElementCountByVariants($this->arParams['PRODUCT_ROW_VARIANTS']);
+		}
+		else
+		{
+			$this->arParams['PAGE_ELEMENT_COUNT'] = $this->arParams['DEFERRED_PAGE_ELEMENT_COUNT'];
+		}
+
+		$this->arParams['PAGE_ELEMENT_COUNT'] = (int)$this->arParams['PAGE_ELEMENT_COUNT'];
 	}
 
 	/**
@@ -1140,16 +1189,12 @@ abstract class ElementList extends Base
 			$params['ADD_TO_BASKET_ACTION'] = 'ADD';
 		}
 
-		if (isset($params['~PRODUCT_ROW_VARIANTS']) && is_string($params['~PRODUCT_ROW_VARIANTS']))
+		if (
+			(empty($params['PRODUCT_ROW_VARIANTS']) || !is_array($params['PRODUCT_ROW_VARIANTS']))
+			&& isset($params['~PRODUCT_ROW_VARIANTS'])
+		)
 		{
-			try
-			{
-				$params['PRODUCT_ROW_VARIANTS'] = Json::decode(str_replace("'", '"', $params['~PRODUCT_ROW_VARIANTS']));
-			}
-			catch (\Exception $e)
-			{
-				$params['PRODUCT_ROW_VARIANTS'] = array();
-			}
+			$params['PRODUCT_ROW_VARIANTS'] = static::parseJsonParameter($params['~PRODUCT_ROW_VARIANTS']);
 		}
 
 		if (empty($params['PRODUCT_ROW_VARIANTS']))
@@ -1159,7 +1204,7 @@ abstract class ElementList extends Base
 
 		if (empty($params['PRODUCT_BLOCKS_ORDER']))
 		{
-			$params['PRODUCT_BLOCKS_ORDER'] = 'price,props,sku,quantity,buttons';
+			$params['PRODUCT_BLOCKS_ORDER'] = 'price,props,sku,quantityLimit,quantity,buttons';
 		}
 
 		if (is_string($params['PRODUCT_BLOCKS_ORDER']))
@@ -1177,6 +1222,22 @@ abstract class ElementList extends Base
 		{
 			$this->getTemplateSingleIblockParams($params);
 		}
+	}
+
+	protected static function parseJsonParameter($jsonString)
+	{
+		$parameter = [];
+
+		if (!empty($jsonString) && is_string($jsonString))
+		{
+			try
+			{
+				$parameter = Json::decode(str_replace("'", '"', $jsonString));
+			}
+			catch (\Exception $e) {}
+		}
+
+		return $parameter;
 	}
 
 	/**
@@ -1584,92 +1645,116 @@ abstract class ElementList extends Base
 			$enlargedIndexMap = $this->getEnlargedIndexMap();
 		}
 
-		$variantParam = false;
-		$itemsCounter = 0;
-		$itemsLength = count($this->arResult['ITEMS']);
-
-		while (($itemsRemaining = $itemsLength - $itemsCounter) > 0)
+		if (!empty($this->arParams['PRODUCT_ROW_VARIANTS']))
 		{
-			if ($variantParam === false)
-			{
-				$variantParam = reset($this->arParams['PRODUCT_ROW_VARIANTS']);
-			}
+			$showItems = false;
 
-			//	skip big_data rows on initial load and not_big_data rows on deferred load
-			if (!empty($variantParam))
+			foreach ($this->arParams['PRODUCT_ROW_VARIANTS'] as $variant)
 			{
 				if (
-					$isBigData && !$variantParam['BIG_DATA']
-					|| !$isBigData && $variantParam['BIG_DATA']
+					(!$isBigData && !$variant['BIG_DATA'])
+					|| ($isBigData && $variant['BIG_DATA'])
 				)
 				{
-					$variantParam = next($this->arParams['PRODUCT_ROW_VARIANTS']);
-					// if last variant is not suitable - should reset again
-					if ($variantParam === false)
-					{
-						$variantParam = reset($this->arParams['PRODUCT_ROW_VARIANTS']);
-					}
-
-					if ($variantParam === false)
-						break;
-					else
-						continue;
+					$showItems = true;
+					break;
 				}
 			}
+		}
+		else
+		{
+			$showItems = true;
+		}
 
-			if (
-				$variantParam === false
-				|| !isset($variantsMap[$variantParam['VARIANT']])
-				|| ($variantsMap[$variantParam['VARIANT']]['SHOW_ONLY_FULL'] && $variantsMap[$variantParam['VARIANT']]['COUNT'] > $itemsRemaining)
-			)
-			{
-				// default variant
-				$variant = $variantsMap[self::getDefaultVariantId()];
-			}
-			else
-			{
-				$variant = $variantsMap[$variantParam['VARIANT']];
-			}
+		if ($showItems)
+		{
+			$variantParam = false;
+			$itemsCounter = 0;
+			$itemsLength = count($this->arResult['ITEMS']);
 
-			// sorting by property $arResult['ITEMS'] for proper elements enlarge
-			if ($this->arParams['ENLARGE_PRODUCT'] === 'PROP' && $variant['ENLARGED_POS'] !== false)
+			while (($itemsRemaining = $itemsLength - $itemsCounter) > 0)
 			{
-				if (!empty($enlargedIndexMap))
+				if ($variantParam === false)
 				{
-					$overallPos = $itemsCounter + $variant['ENLARGED_POS'];
-					$overallPosKey = array_search($overallPos, $enlargedIndexMap);
-					if ($overallPosKey === false)
+					$variantParam = reset($this->arParams['PRODUCT_ROW_VARIANTS']);
+				}
+
+				//	skip big_data rows on initial load and not_big_data rows on deferred load
+				if (!empty($variantParam))
+				{
+					if (
+						$isBigData && !$variantParam['BIG_DATA']
+						|| !$isBigData && $variantParam['BIG_DATA']
+					)
 					{
-						$closestPos = false;
-						$closestPosKey = false;
-						$enlargedPosInRange = array_intersect($enlargedIndexMap , range($itemsCounter, $itemsCounter + $variant['COUNT']));
-
-						if (!empty($enlargedPosInRange))
+						$variantParam = next($this->arParams['PRODUCT_ROW_VARIANTS']);
+						// if last variant is not suitable - should reset again
+						if ($variantParam === false)
 						{
-							foreach ($enlargedPosInRange as $key => $posInRange)
-							{
-								if ($closestPos === false || abs($overallPos - $closestPos) > abs($posInRange - $overallPos))
-								{
-									$closestPos = $posInRange;
-									$closestPosKey = $key;
-								}
-							}
+							$variantParam = reset($this->arParams['PRODUCT_ROW_VARIANTS']);
+						}
 
-							$temporary = array($this->arResult['ITEMS'][$closestPos]);
-							unset($this->arResult['ITEMS'][$closestPos], $enlargedIndexMap[$closestPosKey]);
-							array_splice($this->arResult['ITEMS'], $overallPos, 0, $temporary);
+						if ($variantParam === false)
+							break;
+						else
+							continue;
+					}
+				}
+
+				if (
+					$variantParam === false
+					|| !isset($variantsMap[$variantParam['VARIANT']])
+					|| ($variantsMap[$variantParam['VARIANT']]['SHOW_ONLY_FULL'] && $variantsMap[$variantParam['VARIANT']]['COUNT'] > $itemsRemaining)
+				)
+				{
+					// default variant
+					$variant = $variantsMap[self::getDefaultVariantId()];
+				}
+				else
+				{
+					$variant = $variantsMap[$variantParam['VARIANT']];
+				}
+
+				// sorting by property $arResult['ITEMS'] for proper elements enlarge
+				if ($this->arParams['ENLARGE_PRODUCT'] === 'PROP' && $variant['ENLARGED_POS'] !== false)
+				{
+					if (!empty($enlargedIndexMap))
+					{
+						$overallPos = $itemsCounter + $variant['ENLARGED_POS'];
+						$overallPosKey = array_search($overallPos, $enlargedIndexMap);
+						if ($overallPosKey === false)
+						{
+							$closestPos = false;
+							$closestPosKey = false;
+							$enlargedPosInRange = array_intersect($enlargedIndexMap , range($itemsCounter, $itemsCounter + $variant['COUNT']));
+
+							if (!empty($enlargedPosInRange))
+							{
+								foreach ($enlargedPosInRange as $key => $posInRange)
+								{
+									if ($closestPos === false || abs($overallPos - $closestPos) > abs($posInRange - $overallPos))
+									{
+										$closestPos = $posInRange;
+										$closestPosKey = $key;
+									}
+								}
+
+								$temporary = array($this->arResult['ITEMS'][$closestPos]);
+								unset($this->arResult['ITEMS'][$closestPos], $enlargedIndexMap[$closestPosKey]);
+								array_splice($this->arResult['ITEMS'], $overallPos, 0, $temporary);
+							}
+						}
+						else
+						{
+							unset($enlargedIndexMap[$overallPosKey]);
 						}
 					}
-					else
-					{
-						unset($enlargedIndexMap[$overallPosKey]);
-					}
 				}
-			}
 
-			$rows[] = $variant;
-			$itemsCounter += $variant['COUNT'];
-			$variantParam = next($this->arParams['PRODUCT_ROW_VARIANTS']);
+				$rows[] = $variant;
+				$itemsCounter += $variant['COUNT'];
+				$variantParam = next($this->arParams['PRODUCT_ROW_VARIANTS']);
+			}
 		}
 
 		$this->arResult['ITEM_ROWS'] = $rows;
@@ -2074,8 +2159,8 @@ abstract class ElementList extends Base
 				$this->arResult['MODULES']['catalog']
 				&& $item['CATALOG']
 				&& (
-					$item['CATALOG_TYPE'] == \CCatalogProduct::TYPE_PRODUCT
-					|| $item['CATALOG_TYPE'] == \CCatalogProduct::TYPE_SET
+					$item['CATALOG_TYPE'] == Catalog\ProductTable::TYPE_PRODUCT
+					|| $item['CATALOG_TYPE'] == Catalog\ProductTable::TYPE_SET
 				)
 			)
 			{
@@ -2199,6 +2284,7 @@ abstract class ElementList extends Base
 				unset($oneProp);
 			}
 
+			$ratioSelectedIndex = $offer['ITEM_MEASURE_RATIO_SELECTED'];
 			$oneRow = array(
 				'ID' => $offer['ID'],
 				'NAME' => $offer['~NAME'],
@@ -2216,20 +2302,20 @@ abstract class ElementList extends Base
 				'ITEM_QUANTITY_RANGES' => $offer['ITEM_QUANTITY_RANGES'],
 				'ITEM_QUANTITY_RANGE_SELECTED' => $offer['ITEM_QUANTITY_RANGE_SELECTED'],
 				'ITEM_MEASURE_RATIOS' => $offer['ITEM_MEASURE_RATIOS'],
-				'ITEM_MEASURE_RATIO_SELECTED' => $offer['ITEM_MEASURE_RATIO_SELECTED'],
-
+				'ITEM_MEASURE_RATIO_SELECTED' => $ratioSelectedIndex,
 				'SECOND_PICT' => $offer['SECOND_PICT'],
 				'OWNER_PICT' => $offer['OWNER_PICT'],
 				'PREVIEW_PICTURE' => $offer['PREVIEW_PICTURE'],
 				'PREVIEW_PICTURE_SECOND' => $offer['PREVIEW_PICTURE_SECOND'],
 				'CHECK_QUANTITY' => $offer['CHECK_QUANTITY'],
-				'MAX_QUANTITY' => $offer['CATALOG_QUANTITY'],
-				'STEP_QUANTITY' => $offer['ITEM_MEASURE_RATIOS'][$offer['ITEM_MEASURE_RATIO_SELECTED']]['RATIO'],
-				'QUANTITY_FLOAT' => is_float($offer['ITEM_MEASURE_RATIOS'][$offer['ITEM_MEASURE_RATIO_SELECTED']]['RATIO']),
+				'MAX_QUANTITY' => $offer['PRODUCT']['QUANTITY'],
+				'STEP_QUANTITY' => $offer['ITEM_MEASURE_RATIOS'][$ratioSelectedIndex]['RATIO'], // deprecated
+				'QUANTITY_FLOAT' => is_float($offer['ITEM_MEASURE_RATIOS'][$ratioSelectedIndex]['RATIO']), //deprecated
 				'MEASURE' => $offer['ITEM_MEASURE']['TITLE'],
 				'CAN_BUY' => $offer['CAN_BUY'],
 				'CATALOG_SUBSCRIBE' => $offer['CATALOG_SUBSCRIBE']
 			);
+			unset($ratioSelectedIndex);
 
 			if (isset($offer['MORE_PHOTO_COUNT']) && $offer['MORE_PHOTO_COUNT'] > 1)
 			{

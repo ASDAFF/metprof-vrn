@@ -13,11 +13,15 @@
 /** @var bool $boolNeedRootSection */
 /** @var int $intMaxSectionID */
 
-use Bitrix\Currency,
+use Bitrix\Main,
+	Bitrix\Main\Loader,
+	Bitrix\Currency,
 	Bitrix\Iblock,
-	Bitrix\Catalog;
+	Bitrix\Catalog,
+	Bitrix\Sale;
 
 IncludeModuleLangFile($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/catalog/export_yandex.php');
+IncludeModuleLangFile(__FILE__);
 
 $MAX_EXECUTION_TIME = (isset($MAX_EXECUTION_TIME) ? (int)$MAX_EXECUTION_TIME : 0);
 if ($MAX_EXECUTION_TIME <= 0)
@@ -47,7 +51,7 @@ if (!isset($firstStep))
 $pageSize = 100;
 $navParams = array('nTopCount' => $pageSize);
 
-$SETUP_VARS_LIST = 'IBLOCK_ID,V,XML_DATA,SETUP_SERVER_NAME,SETUP_FILE_NAME,USE_HTTPS,FILTER_AVAILABLE,DISABLE_REFERERS,MAX_EXECUTION_TIME,CHECK_PERMISSIONS';
+$SETUP_VARS_LIST = 'IBLOCK_ID,SITE_ID,V,XML_DATA,SETUP_SERVER_NAME,COMPANY_NAME,SETUP_FILE_NAME,USE_HTTPS,FILTER_AVAILABLE,DISABLE_REFERERS,MAX_EXECUTION_TIME,CHECK_PERMISSIONS';
 $INTERNAL_VARS_LIST = 'intMaxSectionID,boolNeedRootSection,arSectionIDs,arAvailGroups';
 
 global $USER, $APPLICATION;
@@ -60,14 +64,10 @@ if (!CCatalog::IsUserExists())
 	$USER = new CUser();
 }
 
+$saleIncluded = Loader::includeModule('sale');
+if ($saleIncluded)
+	Sale\DiscountCouponsManager::freezeCouponStorage();
 CCatalogDiscountSave::Disable();
-/** @noinspection PhpDeprecationInspection */
-CCatalogDiscountCoupon::ClearCoupon();
-if ($USER->IsAuthorized())
-{
-	/** @noinspection PhpDeprecationInspection */
-	CCatalogDiscountCoupon::ClearCouponsByManage($USER->GetID());
-}
 
 $arYandexFields = array(
 	'typePrefix', 'vendor', 'vendorCode', 'model',
@@ -382,7 +382,7 @@ function yandex_get_value($arOffer, $param, $PROPERTY, $arProperties, $arUserTyp
 
 if (!function_exists('yandexPrepareItems'))
 {
-	function yandexPrepareItems(array &$list, array $options)
+	function yandexPrepareItems(array &$list, array $parents, array $options)
 	{
 		foreach (array_keys($list) as $index)
 		{
@@ -407,7 +407,24 @@ if (!function_exists('yandexPrepareItems'))
 					$safeRow['~'.$field] = $value;
 				}
 				unset($field, $value);
-				$row['DETAIL_PAGE_URL'] = \CIBlock::ReplaceDetailUrl($safeRow['~DETAIL_PAGE_URL'], $safeRow, true, 'E');
+
+				if (isset($row['PARENT_ID']) && isset($parents[$row['PARENT_ID']]))
+				{
+					$safeRow['~DETAIL_PAGE_URL'] = str_replace(
+						array('#SERVER_NAME#', '#SITE_DIR#', '#PRODUCT_URL#'),
+						array($options['SITE_NAME'], $options['SITE_DIR'], $parents[$row['PARENT_ID']]),
+						$safeRow['~DETAIL_PAGE_URL']
+					);
+				}
+				else
+				{
+					$safeRow['~DETAIL_PAGE_URL'] = str_replace(
+						array('#SERVER_NAME#', '#SITE_DIR#'),
+						array($options['SITE_NAME'], $options['SITE_DIR']),
+						$safeRow['~DETAIL_PAGE_URL']
+					);
+				}
+				$row['DETAIL_PAGE_URL'] = \CIBlock::ReplaceDetailUrl($safeRow['~DETAIL_PAGE_URL'], $safeRow, false, 'E');
 				unset($safeRow);
 			}
 
@@ -536,27 +553,6 @@ if (!($ar_iblock = $db_iblock->Fetch()))
 } */
 else
 {
-	$SETUP_SERVER_NAME = trim($SETUP_SERVER_NAME);
-
-	if (strlen($SETUP_SERVER_NAME) <= 0)
-	{
-		if (strlen($ar_iblock['SERVER_NAME']) <= 0)
-		{
-			$b = "sort";
-			$o = "asc";
-			$rsSite = CSite::GetList($b, $o, array("LID" => $ar_iblock["LID"]));
-			if($arSite = $rsSite->Fetch())
-				$ar_iblock["SERVER_NAME"] = $arSite["SERVER_NAME"];
-			if(strlen($ar_iblock["SERVER_NAME"])<=0 && defined("SITE_SERVER_NAME"))
-				$ar_iblock["SERVER_NAME"] = SITE_SERVER_NAME;
-			if(strlen($ar_iblock["SERVER_NAME"])<=0)
-				$ar_iblock["SERVER_NAME"] = COption::GetOptionString("main", "server_name", "");
-		}
-	}
-	else
-	{
-		$ar_iblock['SERVER_NAME'] = $SETUP_SERVER_NAME;
-	}
 	$ar_iblock['PROPERTY'] = array();
 	$rsProps = \CIBlockProperty::GetList(
 		array('SORT' => 'ASC', 'NAME' => 'ASC'),
@@ -572,10 +568,50 @@ else
 		$arProp['LINK_IBLOCK_ID'] = (int)$arProp['LINK_IBLOCK_ID'];
 		$ar_iblock['PROPERTY'][$arProp['ID']] = $arProp;
 	}
+	unset($arProp, $rsProps);
+}
+
+$SETUP_SERVER_NAME = (isset($SETUP_SERVER_NAME) ? trim($SETUP_SERVER_NAME) : '');
+$COMPANY_NAME = (isset($COMPANY_NAME) ? trim($COMPANY_NAME) : '');
+$SITE_ID = (isset($SITE_ID) ? (string)$SITE_ID : '');
+if ($SITE_ID === '')
+	$SITE_ID = $ar_iblock['LID'];
+$iterator = Main\SiteTable::getList(array(
+	'select' => array('LID', 'SERVER_NAME', 'SITE_NAME', 'DIR'),
+	'filter' => array('=LID' => $SITE_ID, '=ACTIVE' => 'Y')
+));
+$site = $iterator->fetch();
+unset($iterator);
+if (empty($site))
+{
+	$arRunErrors[] = GetMessage('BX_CATALOG_EXPORT_YANDEX_ERR_BAD_SITE');
+}
+else
+{
+	$site['SITE_NAME'] = (string)$site['SITE_NAME'];
+	if ($site['SITE_NAME'] === '')
+		$site['SITE_NAME'] = (string)Main\Config\Option::get('main', 'site_name');
+	$site['COMPANY_NAME'] = $COMPANY_NAME;
+	if ($site['COMPANY_NAME'] === '')
+		$site['COMPANY_NAME'] = (string)Main\Config\Option::get('main', 'site_name');
+	$site['SERVER_NAME'] = (string)$site['SERVER_NAME'];
+	if ($SETUP_SERVER_NAME !== '')
+		$site['SERVER_NAME'] = $SETUP_SERVER_NAME;
+	if ($site['SERVER_NAME'] === '')
+	{
+		$site['SERVER_NAME'] = (defined('SITE_SERVER_NAME')
+			? SITE_SERVER_NAME
+			: (string)Main\Config\Option::get('main', 'server_name')
+		);
+	}
+	if ($site['SERVER_NAME'] === '')
+	{
+		$arRunErrors[] = GetMessage('BX_CATALOG_EXPORT_YANDEX_ERR_BAD_SERVER_NAME');
+	}
 }
 
 global $iblockServerName;
-$iblockServerName = $ar_iblock["SERVER_NAME"];
+$iblockServerName = $site['SERVER_NAME'];
 
 $arProperties = array();
 if (isset($ar_iblock['PROPERTY']))
@@ -644,12 +680,14 @@ else
 						$arSelectOfferProps[] = $arProp['ID'];
 				}
 			}
-			$arOfferIBlock['LID'] = $ar_iblock['LID'];
+			unset($arProp, $rsProps);
+			$arOfferIBlock['LID'] = $site['LID'];
 		}
 		else
 		{
 			$arRunErrors[] = GetMessage('YANDEX_ERR_BAD_OFFERS_IBLOCK_ID');
 		}
+		unset($rsOfferIBlocks);
 	}
 	if ($boolOffers)
 	{
@@ -722,6 +760,7 @@ foreach($arProperties as $key => $arProperty)
 		$arProperties[$key]['PROPERTY_TYPE'] = 'USER_TYPE';
 	}
 }
+unset($arUserType, $key, $arProperty);
 
 $bAllSections = false;
 $arSections = array();
@@ -760,6 +799,7 @@ if (empty($arRunErrors))
 			$clearedValues[] = (int)$row['ID'];
 		unset($row, $iterator);
 		$arSections = $clearedValues;
+		unset($clearedValues);
 	}
 
 	if (!$bAllSections && empty($arSections))
@@ -783,6 +823,7 @@ if (!empty($XML_DATA['PRICE']))
 		{
 			$selectedPriceType = $XML_DATA['PRICE'];
 		}
+		unset($arCatalogGroup, $rsCatalogGroups);
 	}
 	else
 	{
@@ -840,13 +881,14 @@ if ($vatExport)
 	}
 }
 
-
 $itemOptions = array(
 	'PROTOCOL' => $usedProtocol,
-	'SITE_NAME' => $ar_iblock['SERVER_NAME'],
+	'SITE_NAME' => $site['SERVER_NAME'],
+	'SITE_DIR' => $site['DIR'],
 	'MAX_DESCRIPTION_LENGTH' => 3000
 );
 
+$sectionFileName = '';
 $itemFileName = '';
 if (strlen($SETUP_FILE_NAME) <= 0)
 {
@@ -866,6 +908,7 @@ if (empty($arRunErrors))
 	{
 		$arRunErrors[] = str_replace('#FILE#', $SETUP_FILE_NAME,GetMessage('YANDEX_ERR_FILE_ACCESS_DENIED'));
 	} */
+	$sectionFileName = $SETUP_FILE_NAME.'_sections';
 	$itemFileName = $SETUP_FILE_NAME.'_items';
 }
 
@@ -879,15 +922,15 @@ if ($firstStep)
 	{
 		CheckDirPath($_SERVER["DOCUMENT_ROOT"].$SETUP_FILE_NAME);
 
-		if (!$fp = @fopen($_SERVER["DOCUMENT_ROOT"].$SETUP_FILE_NAME, "wb"))
+		if (!$fp = @fopen($_SERVER["DOCUMENT_ROOT"].$sectionFileName, "wb"))
 		{
-			$arRunErrors[] = str_replace('#FILE#', $_SERVER["DOCUMENT_ROOT"].$SETUP_FILE_NAME, GetMessage('YANDEX_ERR_FILE_OPEN_WRITING'));
+			$arRunErrors[] = str_replace('#FILE#', $sectionFileName, GetMessage('YANDEX_ERR_FILE_OPEN_WRITING'));
 		}
 		else
 		{
 			if (!@fwrite($fp, '<? $disableReferers = '.($disableReferers ? 'true' : 'false').';'."\n"))
 			{
-				$arRunErrors[] = str_replace('#FILE#', $_SERVER["DOCUMENT_ROOT"].$SETUP_FILE_NAME, GetMessage('YANDEX_ERR_SETUP_FILE_WRITE'));
+				$arRunErrors[] = str_replace('#FILE#', $sectionFileName, GetMessage('YANDEX_ERR_SETUP_FILE_WRITE'));
 				@fclose($fp);
 			}
 			else
@@ -912,10 +955,10 @@ if ($firstStep)
 		fwrite($fp, '<yml_catalog date="'.date("Y-m-d H:i").'">'."\n");
 		fwrite($fp, '<shop>'."\n");
 
-		fwrite($fp, '<name>'.$APPLICATION->ConvertCharset(htmlspecialcharsbx(COption::GetOptionString('main', 'site_name', '')), LANG_CHARSET, 'windows-1251')."</name>\n");
+		fwrite($fp, '<name>'.$APPLICATION->ConvertCharset(htmlspecialcharsbx($site['SITE_NAME']), LANG_CHARSET, 'windows-1251')."</name>\n");
 
-		fwrite($fp, '<company>'.$APPLICATION->ConvertCharset(htmlspecialcharsbx(COption::GetOptionString('main', 'site_name', '')), LANG_CHARSET, 'windows-1251')."</company>\n");
-		fwrite($fp, '<url>'.$usedProtocol.htmlspecialcharsbx($ar_iblock['SERVER_NAME'])."</url>\n");
+		fwrite($fp, '<company>'.$APPLICATION->ConvertCharset(htmlspecialcharsbx($site['COMPANY_NAME']), LANG_CHARSET, 'windows-1251')."</company>\n");
+		fwrite($fp, '<url>'.$usedProtocol.htmlspecialcharsbx($site['SERVER_NAME'])."</url>\n");
 		fwrite($fp, '<platform>1C-Bitrix</platform>'."\n");
 
 		$strTmp = '<currencies>'."\n";
@@ -1062,7 +1105,7 @@ if ($firstStep)
 		$itemsFile = @fopen($_SERVER["DOCUMENT_ROOT"].$itemFileName, 'wb');
 		if (!$itemsFile)
 		{
-			$arRunErrors[] = str_replace('#FILE#', $_SERVER['DOCUMENT_ROOT'].$itemFileName, GetMessage('YANDEX_ERR_FILE_OPEN_WRITING'));
+			$arRunErrors[] = str_replace('#FILE#', $itemFileName, GetMessage('YANDEX_ERR_FILE_OPEN_WRITING'));
 		}
 	}
 }
@@ -1071,18 +1114,29 @@ else
 	$itemsFile = @fopen($_SERVER["DOCUMENT_ROOT"].$itemFileName, 'ab');
 	if (!$itemsFile)
 	{
-		$arRunErrors[] = str_replace('#FILE#', $_SERVER['DOCUMENT_ROOT'].$itemFileName, GetMessage('YANDEX_ERR_FILE_OPEN_WRITING'));
+		$arRunErrors[] = str_replace('#FILE#', $itemFileName, GetMessage('YANDEX_ERR_FILE_OPEN_WRITING'));
 	}
 }
+unset($arSections);
 
 if (empty($arRunErrors))
 {
 	//*****************************************//
-	Catalog\Product\Price\Calculation::setConfig(array(
+	$saleDiscountOnly = false;
+	$calculationConfig = [
 		'CURRENCY' => $BASE_CURRENCY,
 		'USE_DISCOUNTS' => true,
-		'RESULT_WITH_VAT' => true
-	));
+		'RESULT_WITH_VAT' => true,
+		'RESULT_MODE' => Catalog\Product\Price\Calculation::RESULT_MODE_COMPONENT
+	];
+	if ($saleIncluded)
+	{
+		$saleDiscountOnly = (string)Main\Config\Option::get('sale', 'use_sale_discount_only') == 'Y';
+		if ($saleDiscountOnly)
+			$calculationConfig['PRECISION'] = (int)Main\Config\Option::get('sale', 'value_precision');
+	}
+	Catalog\Product\Price\Calculation::setConfig($calculationConfig);
+	unset($calculationConfig);
 
 	if ($selectedPriceType > 0)
 	{
@@ -1093,7 +1147,7 @@ if (empty($arRunErrors))
 		$priceTypeList = array();
 		$priceIterator = Catalog\GroupAccessTable::getList(array(
 			'select' => array('CATALOG_GROUP_ID'),
-			'filter' => array('@GROUP_ID' => 2),
+			'filter' => array('=GROUP_ID' => 2),
 			'order' => array('CATALOG_GROUP_ID' => 'ASC')
 		));
 		while ($priceType = $priceIterator->fetch())
@@ -1105,15 +1159,15 @@ if (empty($arRunErrors))
 		unset($priceType, $priceIterator);
 	}
 
-	$needDiscountCache = \CIBlockPriceTools::SetCatalogDiscountCache($priceTypeList, array(2), $ar_iblock['LID']);
+	$needDiscountCache = \CIBlockPriceTools::SetCatalogDiscountCache($priceTypeList, array(2), $site['LID']);
 
 	$itemFields = array(
-		'ID', 'LID', 'IBLOCK_ID', 'IBLOCK_SECTION_ID', 'NAME',
+		'ID', 'IBLOCK_ID', 'IBLOCK_SECTION_ID', 'NAME',
 		'PREVIEW_PICTURE', 'PREVIEW_TEXT', 'PREVIEW_TEXT_TYPE', 'DETAIL_PICTURE', 'DETAIL_PAGE_URL',
 		'CATALOG_AVAILABLE', 'CATALOG_TYPE'
 	);
 	$offerFields = array(
-		'ID', 'LID', 'IBLOCK_ID', 'IBLOCK_SECTION_ID', 'NAME',
+		'ID', 'IBLOCK_ID', 'IBLOCK_SECTION_ID', 'NAME',
 		'PREVIEW_PICTURE', 'PREVIEW_TEXT', 'PREVIEW_TEXT_TYPE', 'DETAIL_PICTURE', 'DETAIL_PAGE_URL'
 	);
 
@@ -1227,7 +1281,7 @@ if (empty($arRunErrors))
 
 		if (!empty($items))
 		{
-			yandexPrepareItems($items, $itemOptions);
+			yandexPrepareItems($items, array(), $itemOptions);
 
 			foreach (array_chunk($itemIdsList, 500) as $pageIds)
 			{
@@ -1323,10 +1377,12 @@ if (empty($arRunErrors))
 				{
 					$offerLinks = array();
 					$offerIdsList = array();
+					$parentsUrl = array();
 					foreach (array_keys($offers) as $productId)
 					{
 						unset($skuIdsList[$productId]);
 						$items[$productId]['OFFERS'] = array();
+						$parentsUrl[$productId] = $items[$productId]['DETAIL_PAGE_URL'];
 						foreach (array_keys($offers[$productId]) as $offerId)
 						{
 							$productOffer = $offers[$productId][$offerId];
@@ -1361,7 +1417,7 @@ if (empty($arRunErrors))
 					}
 					if (!empty($offerIdsList))
 					{
-						yandexPrepareItems($offerLinks, $itemOptions);
+						yandexPrepareItems($offerLinks, $parentsUrl, $itemOptions);
 
 						foreach (array_chunk($offerIdsList, 500) as $pageIds)
 						{
@@ -1394,36 +1450,53 @@ if (empty($arRunErrors))
 								unset($id, $row, $iterator);
 							}
 
-							$priceFilter = array(
+							// load vat cache
+							$vatList = CCatalogProduct::GetVATDataByIDList($pageIds);
+							unset($vatList);
+
+							$priceFilter = [
 								'@PRODUCT_ID' => $pageIds,
-								'+<=QUANTITY_FROM' => 1,
-								'+>=QUANTITY_TO' => 1,
-							);
+								[
+									'LOGIC' => 'OR',
+									'<=QUANTITY_FROM' => 1,
+									'=QUANTITY_FROM' => null
+								],
+								[
+									'LOGIC' => 'OR',
+									'>=QUANTITY_TO' => 1,
+									'=QUANTITY_TO' => null
+								]
+							];
 							if ($selectedPriceType > 0)
-								$priceFilter['CATALOG_GROUP_ID'] = $selectedPriceType;
+								$priceFilter['=CATALOG_GROUP_ID'] = $selectedPriceType;
 							else
 								$priceFilter['@CATALOG_GROUP_ID'] = $priceTypeList;
 
-							$priceIterator = \CPrice::GetListEx(
-								array(),
-								$priceFilter,
-								false,
-								false,
-								array('ID', 'PRODUCT_ID', 'CATALOG_GROUP_ID', 'PRICE', 'CURRENCY')
-							);
-							while ($price = $priceIterator->Fetch())
+							$iterator = Catalog\PriceTable::getList([
+								'select' => ['ID', 'PRODUCT_ID', 'CATALOG_GROUP_ID', 'PRICE', 'CURRENCY'],
+								'filter' => $priceFilter
+							]);
+
+							while ($price = $iterator->fetch())
 							{
 								$id = (int)$price['PRODUCT_ID'];
 								$priceTypeId = (int)$price['CATALOG_GROUP_ID'];
 								$offerLinks[$id]['PRICES'][$priceTypeId] = $price;
 								unset($priceTypeId, $id);
 							}
-							unset($price, $priceIterator);
+							unset($price, $iterator);
+
+							if ($saleDiscountOnly)
+							{
+								Catalog\Discount\DiscountManager::preloadPriceData(
+									$pageIds,
+									($selectedPriceType > 0 ? [$selectedPriceType] : $priceTypeList)
+								);
+							}
 						}
 						unset($pageIds);
 					}
-
-					unset($offerIdsList, $offerLinks);
+					unset($parentsUrl, $offerIdsList, $offerLinks);
 				}
 				unset($offers);
 
@@ -1442,31 +1515,49 @@ if (empty($arRunErrors))
 			{
 				foreach (array_chunk($simpleIdsList, 500) as $pageIds)
 				{
-					$priceFilter = array(
+					// load vat cache
+					$vatList = CCatalogProduct::GetVATDataByIDList($pageIds);
+					unset($vatList);
+
+					$priceFilter = [
 						'@PRODUCT_ID' => $pageIds,
-						'+<=QUANTITY_FROM' => 1,
-						'+>=QUANTITY_TO' => 1,
-					);
+						[
+							'LOGIC' => 'OR',
+							'<=QUANTITY_FROM' => 1,
+							'=QUANTITY_FROM' => null
+						],
+						[
+							'LOGIC' => 'OR',
+							'>=QUANTITY_TO' => 1,
+							'=QUANTITY_TO' => null
+						]
+					];
 					if ($selectedPriceType > 0)
-						$priceFilter['CATALOG_GROUP_ID'] = $selectedPriceType;
+						$priceFilter['=CATALOG_GROUP_ID'] = $selectedPriceType;
 					else
 						$priceFilter['@CATALOG_GROUP_ID'] = $priceTypeList;
 
-					$priceIterator = \CPrice::GetListEx(
-						array(),
-						$priceFilter,
-						false,
-						false,
-						array('ID', 'PRODUCT_ID', 'CATALOG_GROUP_ID', 'PRICE', 'CURRENCY')
-					);
-					while ($price = $priceIterator->Fetch())
+					$iterator = Catalog\PriceTable::getList([
+						'select' => ['ID', 'PRODUCT_ID', 'CATALOG_GROUP_ID', 'PRICE', 'CURRENCY'],
+						'filter' => $priceFilter
+					]);
+
+					while ($price = $iterator->fetch())
 					{
 						$id = (int)$price['PRODUCT_ID'];
 						$priceTypeId = (int)$price['CATALOG_GROUP_ID'];
 						$items[$id]['PRICES'][$priceTypeId] = $price;
 						unset($priceTypeId, $id);
 					}
-					unset($price, $priceIterator);
+					unset($price, $iterator);
+
+					if ($saleDiscountOnly)
+					{
+						Catalog\Discount\DiscountManager::preloadPriceData(
+							$pageIds,
+							($selectedPriceType > 0 ? [$selectedPriceType] : $priceTypeList)
+						);
+					}
 				}
 				unset($pageIds);
 			}
@@ -1522,7 +1613,7 @@ if (empty($arRunErrors))
 							array(2),
 							'N',
 							$row['OFFERS'][$offerId]['PRICES'],
-							$ar_iblock['LID'],
+							$site['LID'],
 							array()
 						);
 
@@ -1571,7 +1662,7 @@ if (empty($arRunErrors))
 						if (!$disableReferers)
 							$referer = (strpos($offer['DETAIL_PAGE_URL'], '?') === false ? '?' : '&amp;').'r1=<?=$strReferer1; ?>&amp;r2=<?=$strReferer2; ?>';
 
-						$itemsContent .= "<url>".$usedProtocol.$ar_iblock['SERVER_NAME'].htmlspecialcharsbx($offer['DETAIL_PAGE_URL']).$referer."</url>\n";
+						$itemsContent .= "<url>".$usedProtocol.$site['SERVER_NAME'].htmlspecialcharsbx($offer['DETAIL_PAGE_URL']).$referer."</url>\n";
 						unset($referer);
 
 						$minPrice = $offer['RESULT_PRICE']['MIN_PRICE'];
@@ -1738,7 +1829,7 @@ if (empty($arRunErrors))
 						array(2),
 						'N',
 						$row['PRICES'],
-						$ar_iblock['LID'],
+						$site['LID'],
 						array()
 					);
 
@@ -1761,7 +1852,7 @@ if (empty($arRunErrors))
 					if (!$disableReferers)
 						$referer = (strpos($row['DETAIL_PAGE_URL'], '?') === false ? '?' : '&amp;').'r1=<?=$strReferer1; ?>&amp;r2=<?=$strReferer2; ?>';
 
-					$itemsContent .= "<url>".$usedProtocol.$ar_iblock['SERVER_NAME'].htmlspecialcharsbx($row['DETAIL_PAGE_URL']).$referer."</url>\n";
+					$itemsContent .= "<url>".$usedProtocol.$site['SERVER_NAME'].htmlspecialcharsbx($row['DETAIL_PAGE_URL']).$referer."</url>\n";
 					unset($referer);
 
 					$itemsContent .= "<price>".$minPrice."</price>\n";
@@ -1882,8 +1973,10 @@ if (empty($arRunErrors))
 			\CCatalogDiscount::ClearDiscountCache(array(
 				'PRODUCT' => true,
 				'SECTIONS' => true,
+				'SECTION_CHAINS' => true,
 				'PROPERTIES' => true
 			));
+			\CCatalogProduct::ClearCache();
 		}
 
 		if ($itemsContent !== '')
@@ -1909,6 +2002,7 @@ if (empty($arRunErrors))
 		$finalExport = true;
 	if ($finalExport)
 	{
+		$process = true;
 		$content = '';
 		if ($boolNeedRootSection)
 			$content .= '<category id="'.$intMaxSectionID.'">'.yandex_text2xml(GetMessage('YANDEX_ROOT_DIRECTORY'), true).'</category>'."\n";
@@ -1919,20 +2013,48 @@ if (empty($arRunErrors))
 		if ($items === false)
 		{
 			$arRunErrors[] = GetMessage('YANDEX_STEP_ERR_DATA_FILE_NOT_READ');
+			$process = false;
 		}
-		else
+
+		if ($process)
 		{
 			$content .= $items;
 			unset($items);
 			$content .= "</offers>\n"."</shop>\n"."</yml_catalog>\n";
 
-			file_put_contents($_SERVER["DOCUMENT_ROOT"].$SETUP_FILE_NAME, $content, FILE_APPEND);
+			if (file_put_contents($_SERVER["DOCUMENT_ROOT"].$sectionFileName, $content, FILE_APPEND) === false)
+			{
+				$arRunErrors[] = str_replace('#FILE#', $sectionFileName, GetMessage('YANDEX_ERR_SETUP_FILE_WRITE'));
+				$process = false;
+			}
 		}
-		unlink($_SERVER["DOCUMENT_ROOT"].$itemFileName);
+		if ($process)
+		{
+			unlink($_SERVER["DOCUMENT_ROOT"].$itemFileName);
+
+			if (file_exists($_SERVER["DOCUMENT_ROOT"].$SETUP_FILE_NAME))
+			{
+				if (!unlink($_SERVER["DOCUMENT_ROOT"].$SETUP_FILE_NAME))
+				{
+					$arRunErrors[] = str_replace('#FILE#', $SETUP_FILE_NAME, GetMessage('BX_CATALOG_EXPORT_YANDEX_ERR_UNLINK_FILE'));
+					$process = false;
+				}
+			}
+		}
+		if ($process)
+		{
+			if (!rename($_SERVER["DOCUMENT_ROOT"].$sectionFileName, $_SERVER["DOCUMENT_ROOT"].$SETUP_FILE_NAME))
+			{
+				$arRunErrors[] = str_replace('#FILE#', $sectionFileName, GetMessage('BX_CATALOG_EXPORT_YANDEX_ERR_UNLINK_FILE'));
+			}
+		}
+		unset($process);
 	}
 }
 
 CCatalogDiscountSave::Enable();
+if ($saleIncluded)
+	Sale\DiscountCouponsManager::unFreezeCouponStorage();
 
 if (!empty($arRunErrors))
 	$strExportErrorMessage = implode('<br />',$arRunErrors);

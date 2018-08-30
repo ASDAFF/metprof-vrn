@@ -11,10 +11,8 @@ class CSaleOrderLoader
 	const DEBUG_FILE = "1c_order_exchange.log";
 	const DEBUG_MODE = true;
 
-	/** @var Sale\Exchange\ImportOneCPackage  */
+	/** @var Sale\Exchange\ImportOneCBase  */
 	public $importer;
-	/** @var Sale\Exchange\ImportOneCContragent */
-	public $importerContragent;
 
 	var $strError = "";
 	var $SumFormat = ".";
@@ -1402,8 +1400,7 @@ class CSaleOrderLoader
 					{
 						if (IntVal($arItem["PRICE"]) != IntVal($shipment->getField('PRICE_DELIVERY')))
 						{
-							$shipment->setField("CUSTOM_PRICE_DELIVERY", "Y");
-							$shipment->setField('BASE_PRICE_DELIVERY', $arItem["PRICE"]);
+							$shipment->setBasePriceDelivery($arItem["PRICE"], true);
 							$shipment->setField('CURRENCY',CSaleLang::GetLangCurrency($this->getSiteId()));
 						}
 
@@ -2051,30 +2048,77 @@ class CSaleOrderLoader
 		return false;
 	}
 
-	function nodeHandler(CDataXML $dataXml)
+	protected function getXMLStream(CXMLFileStream $fileStream)
+	{
+		$startPosition = 0;
+		$endPosition = 0;
+
+		$positionLast = $fileStream->getPosition();
+
+		if(isset($positionLast[1]))
+			$endPosition = $positionLast[1];
+
+		if(is_array($_SESSION["BX_CML2_EXPORT"]["proccess_xml_entry"]))
+		{
+			$position = $_SESSION["BX_CML2_EXPORT"]["proccess_xml_entry"];
+
+			if(isset($position[1]))
+				$startPosition = $position[1];
+		}
+		else
+		{
+			foreach(explode("/", $positionLast[2]) as $pathPart)
+			{
+				@list($elementPosition, $elementName) = explode("@", $pathPart, 2);
+				$positionStack[] = $elementPosition;
+			}
+			$startPosition = array_pop($positionStack);
+		}
+
+		$_SESSION["BX_CML2_EXPORT"]["proccess_xml_entry"] = $fileStream->getPosition();
+
+		$xmlChunk = $fileStream->readFilePart($startPosition, $endPosition);
+
+		return \Bitrix\Main\Text\Encoding::convertEncoding($xmlChunk, $positionLast[0], LANG_CHARSET, $error);
+	}
+
+	function nodeHandler(CDataXML $dataXml, CXMLFileStream $fileStream)
 	{
 		$value = $dataXml->GetArray();
+		$xmlStream = $this->getXMLStream($fileStream);
+		$importer = $this->importer;
 
-		if(!empty($value[GetMessage("CC_BSC1_CONTAINER")]) ||
-			empty($value[GetMessage("CC_BSC1_DOCUMENT")])
- 		)
+		if($importer instanceof Sale\Exchange\ImportOneCBase)
 		{
-			if(!empty($value[GetMessage("CC_BSC1_CONTAINER")]))
+			$r = new Sale\Result();
+
+			if($importer instanceof Sale\Exchange\ImportOneCSubordinateSale)
+			{
+				$documentData = array($value[GetMessage("CC_BSC1_DOCUMENT")]);
+			}
+			elseif($importer instanceof Sale\Exchange\ImportOneCPackage)
 			{
 				$documentData = $value[GetMessage("CC_BSC1_CONTAINER")]['#'][GetMessage("CC_BSC1_DOCUMENT")];
-				$importer = $this->importer;
 			}
 			else
 			{
 				$documentData = array($value[GetMessage("CC_BSC1_AGENT")]["#"]);
-				$importer = $this->importerContragent;
 			}
 
-			/** @var Sale\Result $r */
-			$r = $importer::checkSettings();
+			if(!is_array($documentData) || count($documentData)<=0)
+				$r->addError(new \Bitrix\Main\Error(GetMessage("CC_BSC1_DOCUMENT_XML_EMPTY")));
+
 			if($r->isSuccess())
 			{
-				$r = $importer->process($documentData);
+				/** @var Sale\Result $r */
+				$r = $importer::checkSettings();
+				if($r->isSuccess())
+				{
+					if(strlen($xmlStream)>0)
+						$importer->setRawData($xmlStream);
+
+					$r = $importer->process($documentData);
+				}
 			}
 
 			if(!$r->isSuccess())
@@ -3385,6 +3429,7 @@ class CSaleOrderLoader
 
 						if(!empty($arOrder["items"]))
 						{
+							$hasServiceItem = self::serviceItemsExists($arOrder["items"]);
 							$priceDelivery = 0;
 							foreach ($arOrder["items"] as $itemID => $arItem)
 							{
@@ -3411,8 +3456,20 @@ class CSaleOrderLoader
 										$priceDelivery = $arItem["PRICE"];
 									}
 
-									if ($priceDelivery != IntVal($orderInfo["PRICE_DELIVERY"]))
-										$arOrderFields["PRICE_DELIVERY"] = $priceDelivery;
+									if($hasServiceItem)
+									{
+										if ($priceDelivery != IntVal($orderInfo["PRICE_DELIVERY"]))
+										{
+											if($arItem["TYPE"] == GetMessage("CC_BSC1_SERVICE"))
+												$arOrderFields["PRICE_DELIVERY"] = $priceDelivery;
+										}
+									}
+									else
+									{
+										if ($priceDelivery != IntVal($orderInfo["PRICE_DELIVERY"]))
+											$arOrderFields["PRICE_DELIVERY"] = $priceDelivery;
+									}
+
 								}
 							}
 						}
@@ -3788,6 +3845,21 @@ class CSaleOrderLoader
 				$this->strError .= "\n".GetMessage("CC_BSC1_ORDER_NO_AGENT_ID", Array("#ID#" => $arOrder["ID_1C"]));
 			}
 		}
+	}
+
+	/**
+	 * @param $items
+	 * @return bool
+	 * @deprecated
+	 */
+	static function serviceItemsExists($items)
+	{
+		foreach($items as $item)
+		{
+			if($item["TYPE"] == GetMessage("CC_BSC1_SERVICE"))
+				return true;
+		}
+		return false;
 	}
 }
 ?>

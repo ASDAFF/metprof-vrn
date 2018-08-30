@@ -29,6 +29,7 @@ final class Manager
 	const DEBUG_MODE = false;
 	const CACHE_ID = 'BITRIX_CASHBOX_LIST';
 	const TTL = 31536000;
+	const CHECK_STATUS_AGENT = '\Bitrix\Sale\Cashbox\Manager::updateChecksStatus();';
 
 	/**
 	 * @param CollectableEntity $entity
@@ -82,14 +83,24 @@ final class Manager
 
 	/**
 	 * @param array $cashbox
-	 * @return void
+	 * @throws Main\ArgumentNullException
+	 * @throws Main\ArgumentOutOfRangeException
+	 * @throws Main\ObjectException
+	 * @throws \Exception
 	 */
 	public static function saveCashbox(array $cashbox)
 	{
 		if (isset($cashbox['ID']) && (int)$cashbox['ID'] > 0)
 		{
 			if ($cashbox['ENABLED'] !== $cashbox['PRESENTLY_ENABLED'])
+			{
 				static::update($cashbox['ID'], array('ENABLED' => $cashbox['PRESENTLY_ENABLED']));
+
+				if ($cashbox['PRESENTLY_ENABLED'] === 'N')
+				{
+					static::showAlarmMessage($cashbox['ID']);
+				}
+			}
 
 			CashboxTable::update($cashbox['ID'], array('DATE_LAST_CHECK' => new DateTime()));
 		}
@@ -104,11 +115,17 @@ final class Manager
 					'HANDLER' => $cashbox['HANDLER'],
 					'ENABLED' => $cashbox['PRESENTLY_ENABLED'],
 					'DATE_LAST_CHECK' => new DateTime(),
+					'EMAIL' => Main\Config\Option::get('main', 'email_from'),
 				)
 			);
 
 			if ($result->isSuccess())
 			{
+				if ($cashbox['PRESENTLY_ENABLED'] === 'N')
+				{
+					static::showAlarmMessage($result->getId());
+				}
+
 				CashboxZReportTable::add(array(
 					'STATUS' => 'Y',
 					'CASHBOX_ID' => $result->getId(),
@@ -124,6 +141,29 @@ final class Manager
 				));
 			}
 		}
+	}
+
+	/**
+	 * @param $cashboxId
+	 */
+	protected static function showAlarmMessage($cashboxId)
+	{
+		$tag = "CASHBOX_STATUS_ERROR";
+
+		$dbRes = \CAdminNotify::GetList([], ["TAG" => $tag]);
+
+		if ($res = $dbRes->Fetch())
+		{
+			return;
+		}
+
+		\CAdminNotify::Add([
+			"MESSAGE" => Loc::getMessage('SALE_CASHBOX_ACCESS_UNAVAILABLE', ['#CASHBOX_ID#' => $cashboxId]),
+			"TAG" => $tag,
+			"MODULE_ID" => "SALE",
+			"ENABLE_CLOSE" => "Y",
+			"NOTIFY_TYPE" => \CAdminNotify::TYPE_ERROR
+		]);
 	}
 
 	/**
@@ -274,10 +314,18 @@ final class Manager
 
 		if (is_subclass_of($data['HANDLER'], '\Bitrix\Sale\Cashbox\ICheckable'))
 		{
-			\CAgent::AddAgent('\Bitrix\Sale\Cashbox\Manager::updateChecksStatus();', "sale", "N", 120, "", "Y");
+			static::addCheckStatusAgent();
 		}
 
 		return $addResult;
+	}
+
+	/**
+	 * @return void
+	 */
+	private static function addCheckStatusAgent()
+	{
+		\CAgent::AddAgent(static::CHECK_STATUS_AGENT, "sale", "N", 120, "", "Y");
 	}
 
 	/**
@@ -291,6 +339,11 @@ final class Manager
 
 		$cacheManager = Main\Application::getInstance()->getManagedCache();
 		$cacheManager->clean(Manager::CACHE_ID);
+
+		if (is_subclass_of($data['HANDLER'], '\Bitrix\Sale\Cashbox\ICheckable'))
+		{
+			static::addCheckStatusAgent();
+		}
 
 		return $updateResult;
 	}
@@ -376,6 +429,7 @@ final class Manager
 
 	/**
 	 * @return string
+	 * @throws Main\ArgumentException
 	 */
 	public static function updateChecksStatus()
 	{
@@ -428,7 +482,7 @@ final class Manager
 			}
 		}
 
-		return '\Bitrix\Sale\Cashbox\Manager::updateChecksStatus();';
+		return static::CHECK_STATUS_AGENT;
 	}
 
 }
