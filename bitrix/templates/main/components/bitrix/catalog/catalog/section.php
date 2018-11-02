@@ -130,7 +130,8 @@ $this->setFrameMode(true);
 					"VIEW_MODE" => $arParams["SECTIONS_VIEW_MODE"],
 					"SHOW_PARENT_NAME" => $arParams["SECTIONS_SHOW_PARENT_NAME"],
 					"HIDE_SECTION_NAME" => (isset($arParams["SECTIONS_HIDE_SECTION_NAME"]) ? $arParams["SECTIONS_HIDE_SECTION_NAME"] : "N"),
-					"ADD_SECTIONS_CHAIN" => (isset($arParams["ADD_SECTIONS_CHAIN"]) ? $arParams["ADD_SECTIONS_CHAIN"] : '')
+					"ADD_SECTIONS_CHAIN" => (isset($arParams["ADD_SECTIONS_CHAIN"]) ? $arParams["ADD_SECTIONS_CHAIN"] : ''),
+					"SECTION_USER_FIELDS" => array("UF_SECTION_NAME")
 				),
 				$component,
 				array("HIDE_ICONS" => "Y")
