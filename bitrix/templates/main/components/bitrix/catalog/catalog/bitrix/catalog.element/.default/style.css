@@ -243,4 +243,12 @@ button.no-style {
         padding: 0px;
     }
 
+    .toShopBox:before{
+        display: none;
+    }
+
+    .toShopBox{
+        padding-left: 0px;
+    }
+
 }
