@@ -63,6 +63,7 @@ Disallow: /*.xls
 Disallow: /*.doc
 Disallow: /*.ppt
 Disallow: /*.txt
+Disallow: /new.metprof-vrn.ru/
 Allow: /*/css/*.css
 Allow: /*/js/*.js
 Allow: /*.jpg
