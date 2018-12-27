@@ -67,6 +67,21 @@ if($result->isSuccess())
 {
 	$arResult["RESULT"] = "OK";
 
+	$needConfirm = ($result->get('NEED_CONFIRM') === true);
+	if ($needConfirm)
+	{
+		if ($result->get('CONFIRM_TITLE') != '')
+		{
+			$arResult["CONFIRM_TITLE"] = $result->get('CONFIRM_TITLE');
+		}
+
+		if ($result->get('CONFIRM_MESSAGE') != '')
+		{
+			$arResult["CONFIRM_MESSAGE"] = $result->get('CONFIRM_MESSAGE');
+		}
+
+	}
+
 	if ($result->hasWarnings())
 	{
 		$arResult["WARNING"] = implode("\n", $result->getWarningMessages());
@@ -253,7 +268,7 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowView)
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_BASKET_ITEM_ADD'));
 			}
 		}
 
@@ -372,7 +387,7 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowUpdate)
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_ORDER_CANCEL'));
 			}
 		}
 
@@ -392,7 +407,11 @@ class AjaxProcessor
 		$saleOrder->setField("REASON_CANCELED", $canceled == "N" ? $comment : "");
 
 		$res = $saleOrder->save();
-		if(!$res->isSuccess())
+		if($res->isSuccess())
+		{
+			Sale\Provider::resetTrustData($saleOrder->getSiteId());
+		}
+		else
 		{
 			$errors = array_merge($errors, $res->getErrorMessages());
 		}
@@ -459,7 +478,7 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowUpdate)
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_ORDER_ADD_COMMENTS'));
 			}
 		}
 
@@ -519,7 +538,7 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowUpdate)
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_ORDER_STATUS_CHANGE'));
 			}
 		}
 
@@ -537,8 +556,14 @@ class AjaxProcessor
 
 			$res = $order->save();
 
-			if(!$res->isSuccess())
+			if($res->isSuccess())
+			{
+				Sale\Provider::resetTrustData($order->getSiteId());
+			}
+			else
+			{
 				throw new UserMessageException(implode("<br>\n", $res->getErrorMessages()));
+			}
 		}
 	}
 
@@ -608,7 +633,7 @@ class AjaxProcessor
 
 				if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowUpdate)
 				{
-					throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+					throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_ORDER_REFRESH'));
 				}
 			}
 
@@ -905,6 +930,8 @@ class AjaxProcessor
 		if(!isset($this->request['paymentId']) || intval($this->request['paymentId']) <= 0)
 			throw new ArgumentNullException("paymentId");
 
+		$strict = (isset($this->request['strict']) && $this->request['strict'] == true);
+
 		$fields = array();
 		$orderStatusId = '';
 		/** @var \Bitrix\Sale\Order $order */
@@ -939,8 +966,13 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowUpdate)
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_PAYMENT_STATUS_CHANGE'));
 			}
+		}
+
+		if ($strict)
+		{
+			Sale\Internals\Catalog\Provider::setIgnoreErrors(true);
 		}
 
 		if ($this->request['method'] == 'save')
@@ -962,10 +994,35 @@ class AjaxProcessor
 			else
 			{
 				$res = $payment->setPaid('Y');
+				if ($strict)
+				{
+					$res = $this->removeErrorsForConfirmation($res);
+				}
+
 				if (!$res->isSuccess())
 				{
-					$this->addResultError(join("\n", $res->getErrorMessages()));
+					$res = $this->convertErrorsToConfirmation($res);
+
+					$setResultMessage = $res->getErrorMessages();
+					if (!empty($setResultMessage))
+					{
+						$this->addResultError(join("\n", $setResultMessage));
+					}
+					elseif ($res->hasWarnings())
+					{
+						$existSpecialErrors = $res->get('NEED_CONFIRM');
+						if ($existSpecialErrors)
+						{
+							$this->addResultData('NEED_CONFIRM', $existSpecialErrors);
+							$this->addResultData('CONFIRM_TITLE', Loc::getMessage('SALE_ORDER_SHIP_SHIPMENT_NOTICE_TITLE'));
+							$this->addResultData('CONFIRM_MESSAGE', Loc::getMessage('SALE_ORDER_SHIP_SHIPMENT_NOTICE_MESSAGE'));
+						}
+
+						$this->addResultWarning(join("\n", $res->getWarningMessages()));
+					}
+
 					$hasErrors = true;
+
 				}
 				elseif ($res->hasWarnings())
 				{
@@ -1047,6 +1104,11 @@ class AjaxProcessor
 		if (!$hasErrors)
 		{
 			$saveResult = $payment->setFields($fields);
+			if ($strict)
+			{
+				$saveResult = $this->removeErrorsForConfirmation($saveResult);
+			}
+
 			if ($saveResult->isSuccess())
 			{
 				if (!empty($orderStatusId))
@@ -1069,8 +1131,14 @@ class AjaxProcessor
 				}
 
 				$result = $order->save();
+				if ($strict)
+				{
+					$result = $this->removeErrorsForConfirmation($result);
+				}
+
 				if ($result->isSuccess())
 				{
+					Sale\Provider::resetTrustData($order->getSiteId());
 					$preparedData = Admin\Blocks\OrderFinanceInfo::prepareData($order);
 					$preparedData["PAYMENT_PAID_".$payment->getId()] = $payment->isPaid() ? "Y" : "N";
 
@@ -1129,8 +1197,31 @@ class AjaxProcessor
 			}
 			else
 			{
-				$this->addResultError(join("\n", $saveResult->getErrorMessages()));
+				$saveResult = $this->convertErrorsToConfirmation($saveResult);
+
+				$setResultMessage = $saveResult->getErrorMessages();
+				if (!empty($setResultMessage))
+				{
+					$this->addResultError(join("\n", $setResultMessage));
+				}
+				elseif ($saveResult->hasWarnings())
+				{
+					$existSpecialErrors = $saveResult->get('NEED_CONFIRM');
+					if ($existSpecialErrors)
+					{
+						$this->addResultData('NEED_CONFIRM', $existSpecialErrors);
+						$this->addResultData('CONFIRM_TITLE', Loc::getMessage('SALE_ORDER_SHIP_SHIPMENT_NOTICE_TITLE'));
+						$this->addResultData('CONFIRM_MESSAGE', Loc::getMessage('SALE_ORDER_SHIP_SHIPMENT_NOTICE_MESSAGE'));
+					}
+
+					$this->addResultWarning(join("\n", $saveResult->getWarningMessages()));
+				}
 			}
+		}
+
+		if ($strict)
+		{
+			Sale\Internals\Catalog\Provider::setIgnoreErrors(false);
 		}
 	}
 
@@ -1187,7 +1278,7 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowUpdate)
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_PAYMENT_DELETE'));
 			}
 		}
 
@@ -1197,9 +1288,14 @@ class AjaxProcessor
 		{
 			$result = $order->save();
 			if ($result->isSuccess())
+			{
+				Sale\Provider::resetTrustData($order->getSiteId());
 				$this->addResultData("RESULT", "OK");
+			}
 			else
+			{
 				throw new UserMessageException(join("\n", $result->getErrorMessages()));
+			}
 		}
 		else
 		{
@@ -1254,7 +1350,7 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowUpdate)
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_SHIPMENT_DELETE'));
 			}
 		}
 		
@@ -1271,6 +1367,7 @@ class AjaxProcessor
 			$saveResult = $order->save();
 			if ($saveResult->isSuccess())
 			{
+				Sale\Provider::resetTrustData($order->getSiteId());
 				$result["DELIVERY_PRICE"] = $shipmentCollection->getBasePriceDelivery();
 				$result["DELIVERY_PRICE_DISCOUNT"] = $shipmentCollection->getPriceDelivery();
 				$result['PRICE'] = $order->getPrice();
@@ -1315,6 +1412,7 @@ class AjaxProcessor
 		$field = $this->request['field'];
 		$index = $this->request['index'];
 		$newStatus = $this->request['status'];
+		$strict = (isset($this->request['strict']) && $this->request['strict'] == true);
 
 		/** @var \Bitrix\Sale\Order $order */
 		$order = \Bitrix\Sale\Order::load($orderId);
@@ -1348,36 +1446,77 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowUpdate)
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_SHIPMENT_STATUS_CHANGE'));
 			}
+		}
+
+		if ($strict)
+		{
+			Sale\Internals\Catalog\Provider::setIgnoreErrors(true);
 		}
 
 		$setResult = $shipment->setField($field, $newStatus);
 
 		if ($setResult->isSuccess())
 		{
+			if ($strict)
+			{
+				$setResult = $this->removeErrorsForConfirmation($setResult);
+			}
+
 			if ($setResult->hasWarnings())
 			{
 				$this->addResultWarning(join("\n", $setResult->getWarningMessages()));
 			}
 
 			$saveResult = $order->save();
-			if (!$saveResult->isSuccess())
+			if ($strict)
+			{
+				$saveResult = $this->removeErrorsForConfirmation($saveResult);
+			}
+
+			if ($saveResult->isSuccess())
+			{
+				Sale\Provider::resetTrustData($order->getSiteId());
+			}
+			else
 			{
 				$this->addResultError(join("\n", $saveResult->getErrorMessages()));
 			}
-			elseif ($saveResult->hasWarnings())
+
+			if ($saveResult->hasWarnings())
 			{
 				$this->addResultWarning(join("\n", $saveResult->getWarningMessages()));
 			}
+
+
 		}
 		else
 		{
-			$serResultMessage = $setResult->getErrorMessages();
-			if (!empty($serResultMessage))
-				$this->addResultError(join("\n", $serResultMessage));
-			else
-				$this->addResultError(Loc::getMessage('SALE_OA_SHIPMENT_STATUS_ERROR'));
+			$setResult = $this->convertErrorsToConfirmation($setResult);
+
+			$setResultMessage = $setResult->getErrorMessages();
+			if (!empty($setResultMessage))
+			{
+				$this->addResultError(join("\n", $setResultMessage));
+			}
+			elseif ($setResult->hasWarnings())
+			{
+				$existSpecialErrors = $setResult->get('NEED_CONFIRM');
+				if ($existSpecialErrors)
+				{
+					$this->addResultData('NEED_CONFIRM', $existSpecialErrors);
+					$this->addResultData('CONFIRM_TITLE', Loc::getMessage('SALE_ORDER_SHIP_SHIPMENT_NOTICE_TITLE'));
+					$this->addResultData('CONFIRM_MESSAGE', Loc::getMessage('SALE_ORDER_SHIP_SHIPMENT_NOTICE_MESSAGE'));
+				}
+
+				$this->addResultWarning(join("\n", $setResult->getWarningMessages()));
+			}
+		}
+
+		if ($strict)
+		{
+			Sale\Internals\Catalog\Provider::setIgnoreErrors(false);
 		}
 
 		if($shipment)
@@ -1445,7 +1584,7 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowUpdate)
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_PAYMENT_ADD'));
 			}
 		}
 
@@ -1486,11 +1625,31 @@ class AjaxProcessor
 		$profiles = array();
 		$index = $this->request['index'];
 		$formData = isset($this->request["formData"]) ? $this->request["formData"] : array();
+		$confirmed = isset($this->request["confirmed"]) ? $this->request["confirmed"] : 'N';
 		$formData['ID'] = $formData['order_id'];
 		$deliveryId = intval($formData['SHIPMENT'][$index]['DELIVERY_ID']);
 
 		if ($deliveryId <= 0)
 			return;
+
+		$shipmentId = intval($formData['SHIPMENT'][$index]['SHIPMENT_ID']);
+
+		if($shipmentId > 0 && Sale\Delivery\Requests\Manager::isShipmentSent($shipmentId) && $confirmed != 'Y')
+		{
+			$requestId = Sale\Delivery\Requests\Manager::getRequestIdByShipmentId($shipmentId);
+			$this->addResultData("NEED_CONFIRM", "Y");
+			$this->addResultData(
+				"CONFIRM",
+				array(
+					"TEXT" =>
+						Loc::getMessage(
+							'SALE_OA_SHIPMENT_DELIVERY_REQ_SENT',
+							array(
+								'#REQUEST_ID#' => Sale\Delivery\Requests\Helper::getRequestViewLink($requestId)
+
+			))));
+			return;
+		}
 
 		Admin\OrderEdit::$isTrustProductFormData = true;
 		$order = $this->getOrder($formData);
@@ -1518,7 +1677,7 @@ class AjaxProcessor
 			$resShipment = Sale\Internals\ShipmentTable::getList(array(
 																	 'filter' => array(
 																		 '=ORDER_ID' => intval($this->request["orderId"]),
-																		 '=ID' => intval($formData['SHIPMENT'][$index]['SHIPMENT_ID']),
+																		 '=ID' => $shipmentId,
 																	 ),
 																	 'select' => array(
 																		 'RESPONSIBLE_ID', 'COMPANY_ID', 'STATUS_ID'
@@ -1541,9 +1700,10 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowUpdate)
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_SHIPMENT_DELIVERY_CHANGE'));
 			}
 		}
+
 
 		/** @var  \Bitrix\Sale\Delivery\Services\Base $service */
 		$service = Sale\Delivery\Services\Manager::getObjectById($deliveryId);
@@ -1666,7 +1826,7 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowView)
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_SHIPMENT_GET_DEFAULT_DELIVERY_PRICE'));
 			}
 		}
 
@@ -1762,7 +1922,7 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowUpdate)
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_ORDER_COUPON_DELETE'));
 			}
 		}
 
@@ -1817,7 +1977,7 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowUpdate)
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_ORDER_COUPON_ADD'));
 			}
 		}
 
@@ -2137,7 +2297,7 @@ class AjaxProcessor
 
 					if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowUpdate)
 					{
-						throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+						throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_PAYMENT_INFO_CHANGE'));
 					}
 				}
 
@@ -2207,7 +2367,7 @@ class AjaxProcessor
 
 					if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowUpdate)
 					{
-						throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+						throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_SHIPMENT_TRACKING_NUMBER_CHANGE'));
 					}
 				}
 
@@ -2215,15 +2375,19 @@ class AjaxProcessor
 				if ($result->isSuccess())
 				{
 					$result = $order->save();
-					if (!$result->isSuccess())
+					if ($result->isSuccess())
 					{
-						if ($result->hasWarnings())
-						{
-							$this->addResultWarning(join(', ', $result->getWarningMessages()));
-						}
-
+						Sale\Provider::resetTrustData($order->getSiteId());
+					}
+					else
+					{
 						$messages = join(', ', $result->getErrorMessages());
 						$this->addResultError($messages);
+					}
+
+					if ($result->hasWarnings())
+					{
+						$this->addResultWarning(join(', ', $result->getWarningMessages()));
 					}
 				}
 			}
@@ -2300,7 +2464,7 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowUpdate)
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_SHIPMENT_TRACKING_STATUS_CHANGE'));
 			}
 		}
 
@@ -2368,7 +2532,7 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowUpdate)
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_ORDER_UNMARK'));
 			}
 		}
 
@@ -2382,11 +2546,16 @@ class AjaxProcessor
 			$errors = $res->getErrorMessages();
 
 		$res = $saleOrder->save();
-		if(!$res->isSuccess())
+		if($res->isSuccess())
+		{
+			Sale\Provider::resetTrustData($saleOrder->getSiteId());
+		}
+		else
 		{
 			$errors = array_merge($errors, $res->getErrorMessages());
 		}
-		elseif ($res->hasWarnings())
+
+		if ($res->hasWarnings())
 		{
 			$warnings = array_merge($warnings, $res->getWarningMessages());
 		}
@@ -2461,11 +2630,11 @@ class AjaxProcessor
 										$isAllowCompany = true;
 									}
 
-									$isAllowUpdate = in_array($payment->getField('STATUS_ID'), $allowedStatusesUpdate);
+									$isAllowUpdate = in_array($order->getField('STATUS_ID'), $allowedStatusesUpdate);
 
 									if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowUpdate)
 									{
-										throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+										throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_PAYMENT_PAYSYSTEM_CHANGE'));
 									}
 								}
 
@@ -2533,7 +2702,7 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany) || !$isAllowView)
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_ORDER_GET_TAILS'));
 			}
 		}
 
@@ -2611,7 +2780,7 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany))
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_MARKER_FIX'));
 			}
 		}
 
@@ -2644,11 +2813,16 @@ class AjaxProcessor
 		}
 
 		$r = $order->save();
-		if(!$r->isSuccess())
+		if($r->isSuccess())
+		{
+			Sale\Provider::resetTrustData($order->getSiteId());
+		}
+		else
 		{
 			$errors = array_merge($errors, $r->getErrorMessages());
 		}
-		elseif ($r->hasWarnings())
+
+		if ($r->hasWarnings())
 		{
 			$warnings = array_merge($warnings, $r->getWarningMessages());
 		}
@@ -2724,7 +2898,7 @@ class AjaxProcessor
 
 			if ((!$isUserResponsible && !$isAllowCompany))
 			{
-				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION'));
+				throw new UserMessageException(Loc::getMessage('SALE_OA_PERMISSION_MARKER_DELETE'));
 			}
 		}
 
@@ -2758,11 +2932,16 @@ class AjaxProcessor
 		}
 
 		$r = $order->save();
-		if(!$r->isSuccess())
+		if($r->isSuccess())
+		{
+			Sale\Provider::resetTrustData($order->getSiteId());
+		}
+		else
 		{
 			$errors = array_merge($errors, $r->getErrorMessages());
 		}
-		elseif ($r->hasWarnings())
+
+		if ($r->hasWarnings())
 		{
 			$warnings = array_merge($warnings, $r->getWarningMessages());
 		}
@@ -2788,6 +2967,8 @@ class AjaxProcessor
 	 * Create HTML for create check window
 	 *
 	 * @throws ArgumentNullException
+	 * @throws \Bitrix\Main\ArgumentException
+	 * @throws \Bitrix\Main\NotImplementedException
 	 */
 	protected function addCheckPaymentAction()
 	{
@@ -2798,13 +2979,8 @@ class AjaxProcessor
 			return ;
 		}
 
-		$dbRes = Sale\Payment::getList(
-			array(
-				"filter" => array("ID" => (int)$paymentId)
-			)
-		);
-
 		$typeList = Cashbox\CheckManager::getCheckTypeMap();
+		$checkType = null;
 		$typeListHtml = '';
 		/** @var Cashbox\Check $typeClass */
 		foreach ($typeList as $id => $typeClass)
@@ -2814,56 +2990,54 @@ class AjaxProcessor
 				if ($typeClass::getSupportedEntityType() === Cashbox\Check::SUPPORTED_ENTITY_TYPE_SHIPMENT)
 					continue;
 
+				if ($checkType === null)
+				{
+					$checkType = $id;
+				}
+
 				$type = $typeClass::getName();
 				$typeListHtml .= "<option value='".$id."'>".$type."</option>";
 			}
 		}
 
-		$paymentData = $dbRes->fetch();
-		$order = Sale\Order::load($paymentData['ORDER_ID']);
+		$relatedEntities = Cashbox\CheckManager::getRelatedEntitiesForPayment($checkType, $paymentId);
 
 		$entityHtml = '';
 
-		/** @var \Bitrix\Sale\Shipment $shipment */
-		foreach($order->getShipmentCollection() as $shipment)
+		if ($relatedEntities['SHIPMENTS'])
 		{
-			if ($shipment->isSystem())
-				continue;
-
 			$useMulti = Cashbox\Manager::isSupportedFFD105() ? 'true' : 'false';
-
-			$uuid = uniqid('check_'.$shipment->getId());
-			$entityHtml .= "
-				<tr>
-					<td colspan='2'>
-						<input type='checkbox' id='".$uuid."' onclick='BX.Sale.Admin.OrderPayment.prototype.onCheckEntityChoose(this, $useMulti);' name='SHIPMENTS[".$shipment->getId()."][ID]' value='".$shipment->getId()."'>
-						<label for='".$uuid."' class=\"bx-admin-service-restricted\">
-							".Loc::getMessage('CASHBOX_OA_SHIPMENT')." ".$shipment->getId().": ".$shipment->getField('DELIVERY_NAME')."
-						</label>
-					</td>
-				</tr>";
+			foreach($relatedEntities['SHIPMENTS'] as $shipment)
+			{
+				$uuid = uniqid('check_'.$shipment['ID']);
+				$entityHtml .= "
+					<tr>
+						<td colspan='2'>
+							<input type='checkbox' id='".$uuid."' onclick='BX.Sale.Admin.OrderPayment.prototype.onCheckEntityChoose(this, $useMulti);' name='SHIPMENTS[".$shipment['ID']."][ID]' value='".$shipment['ID']."'>
+							<label for='".$uuid."'>
+								".Loc::getMessage('CASHBOX_OA_SHIPMENT')." ".$shipment['ID'].": ".$shipment['NAME']."
+							</label>
+						</td>
+					</tr>";
+			}
 		}
 
-		if (Cashbox\Manager::isSupportedFFD105())
+		if ($relatedEntities['PAYMENTS'])
 		{
-			/** @var \Bitrix\Sale\Payment $payment */
-			foreach($order->getPaymentCollection() as $payment)
+			foreach($relatedEntities['PAYMENTS'] as $payment)
 			{
-				if ($payment->getId() == $paymentData['ID'])
-					continue;
-
-				$uuid = uniqid('check_'.$payment->getId());
+				$uuid = uniqid('check_'.$payment['ID']);
 
 				$entityHtml .= "
 					<tr>
 						<td>
-							<input type='checkbox' id='".$uuid."' onclick='BX.Sale.Admin.OrderPayment.prototype.onCheckEntityChoose(this, true)' name='PAYMENTS[".$payment->getId()."][ID]' value='".$payment->getId()."'>
-							<label for='".$uuid."' class=\"bx-admin-service-restricted\">
-								".Loc::getMessage('CASHBOX_OA_PAYMENT')." ".$payment->getId().": ".$payment->getPaymentSystemName()."
+							<input type='checkbox' id='".$uuid."' onclick='BX.Sale.Admin.OrderPayment.prototype.onCheckEntityChoose(this, true)' name='PAYMENTS[".$payment['ID']."][ID]' value='".$payment['ID']."'>
+							<label for='".$uuid."'>
+								".Loc::getMessage('CASHBOX_OA_PAYMENT')." ".$payment['ID'].": ".$payment['NAME']."
 							</label>
 						</td>
 						<td>
-							<select name='PAYMENTS[".$payment->getId()."][TYPE]' disabled='true' id='".$uuid."_type'>
+							<select name='PAYMENTS[".$payment['ID']."][TYPE]' disabled='true' id='".$uuid."_type'>
 								<option value='".Cashbox\Check::PAYMENT_TYPE_ADVANCE."'>".Loc::getMessage('CASHBOX_OA_PAYMENT_TYPE_ADVANCE')."</option>
 								<option value='".Cashbox\Check::PAYMENT_TYPE_CREDIT."'>".Loc::getMessage('CASHBOX_OA_PAYMENT_TYPE_CREDIT')."</option>
 							</select>
@@ -2897,8 +3071,7 @@ class AjaxProcessor
 						</td>
 					</tr>
 				</table>
-				<input type='hidden' name='PAYMENT_ID' value='".$paymentData['ID']."'>
-				<input type='hidden' name='ORDER_ID' value='".$paymentData['ORDER_ID']."'>
+				<input type='hidden' name='PAYMENT_ID' value='".$paymentId."'>
 			</form>
 		";
 
@@ -2908,7 +3081,8 @@ class AjaxProcessor
 	/**
 	 * Create HTML for create check window
 	 *
-	 * @throws ArgumentNullException
+	 * @throws \Bitrix\Main\ArgumentException
+	 * @throws \Bitrix\Main\NotImplementedException
 	 */
 	protected function addCheckShipmentAction()
 	{
@@ -2919,16 +3093,7 @@ class AjaxProcessor
 			return ;
 		}
 
-		$dbRes = Sale\Shipment::getList(
-			array(
-				"filter" => array("ID" => (int)$shipmentId)
-			)
-		);
-
-		$shipmentData = $dbRes->fetch();
-		$order = Sale\Order::load($shipmentData['ORDER_ID']);
-		$paymentCollection = $order->getPaymentCollection();
-
+		$checkType = null;
 		$typeList = Cashbox\CheckManager::getCheckTypeMap();
 		$typeListHtml = '';
 		/** @var Cashbox\Check $typeClass */
@@ -2939,46 +3104,77 @@ class AjaxProcessor
 				if ($typeClass::getSupportedEntityType() === Cashbox\Check::SUPPORTED_ENTITY_TYPE_PAYMENT)
 					continue;
 
+				if ($checkType === null)
+				{
+					$checkType = $id;
+				}
+
 				$type = $typeClass::getName();
 				$typeListHtml .= "<option value='".$id."'>".$type."</option>";
 			}
 		}
 
-		$entityHtml = '';
-		/** @var \Bitrix\Sale\Payment $payment */
-		foreach($paymentCollection as $payment)
-		{
-			$uuid = uniqid('check_'.$payment->getId().'_');
+		$relatedEntities = Cashbox\CheckManager::getRelatedEntitiesForShipment($checkType, $shipmentId);
 
-			$entityHtml .= "
-				<tr>
-					<td>
-						<input type='checkbox' id='".$uuid."' onclick='BX.Sale.Admin.OrderShipment.prototype.onCheckEntityChoose(this, true);' name='PAYMENTS[".$payment->getId()."][ID]' value='".$payment->getId()."'>
-						<label for='".$uuid."' class=\"bx-admin-service-restricted\" id=\"".$uuid."_title\">
-							".Loc::getMessage('CASHBOX_OA_PAYMENT')." ".$payment->getId().": ".$payment->getPaymentSystemName()."
-						</label>
-					</td>
-					<td>
-						<select name='PAYMENTS[".$payment->getId()."][TYPE]' disabled='true' id='".$uuid."_type'>
-							<option value='".Cashbox\Check::PAYMENT_TYPE_ADVANCE."'>".Loc::getMessage('CASHBOX_OA_PAYMENT_TYPE_ADVANCE')."</option>
-							<option value='".Cashbox\Check::PAYMENT_TYPE_CREDIT."'>".Loc::getMessage('CASHBOX_OA_PAYMENT_TYPE_CREDIT')."</option>
-						</select>
-					</td>
-				</tr>";
+		$entityHtml = '';
+		if ($relatedEntities['PAYMENTS'])
+		{
+			foreach($relatedEntities['PAYMENTS'] as $payment)
+			{
+				$uuid = uniqid('check_'.$payment['ID'].'_');
+
+				$entityHtml .= "
+					<tr>
+						<td>
+							<input type='checkbox' id='".$uuid."' onclick='BX.Sale.Admin.OrderShipment.prototype.onCheckEntityChoose(this, true);' name='PAYMENTS[".$payment['ID']."][ID]' value='".$payment['ID']."'>
+							<label for='".$uuid."' id=\"".$uuid."_title\">
+								".Loc::getMessage('CASHBOX_OA_PAYMENT')." ".$payment['ID'].": ".$payment['NAME']."
+							</label>
+						</td>
+						<td>
+							<select name='PAYMENTS[".$payment['ID']."][TYPE]' disabled='true' id='".$uuid."_type'>
+								<option value='".Cashbox\Check::PAYMENT_TYPE_ADVANCE."'>".Loc::getMessage('CASHBOX_OA_PAYMENT_TYPE_ADVANCE')."</option>
+								<option value='".Cashbox\Check::PAYMENT_TYPE_CREDIT."'>".Loc::getMessage('CASHBOX_OA_PAYMENT_TYPE_CREDIT')."</option>
+							</select>
+						</td>
+					</tr>";
+			}
 		}
 
-		$shipmentCollection = $order->getShipmentCollection();
-		/** @var Sale\Shipment $shipment */
-		$shipment = $shipmentCollection->getItemById($shipmentId);
-		$shipmentItemCollection = $shipment->getShipmentItemCollection();
+		$dbRes = Sale\Shipment::getList(array(
+			'select' => array('PRICE_DELIVERY'),
+			'filter' => array('=ID' => $shipmentId)
+		));
+		$shipmentInfo = $dbRes->fetch();
 
-		$shipmentPrice = $shipment->getPrice() + $shipmentItemCollection->getPrice();
+		$totalSum = $shipmentInfo['PRICE_DELIVERY'];
+
+		$dbRes = Sale\ShipmentItemCollection::getList(array(
+			'select' => array(
+				'PRICE' => 'BASKET.PRICE',
+				'QUANTITY',
+				'CURRENCY' => 'BASKET.CURRENCY'
+			),
+			'filter' => array('=ORDER_DELIVERY_ID' => $shipmentId)
+		));
+
+		$currency = '';
+		while ($item = $dbRes->fetch())
+		{
+			if ($currency === '')
+			{
+				$currency = $item['CURRENCY'];
+			}
+
+			$totalSum += $item['PRICE'] * $item['QUANTITY'];
+		}
+
 
 		$resultHtml = "
 			<form name='check_shipment' id='check_shipment'>
 				<table>
 					<tr>
-						<td colspan='2' style='padding-bottom: 7px'>".Loc::getMessage('SALE_CASHBOX_SHIPMENT_PRICE').": ".SaleFormatCurrency($shipmentPrice, $order->getCurrency())."</td>
+						<td colspan='2' style='padding-bottom: 7px'>".Loc::getMessage('SALE_CASHBOX_SHIPMENT_PRICE').": ".SaleFormatCurrency($totalSum, $currency)."</td>
 					</tr>
 					<tr>
 						<td>
@@ -3002,8 +3198,7 @@ class AjaxProcessor
 						</td>
 					</tr>
 				</table>
-				<input type='hidden' name='SHIPMENT_ID' value='".$shipmentData['ID']."'>
-				<input type='hidden' name='ORDER_ID' value='".$shipmentData['ORDER_ID']."'>
+				<input type='hidden' name='SHIPMENT_ID' value='".$shipmentId."'>
 			</form>
 		";
 
@@ -3014,17 +3209,49 @@ class AjaxProcessor
 	 * Add new check
 	 *
 	 * @throws ArgumentNullException
+	 * @throws \Bitrix\Main\ArgumentException
+	 * @throws \Bitrix\Main\NotImplementedException
 	 */
 	protected function saveCheckAction()
 	{
 		global $APPLICATION, $USER;
 
+		$orderId = 0;
 		$typeId = $this->request['formData']['data']['CHECK_TYPE'];
-		$orderId = (int)$this->request['formData']['data']['ORDER_ID'];
 		$paymentId = (int)$this->request['formData']['data']['PAYMENT_ID'];
 		$shipmentId = (int)$this->request['formData']['data']['SHIPMENT_ID'];
 		$paymentData = $this->request['formData']['data']['PAYMENTS'];
 		$shipmentData = $this->request['formData']['data']['SHIPMENTS'];
+
+		if ($paymentId > 0)
+		{
+			$dbRes = Sale\Payment::getList(
+				array(
+					"filter" => array("ID" => (int)$paymentId)
+				)
+			);
+
+			$data = $dbRes->fetch();
+			$orderId = $data['ORDER_ID'];
+
+		}
+		elseif ($shipmentId > 0)
+		{
+
+			$dbRes = Sale\Shipment::getList(
+				array(
+					"filter" => array("ID" => (int)$shipmentId)
+				)
+			);
+
+			$data = $dbRes->fetch();
+			$orderId = $data['ORDER_ID'];
+		}
+
+		if ($orderId <= 0)
+		{
+			return;
+		}
 
 		$order = Sale\Order::load($orderId);
 
@@ -3290,5 +3517,116 @@ class AjaxProcessor
 		{
 			$this->addResultError(Loc::getMessage('CASHBOX_ADD_ZREPORT_WRONG_CHECKBOX'));
 		}
+	}
+
+	/**
+	 * @param Result $result
+	 *
+	 * @return Result
+	 */
+	protected function convertErrorsToConfirmation(Result $result)
+	{
+		if ($result->isSuccess())
+		{
+			return $result;
+		}
+
+		$resultOutput = new Result();
+		$resultData = array();
+
+		if ($result->hasWarnings())
+		{
+			$resultOutput->addWarnings($result->getWarnings());
+		}
+
+		$errorsListForConfirm = $this->getListErrorsForConfirmation();
+		foreach ($result->getErrors() as $error)
+		{
+			if (in_array($error->getCode(), $errorsListForConfirm))
+			{
+				$warningExists = false;
+				$resultData['NEED_CONFIRM'] = true;
+				foreach ($resultOutput->getWarningMessages() as $warningCode => $warningMessage)
+				{
+					if ($warningCode == $error->getCode())
+					{
+						$warningExists = true;
+					}
+				}
+
+				if (!$warningExists)
+				{
+					$resultOutput->addWarning($error);
+				}
+			}
+			else
+			{
+				$resultOutput->addError($error);
+			}
+		}
+
+		$resultOutput->setData($resultData);
+		return $resultOutput;
+	}
+
+	/**
+	 * @param Result $result
+	 *
+	 * @return bool
+	 */
+	protected function hasErrorsForConfirmation(Result $result)
+	{
+		$errorsListForConfirm = $this->getListErrorsForConfirmation();
+		foreach ($result->getErrors() as $error)
+		{
+			if (in_array($error->getCode(), $errorsListForConfirm))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * @param Result $result
+	 *
+	 * @return Result
+	 */
+	protected function removeErrorsForConfirmation(Result $result)
+	{
+		$resultOutput = new Result();
+
+		$resultOutput->setData($result->getData());
+		$resultOutput->setId($result->getId());
+
+		$errorsListForConfirm = $this->getListErrorsForConfirmation();
+		foreach ($result->getErrors() as $error)
+		{
+			if (!in_array($error->getCode(), $errorsListForConfirm))
+			{
+				$resultOutput->addError($error);
+			}
+		}
+
+		foreach ($result->getWarnings() as $warning)
+		{
+			if (!in_array($warning->getCode(), $errorsListForConfirm))
+			{
+				$resultOutput->addWarning($warning);
+			}
+		}
+
+		return $resultOutput;
+	}
+
+	/**
+	 * @return array
+	 */
+	protected function getListErrorsForConfirmation()
+	{
+		return array(
+			'SALE_PROVIDER_PRODUCT_NOT_AVAILABLE'
+		);
 	}
 }

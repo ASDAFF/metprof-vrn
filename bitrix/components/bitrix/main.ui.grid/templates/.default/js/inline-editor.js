@@ -226,7 +226,8 @@
 				BX.type.isPlainObject(editObject) &&
 				('TYPE' in editObject) &&
 				('NAME' in editObject) &&
-				('VALUE' in editObject)
+				('VALUE' in editObject) &&
+				(!('items' in editObject) || (BX.type.isArray(editObject.items) && editObject.items.length))
 			);
 		},
 
@@ -324,6 +325,21 @@
 
 					case this.types.CUSTOM : {
 						control = this.createCustom(editObject);
+
+						requestAnimationFrame(function() {
+							if (editObject.HTML)
+							{
+								var res = BX.processHTML(editObject.HTML);
+
+								res.SCRIPT.forEach(function(item) {
+									if (item.isInternal && item.JS)
+									{
+										BX.evalGlobal(item.JS);
+									}
+								})
+							}
+						});
+
 						BX.bind(control, 'click', function(event) { event.stopPropagation(); });
 						break;
 					}

@@ -455,6 +455,7 @@ CModule::AddAutoloadClasses(
 		"CSaleCondCumulativeCtrl" => "general/sale_cond.php",
 		"CSaleCumulativeAction" => "general/sale_act.php",
 		"CSaleActionCtrl" => "general/sale_act.php",
+		"CSaleActionCtrlComplex" => "general/sale_act.php",
 		"CSaleActionCtrlGroup" => "general/sale_act.php",
 		"CSaleActionCtrlAction" => "general/sale_act.php",
 		"CSaleDiscountActionApply" => "general/sale_act.php",
@@ -528,12 +529,12 @@ CModule::AddAutoloadClasses(
 		'\Bitrix\Sale\Internals\DiscountEntitiesTable' => 'lib/internals/discountentities.php',
 		'\Bitrix\Sale\Internals\DiscountGroupTable' => 'lib/internals/discountgroup.php',
 		'\Bitrix\Sale\Internals\DiscountModuleTable' => 'lib/internals/discountmodule.php',
-		'\Bitrix\sale\Internals\OrderDiscountTable' => 'lib/internals/orderdiscount.php',
+		'\Bitrix\Sale\Internals\OrderDiscountTable' => 'lib/internals/orderdiscount.php',
 		'\Bitrix\Sale\Internals\OrderDiscountDataTable' => 'lib/internals/orderdiscount.php',
-		'\Bitrix\sale\Internals\OrderCouponsTable' => 'lib/internals/orderdiscount.php',
-		'\Bitrix\sale\Internals\OrderModulesTable' => 'lib/internals/orderdiscount.php',
-		'\Bitrix\sale\Internals\OrderRoundTable' => 'lib/internals/orderround.php',
-		'\Bitrix\sale\Internals\OrderRulesTable' => 'lib/internals/orderdiscount.php',
+		'\Bitrix\Sale\Internals\OrderCouponsTable' => 'lib/internals/orderdiscount.php',
+		'\Bitrix\Sale\Internals\OrderModulesTable' => 'lib/internals/orderdiscount.php',
+		'\Bitrix\Sale\Internals\OrderRoundTable' => 'lib/internals/orderround.php',
+		'\Bitrix\Sale\Internals\OrderRulesTable' => 'lib/internals/orderdiscount.php',
 		'\Bitrix\Sale\Internals\OrderRulesDescrTable' => 'lib/internals/orderdiscount.php',
 		'\Bitrix\Sale\Internals\AccountNumberGenerator' => 'lib/internals/accountnumber.php',
 		'\Bitrix\Sale\Discount' => 'lib/discount.php',
@@ -590,52 +591,31 @@ CModule::AddAutoloadClasses(
 		'\Bitrix\Sale\Location\Comparator\MapResult' => 'lib/location/comparator/mapresult.php',
 		'\Bitrix\Sale\Location\Comparator\Mapper' => 'lib/location/comparator/mapper.php',
 
-		'\Bitrix\Sale\Exchange\EntityCollisionType' => '/lib/exchange/entitycollisiontype.php',
-		'\Bitrix\Sale\Exchange\EntityType' => '/lib/exchange/entitytype.php',
-		'\Bitrix\Sale\Exchange\OneC\ImportCollision' => '/lib/exchange/onec/importcollision.php',
+		'\Bitrix\Sale\Exchange\OneC\DocumentImport' => '/lib/exchange/compatibility/documents.php',
+
 		'\Bitrix\Sale\Exchange\OneC\CollisionOrder' => '/lib/exchange/onec/importcollision.php',
 		'\Bitrix\Sale\Exchange\OneC\CollisionShipment' => '/lib/exchange/onec/importcollision.php',
 		'\Bitrix\Sale\Exchange\OneC\CollisionPayment' => '/lib/exchange/onec/importcollision.php',
 		'\Bitrix\Sale\Exchange\OneC\CollisionProfile' => '/lib/exchange/onec/importcollision.php',
-		'\Bitrix\Sale\Exchange\OneC\DocumentImportFactory'=> '/lib/exchange/onec/documentimportfactory.php',
-		'\Bitrix\Sale\Exchange\OneC\DocumentImport'=> '/lib/exchange/onec/documentimport.php',
-		'\Bitrix\Sale\Exchange\OneC\OrderDocument'=> '/lib/exchange/onec/orderdocument.php',
-		'\Bitrix\Sale\Exchange\OneC\PaymentDocument'=> '/lib/exchange/onec/paymentdocument.php',
 		'\Bitrix\Sale\Exchange\OneC\PaymentCashDocument'=> '/lib/exchange/onec/paymentdocument.php',
 		'\Bitrix\Sale\Exchange\OneC\PaymentCashLessDocument'=> '/lib/exchange/onec/paymentdocument.php',
 		'\Bitrix\Sale\Exchange\OneC\PaymentCardDocument'=> '/lib/exchange/onec/paymentdocument.php',
-		'\Bitrix\Sale\Exchange\OneC\ShipmentDocument'=> '/lib/exchange/onec/shipmentdocument.php',
-		'\Bitrix\Sale\Exchange\OneC\UserProfileDocument'=> '/lib/exchange/onec/userprofiledocument.php',
-		'\Bitrix\Sale\Exchange\OneC\Converter'=> '/lib/exchange/onec/converter.php',
-		'\Bitrix\Sale\Exchange\OneC\ConverterDocumentOrder' => '/lib/exchange/onec/converterdocument.php',
-		'\Bitrix\Sale\Exchange\OneC\ConverterDocumentShipment' => '/lib/exchange/onec/converterdocument.php',
-		'\Bitrix\Sale\Exchange\OneC\ConverterDocumentPayment' => '/lib/exchange/onec/converterdocument.php',
-		'\Bitrix\Sale\Exchange\OneC\ConverterDocumentProfile' => '/lib/exchange/onec/converterdocument.php',
+		'\Bitrix\Sale\Exchange\OneC\ConverterDocumentPaymentCash' => '/lib/exchange/onec/converterdocumentpayment.php',
+		'\Bitrix\Sale\Exchange\OneC\ConverterDocumentPaymentCashLess' => '/lib/exchange/onec/converterdocumentpayment.php',
+		'\Bitrix\Sale\Exchange\OneC\ConverterDocumentPaymentCard' => '/lib/exchange/onec/converterdocumentpayment.php',
 		'\Bitrix\Sale\Exchange\OneC\ImportCriterionBase' => '/lib/exchange/onec/importcriterion.php',
 		'\Bitrix\Sale\Exchange\OneC\ImportCriterionOneCCml2' => '/lib/exchange/onec/importcriterion.php',
 		'\Bitrix\Sale\Exchange\OneC\CriterionOrder' => '/lib/exchange/onec/importcriterion.php',
 		'\Bitrix\Sale\Exchange\OneC\CriterionShipment' => '/lib/exchange/onec/importcriterion.php',
 		'\Bitrix\Sale\Exchange\OneC\CriterionPayment' => '/lib/exchange/onec/importcriterion.php',
 		'\Bitrix\Sale\Exchange\OneC\CriterionProfile' => '/lib/exchange/onec/importcriterion.php',
-		'\Bitrix\Sale\Exchange\OneC\ImportSettings' => '/lib/exchange/onec/importsettings.php',
-		'\Bitrix\Sale\Exchange\Entity\EntityImportLoader'=> '/lib/exchange/entity/entityimportloader.php',
 		'\Bitrix\Sale\Exchange\Entity\OrderImportLoader'=> '/lib/exchange/entity/entityimportloader.php',
 		'\Bitrix\Sale\Exchange\Entity\PaymentImportLoader'=> '/lib/exchange/entity/entityimportloader.php',
 		'\Bitrix\Sale\Exchange\Entity\ShipmentImportLoader'=> '/lib/exchange/entity/entityimportloader.php',
-		'\Bitrix\Sale\Exchange\Entity\UserProfileImportLoader'=> '/lib/exchange/entity/entityimportloader.php',		
-		'\Bitrix\Sale\Exchange\EntityImportFactory'=> '/lib/exchange/entity/entityimportfactory.php',
-		'\Bitrix\Sale\Exchange\ImportBase'=> '/lib/exchange/importbase.php',
-		'\Bitrix\Sale\Exchange\Entity\EntityImport'=> '/lib/exchange/entity/entityimport.php',
-		'\Bitrix\Sale\Exchange\Entity\OrderImport'=> '/lib/exchange/entity/orderimport.php',
-		'\Bitrix\Sale\Exchange\Entity\PaymentImport'=> '/lib/exchange/entity/paymentimport.php',
+		'\Bitrix\Sale\Exchange\Entity\UserProfileImportLoader'=> '/lib/exchange/entity/entityimportloader.php',
 		'\Bitrix\Sale\Exchange\Entity\PaymentCashLessImport'=> '/lib/exchange/entity/paymentimport.php',
 		'\Bitrix\Sale\Exchange\Entity\PaymentCardImport'=> '/lib/exchange/entity/paymentimport.php',
 		'\Bitrix\Sale\Exchange\Entity\PaymentCashImport'=> '/lib/exchange/entity/paymentimport.php',
-		'\Bitrix\Sale\Exchange\Entity\ShipmentImport'=> '/lib/exchange/entity/shipmentimport.php',
-		'\Bitrix\Sale\Exchange\Entity\UserImportBase'=> '/lib/exchange/entity/userimportbase.php',
-		'\Bitrix\Sale\Exchange\Entity\UserProfileImport'=> '/lib/exchange/entity/userprofileimport.php',
-		'\Bitrix\Sale\Exchange\ImportPattern'=> '/lib/exchange/importpattern.php',
-		'\Bitrix\Sale\Exchange\ImportOneCPackage'=> '/lib/exchange/importonecpackage.php',
 
 		'\Bitrix\Sale\Location\GeoIp' => '/lib/location/geoip.php',
 
@@ -647,7 +627,9 @@ CModule::AddAutoloadClasses(
 		'\Bitrix\Sale\Delivery\Requests\Result' => '/lib/delivery/requests/result.php',
 		'\Bitrix\Sale\Delivery\Requests\ResultFile' => '/lib/delivery/requests/resultfile.php',
 		
-		'\Bitrix\Sale\Delivery\Packing\Packer' => '/lib/delivery/packing/packer.php'
+		'\Bitrix\Sale\Delivery\Packing\Packer' => '/lib/delivery/packing/packer.php',
+
+		'\Bitrix\Sale\Recurring' => '/lib/recurring.php'
 	)
 );
 
@@ -1000,7 +982,7 @@ function getRatio($arBasketItems)
 	{
 		static $cacheRatio = array();
 
-		$helperCacheRatio = \Bitrix\Sale\BasketComponentHelper::getRatioCache();
+		$helperCacheRatio = \Bitrix\Sale\BasketComponentHelper::getRatioDataCache();
 		if (is_array($helperCacheRatio) && !empty($helperCacheRatio))
 		{
 			$cacheRatio = array_merge($cacheRatio, $helperCacheRatio);

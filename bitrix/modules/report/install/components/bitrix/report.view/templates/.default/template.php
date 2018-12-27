@@ -2,6 +2,8 @@
 
 if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true)die();
 
+/** @var CBitrixComponentTemplate $this */
+
 /** @global CMain $APPLICATION */
 global $APPLICATION;
 
@@ -14,6 +16,13 @@ function reportViewShowTopButtons(&$component, &$arParams, &$arResult)
 {
 	/** @global CMain $APPLICATION */
 	global $APPLICATION;
+
+	$isStExport = is_array($arResult['STEXPORT_PARAMS']);
+	$stExportManagerId = '';
+	if ($isStExport)
+	{
+		$stExportManagerId = $arResult['STEXPORT_PARAMS']['managerId'];
+	}
 
 	$component->SetViewTarget("pagetitle", 100);?>
 
@@ -29,10 +38,17 @@ function reportViewShowTopButtons(&$component, &$arParams, &$arResult)
 				'click',
 				function ()
 				{
+					var isStExport = <? echo $isStExport ? 'true' : 'false'; ?>;
 					BX.PopupMenu.show(
 						element.getAttribute('data-role'),
 						element,
 						[
+							isStExport ?
+							{
+								text: '<?=GetMessage('REPORT_EXCEL_EXPORT')?>',
+								onclick: "BX.Report.StExportManager.items['<?= CUtil::JSEscape($stExportManagerId) ?>'].startExport('excel')",
+								className: 'reports-title-excel-icon'
+							} :
 							{
 								text: '<?=GetMessage('REPORT_EXCEL_EXPORT')?>',
 								href: '<?php echo $APPLICATION->GetCurPageParam("EXCEL=Y&ncc=1")?>',
@@ -841,7 +857,7 @@ function getResultColumnDataType(&$viewColumnInfo, &$customColumnTypes = array()
 				chart.valueField = valueFields[0];
 				chart.outlineAlpha = 0.8;
 				chart.outlineThickness = 0;
-				chart.balloonText = "<div>[[__BN__TITLE__]]: [[percents]]%</div>" + valueFields[0] +
+				chart.balloonText = "<div>[[__BN__TITLE__]]: [[percents]]%</div>" + BX.util.htmlspecialchars(valueFields[0]) +
 					": <b>[[value]]</b>";
 				chart.colors = valueColors;
 				chart.groupedTitle = "<?=GetMessage('REPORT_CHART_TRIFLE_LABEL_TEXT')?>";
@@ -856,11 +872,11 @@ function getResultColumnDataType(&$viewColumnInfo, &$customColumnTypes = array()
 				chart.depth3D = 15;
 				chart.angle = 30;
 			}
-
-			if (chartType == "line" || chartType == "column")
+			if (chartType === "line" || chartType === "column")
 			{
 				// AXES X
 				var categoryAxis = chart.categoryAxis;
+				var categoryType = "string";
 				categoryAxis.labelRotation = 45;
 				if (chartType === 'column')
 				{
@@ -870,6 +886,7 @@ function getResultColumnDataType(&$viewColumnInfo, &$customColumnTypes = array()
 				if (chartType === "line"
 					&& (amChartData["categoryType"] === "date" || amChartData["categoryType"] === "datetime"))
 				{
+					categoryType = "date";
 					categoryAxis.dateFormats = [
 						{period:"fff", format:"JJ:NN:SS"},
 						{period:"ss", format:"JJ:NN:SS"},
@@ -891,7 +908,7 @@ function getResultColumnDataType(&$viewColumnInfo, &$customColumnTypes = array()
 					var graph = new AmCharts.AmGraph();
 					graph.title = valueFields[i];
 					graph.valueField = valueFields[i];
-					graph.balloonText = "[[__BN__TITLE__]]: <b>[[value]]</b>";
+					graph.balloonText = BX.util.htmlspecialchars(valueFields[i]) + ": <b>[[value]]</b>";
 					graph.type = chartType;
 					graph.lineAlpha = 0.8;
 					graph.lineColor = valueColors[i];
@@ -914,8 +931,24 @@ function getResultColumnDataType(&$viewColumnInfo, &$customColumnTypes = array()
 				if (chartType === "line")
 				{
 					chartCursor.cursorAlpha = 0.8;
-					chartCursor.categoryBalloonDateFormat = "DD.MM.YYYY";
 					chartCursor.cursorPosition = "mouse";
+					if (categoryType === "string")
+					{
+						chartCursor.categoryBalloonFunction = function (value) {
+							if (BX.type.isNotEmptyString(value))
+							{
+								return BX.util.htmlspecialchars(value);
+							}
+							else
+							{
+								return value;
+							}
+						};
+					}
+					else if (categoryType === "date")
+					{
+						chartCursor.categoryBalloonDateFormat = "DD.MM.YYYY";
+					}
 				}
 				else if (chartType === 'column')
 				{
@@ -1000,6 +1033,7 @@ function getResultColumnDataType(&$viewColumnInfo, &$customColumnTypes = array()
 			</tr>
 
 			<!-- data -->
+			<? $rowNum = 0; ?>
 			<? foreach ($arResult['data'] as $row): ?>
 				<tr class="reports-list-item">
 					<? $i = 0; foreach($arResult['viewColumns'] as $col): ?>
@@ -1047,6 +1081,41 @@ function getResultColumnDataType(&$viewColumnInfo, &$customColumnTypes = array()
 								}
 							}
 
+							$redSign = false;
+							if (isset($arResult['customChartData'][$rowNum][$col['resultName']]['multiple']))
+							{
+								$customValueInfo = &$arResult['customChartData'][$rowNum][$col['resultName']];
+								if ($customValueInfo['multiple'] === true)
+								{
+									$dataValue = 0;
+									foreach ($customValueInfo as $cvKey => $cvInfo)
+									{
+										if ($cvKey !== 'multiple' && isset($cvInfo['type'])
+											&& ($cvInfo['type'] === 'float' || $cvInfo['type'] === 'integer'))
+										{
+											if ($cvInfo['value'] < 0)
+											{
+												$redSign = true;
+												break;
+											}
+										}
+									}
+									unset($cvKey, $cvInfo);
+								}
+								else
+								{
+									$cvInfo = &$customValueInfo[0];
+									if (isset($cvInfo['type'])
+										&& ($cvInfo['type'] === 'float' || $cvInfo['type'] === 'integer'))
+									{
+										if ($cvInfo['value'] < 0)
+											$redSign = true;
+									}
+									unset($cvInfo);
+								}
+								unset($customValueInfo);
+							}
+
 							// magic glue
 							if (is_array($finalValue))
 							{
@@ -1054,12 +1123,14 @@ function getResultColumnDataType(&$viewColumnInfo, &$customColumnTypes = array()
 							}
 							if ($arResult['settings']['red_neg_vals'] === true)
 							{
-								if (is_numeric($finalValue) && $finalValue < 0) $td_class .= ' report-red-neg-val';
+								if ($redSign || (is_numeric($finalValue) && $finalValue < 0))
+									$td_class .= ' report-red-neg-val';
 							}
 						?>
 						<td class="<?=$td_class?>"><?=$finalValue?></td>
 					<? endforeach; ?>
 				</tr>
+			<? $rowNum++; ?>
 			<? endforeach; ?>
 
 			<tr>
@@ -1176,6 +1247,10 @@ function getResultColumnDataType(&$viewColumnInfo, &$customColumnTypes = array()
 		</span>
 	</div>
 
+	<div class="filter-field filter-field-crm chfilter-field-enum">
+		<label class="filter-field-title">%TITLE% "%COMPARE%"</label>
+	</div>
+
 	<div class="filter-field filter-field-crm chfilter-field-crm">
 		<label class="filter-field-title">%TITLE% "%COMPARE%"</label>
 	</div>
@@ -1252,33 +1327,6 @@ function getResultColumnDataType(&$viewColumnInfo, &$customColumnTypes = array()
 
 </div>
 
-<!-- UF enumerations control examples -->
-<div id="report-chfilter-examples-ufenums" style="display: none;">
-	<?
-	if (is_array($arResult['ufEnumerations'])):
-		foreach ($arResult['ufEnumerations'] as $ufId => $enums):
-			foreach ($enums as $fieldKey => $enum):
-	?>
-	<div class="filter-field chfilter-field-<?=($ufId.'_'.$fieldKey)?>" callback="RTFilter_chooseBoolean">
-		<label for="" class="filter-field-title">%TITLE% "%COMPARE%"</label>
-		<select name="%NAME%" class="filter-dropdown" id="%ID%" caller="true">
-			<option value=""><?=GetMessage('REPORT_IGNORE_FILTER_VALUE')?></option>
-			<?
-			foreach ($enum as $itemId => $itemInfo):
-			?>
-			<option value="<?=$itemId?>"><?=$itemInfo['VALUE']?></option>
-			<?
-			endforeach;
-			?>
-		</select>
-	</div>
-	<?
-			endforeach;
-		endforeach;
-	endif;
-	?>
-</div>
-
 <div class="sidebar-block">
 	<b class="r2"></b><b class="r1"></b><b class="r0"></b>
 	<div class="sidebar-block-inner">
@@ -1333,11 +1381,13 @@ function getResultColumnDataType(&$viewColumnInfo, &$customColumnTypes = array()
 									border="0" src="/bitrix/js/main/core/images/calendar-icon.gif"
 									alt="<?php echo GetMessage("TASKS_PICK_DATE")?>"></a></span>
 				</span>
-					<span class="filter-day-interval<?php if ($arResult["FILTER"]["F_DATE_TYPE"] == "days"): ?> filter-day-interval-selected<?php endif?>"><input type="text" size="5"
-						class="filter-date-days"
-						value="<?=$arResult['form_date']['days']?>"
-						name="F_DATE_DAYS"/> <?php echo GetMessage("TASKS_REPORT_DAYS")?></span>
-
+				<span class="filter-day-interval<?php
+				if ($arResult["FILTER"]["F_DATE_TYPE"] == "days"):
+					?> filter-day-interval-selected<?php
+				endif;
+				?>"><input type="text" size="5" class="filter-date-days"
+						value="<?= htmlspecialcharsbx($arResult['form_date']['days']) ?>"
+						name="F_DATE_DAYS"/> <?php echo GetMessage("TASKS_REPORT_DAYS"); ?></span>
 				<script type="text/javascript">
 
 					function OnTaskIntervalChange(select)
@@ -1435,8 +1485,11 @@ function getResultColumnDataType(&$viewColumnInfo, &$customColumnTypes = array()
 				foreach ($arResult['changeableFilters'] as $chFilter)
 				{
 					if (isset($chFilter['isUF']) && $chFilter['isUF'] === true && isset($chFilter['data_type'])
-						&& ($chFilter['data_type'] === 'crm' || $chFilter['data_type'] === 'crm_status'
-							|| $chFilter['data_type'] === 'iblock_element' || $chFilter['data_type'] === 'iblock_section')
+						&& ($chFilter['data_type'] === 'enum'
+							||$chFilter['data_type'] === 'crm'
+							|| $chFilter['data_type'] === 'crm_status'
+							|| $chFilter['data_type'] === 'iblock_element'
+							|| $chFilter['data_type'] === 'iblock_section')
 						&& isset($chFilter['ufId']) && isset($chFilter['ufName'])
 						&& is_array($arResult['ufInfo'][$chFilter['ufId']][$chFilter['ufName']]))
 					{
@@ -1469,39 +1522,26 @@ function getResultColumnDataType(&$viewColumnInfo, &$customColumnTypes = array()
 
 					cpControl = null;
 					fieldType = info[i].FIELD_TYPE;
-					if (info[i]['IS_UF'] && fieldType === 'enum')
-					{
-						cpControl = BX.clone(
-							BX.findChild(
-								BX('report-chfilter-examples-ufenums'),
-								{className:'chfilter-field-'+info[i]['UF_ID'] + "_" + info[i]['UF_NAME']}
-							),
-							true
-						);
-					}
-					else
-					{
-						// insert value control
-						// search in `examples-custom` by name or type
-						// then search in `examples` by type
-						cpControl = BX.clone(
-							BX.findChild(
-								BX('report-chfilter-examples-custom'),
-								{className:'chfilter-field-'+info[i].FIELD_NAME}
-							)
-							||
-							BX.findChild(
-								BX('report-chfilter-examples-custom'),
-								{className:'chfilter-field-'+fieldType}
-							)
-							||
-							BX.findChild(
-								BX('report-chfilter-examples'),
-								{className:'chfilter-field-'+fieldType}
-							),
-							true
-						);
-					}
+					// insert value control
+					// search in `examples-custom` by name or type
+					// then search in `examples` by type
+					cpControl = BX.clone(
+						BX.findChild(
+							BX('report-chfilter-examples-custom'),
+							{className: 'chfilter-field-' + info[i].FIELD_NAME}
+						)
+						||
+						BX.findChild(
+							BX('report-chfilter-examples-custom'),
+							{className: 'chfilter-field-' + fieldType}
+						)
+						||
+						BX.findChild(
+							BX('report-chfilter-examples'),
+							{className: 'chfilter-field-' + fieldType}
+						),
+						true
+					);
 
 					//global replace %ID%, %NAME%, %TITLE% and etc.
 					cpControl.innerHTML = cpControl.innerHTML.replace(/%((?!VALUE)[A-Z]+)%/gi,
@@ -1516,7 +1556,7 @@ function getResultColumnDataType(&$viewColumnInfo, &$customColumnTypes = array()
 					{
 						ufId = info[i]["UF_ID"];
 						ufName = info[i]["UF_NAME"];
-						if (fieldType === 'crm' || fieldType === 'crm_status'
+						if (fieldType === 'enum' ||fieldType === 'crm' || fieldType === 'crm_status'
 							|| fieldType === 'iblock_element' || fieldType === 'iblock_section')
 						{
 							tipicalControl = false;
@@ -1855,6 +1895,34 @@ function getResultColumnDataType(&$viewColumnInfo, &$customColumnTypes = array()
 <? endif; ?>
 
 <?php
+
+if (is_array($arResult['STEXPORT_PARAMS']))
+{
+	Bitrix\Main\Page\Asset::getInstance()->addJs('/bitrix/js/report/lrpdialog.js');
+	Bitrix\Main\Page\Asset::getInstance()->addJs('/bitrix/js/report/stexport.js');
+	?>
+	<script type="text/javascript">
+		BX.ready(
+			function()
+			{
+				BX.Report.LongRunningProcessDialog.messages =
+					{
+						startButton: "<?=GetMessageJS('CRM_REPORT_LRP_DLG_BTN_START')?>",
+						stopButton: "<?=GetMessageJS('CRM_REPORT_LRP_DLG_BTN_STOP')?>",
+						closeButton: "<?=GetMessageJS('CRM_REPORT_LRP_DLG_BTN_CLOSE')?>",
+						wait: "<?=GetMessageJS('CRM_REPORT_LRP_DLG_WAIT')?>",
+						requestError: "<?=GetMessageJS('CRM_REPORT_LRP_DLG_REQUEST_ERR')?>"
+					};
+
+				BX.Report.StExportManager.create(
+					"<?=CUtil::JSEscape($arResult['STEXPORT_PARAMS']['managerId'])?>",
+					<?=CUtil::PhpToJSObject($arResult['STEXPORT_PARAMS'])?>
+				);
+			}
+		);
+	</script><?php
+}
+
 $this->EndViewTarget();
 
 reportViewShowTopButtons($this, $arParams, $arResult);

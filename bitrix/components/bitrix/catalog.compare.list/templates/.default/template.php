@@ -24,7 +24,7 @@ if ($arParams['POSITION_FIXED'] == 'Y')
 	$mainClass .= ' fix '.($arParams['POSITION'][0] == 'bottom' ? 'bottom' : 'top').' '.($arParams['POSITION'][1] == 'right' ? 'right' : 'left');
 }
 $style = ($itemCount == 0 ? ' style="display: none;"' : '');
-?><div id="<? echo $idCompareCount; ?>" class="<? echo $mainClass; ?> "<? echo $style; ?>><?
+?><div id="<?=$idCompareCount; ?>" class="<?=$mainClass; ?> "<?=$style; ?>><?
 unset($style, $mainClass);
 if ($needReload)
 {
@@ -34,8 +34,8 @@ $frame = $this->createFrame($idCompareCount)->begin('');
 ?><div class="bx_catalog_compare_count"><?
 if ($itemCount > 0)
 {
-	?><p><? echo GetMessage('CP_BCCL_TPL_MESS_COMPARE_COUNT'); ?>&nbsp;<span id="<? echo $idCompareAll; ?>"><? echo $itemCount; ?></span></p>
-	<p class="compare-redirect"><a href="<? echo $arParams["COMPARE_URL"]; ?>"><? echo GetMessage('CP_BCCL_TPL_MESS_COMPARE_PAGE'); ?></a></p><?
+	?><p><?=GetMessage('CP_BCCL_TPL_MESS_COMPARE_COUNT'); ?>&nbsp;<span id="<?=$idCompareAll; ?>"><?=$itemCount; ?></span></p>
+	<p class="compare-redirect"><a href="<?=$arParams["COMPARE_URL"]; ?>"><?=GetMessage('CP_BCCL_TPL_MESS_COMPARE_PAGE'); ?></a></p><?
 }
 ?></div><?
 if (!empty($arResult))
@@ -48,7 +48,7 @@ if (!empty($arResult))
 	{
 		?><tr id="<? echo $idCompareRow.$arElement['PARENT_ID']; ?>">
 			<td><a href="<?=$arElement["DETAIL_PAGE_URL"]?>"><?=$arElement["NAME"]?></a></td>
-			<td><noindex><a href="javascript:void(0);"  data-id="<? echo $arElement['PARENT_ID']; ?>" rel="nofollow"><?=GetMessage("CATALOG_DELETE")?></a></noindex></td>
+			<td><noindex><a href="javascript:void(0);" data-id="<?=$arElement['PARENT_ID']; ?>" rel="nofollow"><?=GetMessage("CATALOG_DELETE")?></a></noindex></td>
 		</tr><?
 	}
 ?>
@@ -97,5 +97,5 @@ $jsParams = array(
 );
 ?></div>
 <script type="text/javascript">
-var <? echo $obCompare; ?> = new JCCatalogCompareList(<? echo CUtil::PhpToJSObject($jsParams, false, true); ?>)
+var <?=$obCompare; ?> = new JCCatalogCompareList(<? echo CUtil::PhpToJSObject($jsParams, false, true); ?>)
 </script>

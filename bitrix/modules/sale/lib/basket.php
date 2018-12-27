@@ -34,20 +34,6 @@ class Basket extends BasketBase
 	}
 
 	/**
-	 * @param BasketItemCollection $basket
-	 * @param $moduleId
-	 * @param $productId
-	 * @param $basketCode
-	 * @return BasketItemBase
-	 */
-	protected function createItemInternal(BasketItemCollection $basket, $moduleId, $productId, $basketCode = null)
-	{
-		/** @var BasketItem $basketItemClassName */
-		$basketItemClassName = $this->getBasketItemCollectionElementClassName();
-		return $basketItemClassName::create($basket, $moduleId, $productId, $basketCode);
-	}
-
-	/**
 	 * @param array $filter
 	 *
 	 * @return Basket
@@ -168,33 +154,45 @@ class Basket extends BasketBase
 
 		$sqlExpiredDate = $sqlHelper->getDateToCharFunction("'" . $expiredValue . "'");
 
-		$query = "DELETE FROM b_sale_basket_props WHERE
-									BASKET_ID IN (
-										 SELECT ID FROM b_sale_basket WHERE
-													FUSER_ID IN (
-															SELECT b_sale_fuser.id FROM b_sale_fuser WHERE
-																	b_sale_fuser.DATE_UPDATE < ".$sqlExpiredDate."
-																	AND b_sale_fuser.USER_ID IS NULL
-															)  AND ORDER_ID IS NULL
-									) LIMIT " . static::BASKET_DELETE_LIMIT;
-		$connection->queryExecute($query);
-
 		$query = "DELETE FROM b_sale_basket	WHERE
-								FUSER_ID IN (
-										SELECT b_sale_fuser.id FROM b_sale_fuser WHERE
-												b_sale_fuser.DATE_UPDATE < ".$sqlExpiredDate."
-												AND b_sale_fuser.USER_ID IS NULL
-										) AND ORDER_ID IS NULL LIMIT " . static::BASKET_DELETE_LIMIT;
+			FUSER_ID IN (
+				SELECT b_sale_fuser.id FROM b_sale_fuser WHERE
+						b_sale_fuser.DATE_UPDATE < ".$sqlExpiredDate."
+						AND b_sale_fuser.USER_ID IS NULL
+				) AND ORDER_ID IS NULL LIMIT ". static::BASKET_DELETE_LIMIT;
+
+		$connection->queryExecute($query);
+		$affectRows = $connection->getAffectedRowsCount();
+
+		$query = "DELETE FROM b_sale_basket	
+			WHERE
+				FUSER_ID NOT IN (SELECT b_sale_fuser.id FROM b_sale_fuser)
+				AND 
+				ORDER_ID IS NULL
+			LIMIT ". static::BASKET_DELETE_LIMIT;
+
+		$connection->queryExecute($query);
+		$affectRows = max($affectRows, $connection->getAffectedRowsCount());
+
+		$query = "
+			DELETE
+			FROM b_sale_basket_props 
+			WHERE b_sale_basket_props.BASKET_ID NOT IN (
+				SELECT b_sale_basket.ID FROM b_sale_basket
+			)
+			LIMIT ".static::BASKET_DELETE_LIMIT;
+
 		$connection->queryExecute($query);
 
-		return true;
+		return max($affectRows, $connection->getAffectedRowsCount());
 	}
 
 	/**
 	 * @param $days
-	 * @param $speed
-	 *
+	 * @param int $speed
 	 * @return string
+	 * @throws Main\ArgumentNullException
+	 * @throws Main\ArgumentOutOfRangeException
 	 */
 	public static function deleteOldAgent($days, $speed = 0)
 	{
@@ -204,16 +202,16 @@ class Basket extends BasketBase
 			$GLOBALS["USER"] = new \CUser();
 		}
 
-		static::deleteOld($days);
-
+		$affectRows = static::deleteOld($days);
 		Fuser::deleteOld($days);
-		$speed = intval($speed);
-		$result = "\\Bitrix\\Sale\\Basket::deleteOldAgent(".intval(Main\Config\Option::get("sale", "delete_after", "30")).");";
 
-		if ($speed > 0)
+		$days = intval(Main\Config\Option::get("sale", "delete_after", "30"));
+		$result = "\Bitrix\Sale\Basket::deleteOldAgent(".$days.");";
+
+		if ($affectRows === static::BASKET_DELETE_LIMIT)
 		{
-			\CAgent::AddAgent($result, "sale", "N", $speed, "", "Y");
-			$result = "";
+			global $pPERIOD;
+			$pPERIOD = 300;
 		}
 
 		if (isset($tmpUser))
@@ -249,8 +247,13 @@ class Basket extends BasketBase
 				/** @var \Bitrix\Sale\BasketPropertyItem $basketPropertyItem */
 				foreach ($basketPropertyCollection as $basketPropertyItem)
 				{
-					if ($basketPropertyItem->getField('CODE') == "PRODUCT.XML_ID" || $basketPropertyItem->getField('CODE') == "CATALOG.XML_ID")
+					if ($basketPropertyItem->getField('CODE') == "PRODUCT.XML_ID"
+						|| $basketPropertyItem->getField('CODE') == "CATALOG.XML_ID"
+						|| $basketPropertyItem->getField('CODE') == "SUM_OF_CHARGE"
+					)
+					{
 						continue;
+					}
 
 					if (strval(trim($basketPropertyItem->getField('VALUE'))) == "")
 						continue;
@@ -315,7 +318,7 @@ class Basket extends BasketBase
 		}
 		else
 		{
-			if ($this->isLoadForFUserId())
+			if ($this->isLoadForFUserId)
 			{
 				$filter = array(
 					'FUSER_ID' => $this->getFUserId(),
@@ -398,6 +401,29 @@ class Basket extends BasketBase
 		$registry  = Registry::getInstance(Registry::REGISTRY_TYPE_ORDER);
 
 		return $registry->getBasketItemClassName();
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getContext()
+	{
+		$context = array();
+
+		$order = $this->getOrder();
+		/** @var OrderBase $order */
+		if ($order)
+		{
+			$context['USER_ID'] = $order->getUserId();
+			$context['SITE_ID'] = $order->getSiteId();
+			$context['CURRENCY'] = $order->getCurrency();
+		}
+		else
+		{
+			$context = parent::getContext();
+		}
+
+		return $context;
 	}
 
 }

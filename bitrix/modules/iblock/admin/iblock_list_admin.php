@@ -19,7 +19,7 @@ $bBizproc = Loader::includeModule("bizproc");
 $bWorkflow = Loader::includeModule("workflow");
 $bFileman = Loader::includeModule("fileman");
 $bExcel = isset($_REQUEST["mode"]) && ($_REQUEST["mode"] == "excel");
-$dsc_cookie_name = COption::GetOptionString('main', 'cookie_name', 'BITRIX_SM')."_DSC";
+$dsc_cookie_name = (string)Main\Config\Option::get('main', 'cookie_name', 'BITRIX_SM')."_DSC";
 
 $bSearch = false;
 $bCurrency = false;
@@ -38,6 +38,12 @@ $useCalendarTime = (string)Main\Config\Option::get('iblock', 'list_full_date_edi
 if (isset($_REQUEST['mode']) && ($_REQUEST['mode']=='list' || $_REQUEST['mode']=='frame'))
 	CFile::DisableJSFunction(true);
 
+$type = '';
+if (isset($_REQUEST['type']) && is_string($_REQUEST['type']))
+	$type = trim($_REQUEST['type']);
+if ($type === '')
+	$APPLICATION->AuthForm(GetMessage("IBLIST_A_BAD_BLOCK_TYPE_ID"));
+
 $arIBTYPE = CIBlockType::GetByIDLang($type, LANGUAGE_ID);
 if($arIBTYPE===false)
 	$APPLICATION->AuthForm(GetMessage("IBLIST_A_BAD_BLOCK_TYPE_ID"));
@@ -45,8 +51,8 @@ if($arIBTYPE===false)
 $IBLOCK_ID = 0;
 if (isset($_REQUEST['IBLOCK_ID']))
 	$IBLOCK_ID = (int)$_REQUEST["IBLOCK_ID"];
-$arIBlock = CIBlock::GetArrayByID($IBLOCK_ID);
 
+$arIBlock = CIBlock::GetArrayByID($IBLOCK_ID);
 if($arIBlock)
 	$bBadBlock = !CIBlockRights::UserHasRightTo($IBLOCK_ID, $IBLOCK_ID, "iblock_admin_display");
 else
@@ -97,8 +103,8 @@ $showCatalogWithOffers = false;
 $productTypeList = array();
 if ($bCatalog)
 {
-	$strUseStoreControl = COption::GetOptionString('catalog', 'default_use_store_control');
-	$strSaveWithoutPrice = COption::GetOptionString('catalog','save_product_without_price');
+	$strUseStoreControl = (string)Main\Config\Option::get('catalog', 'default_use_store_control');
+	$strSaveWithoutPrice = (string)Main\Config\Option::get('catalog','save_product_without_price');
 	$boolCatalogRead = $USER->CanDoOperation('catalog_read');
 	$boolCatalogPrice = $USER->CanDoOperation('catalog_price');
 	$boolCatalogPurchasInfo = $USER->CanDoOperation('catalog_purchas_info');
@@ -118,11 +124,11 @@ if ($bCatalog)
 				$strSKUName = GetMessage('IBLIST_A_OFFERS');
 			}
 		}
-		if(!$boolCatalogRead && !$boolCatalogPrice)
+		if (!$boolCatalogRead && !$boolCatalogPrice)
 			$bCatalog = false;
+		$productTypeList = CCatalogAdminTools::getIblockProductTypeList($arIBlock['ID'], true);
 	}
-	$productTypeList = CCatalogAdminTools::getIblockProductTypeList($arIBlock['ID'], true);
-	$showCatalogWithOffers = (COption::GetOptionString('catalog', 'show_catalog_tab_with_offers') == 'Y');
+	$showCatalogWithOffers = ((string)Main\Config\Option::get('catalog', 'show_catalog_tab_with_offers') == 'Y');
 	if ($boolCatalogPurchasInfo)
 		$catalogPurchasInfoEdit = $boolCatalogPrice && $strUseStoreControl != 'Y';
 }
@@ -367,6 +373,11 @@ if($lAdmin->EditAction())
 {
 	if(is_array($_FILES['FIELDS']))
 		CAllFile::ConvertFilesToPost($_FILES['FIELDS'], $_POST['FIELDS']);
+
+	if ($bCatalog)
+	{
+		Catalog\Product\Sku::enableDeferredCalculation();
+	}
 
 	foreach($_POST['FIELDS'] as $ID=>$arFields)
 	{
@@ -667,22 +678,20 @@ if($lAdmin->EditAction())
 							$arCatalogProduct['QUANTITY'] = $arFields['CATALOG_QUANTITY'];
 					}
 
-					$product = Catalog\ProductTable::getList(array(
-						'select' => array('ID', 'SUBSCRIBE_ORIG'),
+					$product = Catalog\Model\Product::getList(array(
+						'select' => array('ID'),
 						'filter' => array('=ID' => $ID)
 					))->fetch();
 					if (empty($product))
 					{
 						$arCatalogProduct['ID'] = $ID;
-						CCatalogProduct::Add($arCatalogProduct, false);
+						$result = Catalog\Model\Product::add(array('fields' => $arCatalogProduct));
 					}
 					else
 					{
 						if (!empty($arCatalogProduct))
 						{
-							if ($strUseStoreControl != 'Y')
-								$arCatalogProduct['SUBSCRIBE'] = $product['SUBSCRIBE_ORIG'];
-							CCatalogProduct::Update($ID, $arCatalogProduct);
+							$result = Catalog\Model\Product::update($ID, array('fields' => $arCatalogProduct));
 						}
 					}
 					unset($product);
@@ -865,6 +874,12 @@ if($lAdmin->EditAction())
 			unset($arCatalogGroupList);
 		}
 	}
+
+	if ($bCatalog)
+	{
+		Catalog\Product\Sku::disableDeferredCalculation();
+		Catalog\Product\Sku::calculate();
+	}
 }
 
 // Handle actions here
@@ -877,6 +892,11 @@ if(($arID = $lAdmin->GroupAction()))
 		{
 			$arID[] = $arRes['TYPE'].$arRes['ID'];
 		}
+	}
+
+	if ($bCatalog)
+	{
+		Catalog\Product\Sku::enableDeferredCalculation();
 	}
 
 	foreach($arID as $ID)
@@ -1240,6 +1260,12 @@ if(($arID = $lAdmin->GroupAction()))
 		$_SESSION['CHANGE_PRICE_PARAMS']['UNITS'] = $changePriceParams['UNITS'];
 		$_SESSION['CHANGE_PRICE_PARAMS']['FORMAT_RESULTS'] = $changePriceParams['FORMAT_RESULTS'];
 		$_SESSION['CHANGE_PRICE_PARAMS']['INITIAL_PRICE_TYPE'] = $changePriceParams['INITIAL_PRICE_TYPE'];
+	}
+
+	if ($bCatalog)
+	{
+		Catalog\Product\Sku::disableDeferredCalculation();
+		Catalog\Product\Sku::calculate();
 	}
 
 	if (isset($return_url) && strlen($return_url)>0)
@@ -1752,7 +1778,7 @@ $arUsersCache = array();
 
 $boolIBlockElementAdd = CIBlockSectionRights::UserHasRightTo($IBLOCK_ID, $find_section_section, "section_element_bind");
 
-$availQuantityTrace = COption::GetOptionString("catalog", "default_quantity_trace", 'N');
+$availQuantityTrace = (string)Main\Config\Option::get("catalog", "default_quantity_trace");
 $arQuantityTrace = array(
 	"D" => GetMessage("IBLIST_DEFAULT_VALUE")." (".($availQuantityTrace=='Y' ? GetMessage("IBLIST_YES_VALUE") : GetMessage("IBLIST_NO_VALUE")).")",
 	"Y" => GetMessage("IBLIST_YES_VALUE"),
@@ -3085,15 +3111,12 @@ if ($bCatalog)
 {
 	if ($strUseStoreControl == "Y" && in_array("CATALOG_BAR_CODE", $arSelectedFields) && !empty($arElemID))
 	{
-		$rsProducts = CCatalogProduct::GetList(
-			array(),
-			array("ID" => $arElemID),
-			false,
-			false,
-			array('ID', 'BARCODE_MULTI')
-		);
 		$productsWithBarCode = array();
-		while ($product = $rsProducts->Fetch())
+		$rsProducts = Catalog\ProductTable::getList(array(
+			'select' => array('ID', 'BARCODE_MULTI'),
+			'filter' => array('@ID' => $arElemID)
+		));
+		while ($product = $rsProducts->fetch())
 		{
 			if (isset($arRows['E'.$product["ID"]]))
 			{

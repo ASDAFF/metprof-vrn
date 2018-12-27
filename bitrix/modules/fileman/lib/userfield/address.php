@@ -232,7 +232,7 @@ class Address extends \Bitrix\Main\UserField\TypeBase
 	protected static function getEdit($arUserField, $arHtmlControl)
 	{
 		$html = '';
-		\CJSCore::Init('userfield_address', 'google_map');
+		\CJSCore::Init(array('userfield_address', 'google_map'));
 
 		if(static::canUseMap())
 		{
@@ -374,6 +374,32 @@ class Address extends \Bitrix\Main\UserField\TypeBase
 		static::initDisplay(array('userfield_address', 'google_map'));
 
 		return static::getHelper()->wrapDisplayResult($html);
+	}
+
+	public static function getPublicText($userField)
+	{
+		$value = static::normalizeFieldValue($userField['VALUE']);
+
+		$text = '';
+		$first = true;
+		foreach ($value as $res)
+		{
+			if ($res == '')
+				continue;
+
+			list($descr, $coords) = static::parseValue($res);
+
+			if ($descr == '')
+				continue;
+
+			if (!$first)
+				$text .= ', ';
+			$first = false;
+
+			$text .= $coords != '' ? sprintf('%s (%s)', $descr, join(', ', $coords)) : $descr;
+		}
+
+		return $text;
 	}
 
 	protected static function parseValue($value)

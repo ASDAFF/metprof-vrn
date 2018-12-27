@@ -167,4 +167,30 @@ class Dictionary
 		}
 		return $stringValue;
 	}
+
+	/**
+	 * Returns array of string by its identifier in the dictionary.
+	 *
+	 * @param array $valueIDs Value identifier for dictionary lookup.
+	 *
+	 * @return array
+	 */
+	public function getStringByIds($valueIDs)
+	{
+		$result = array();
+		$connection  = \Bitrix\Main\Application::getConnection();
+
+		foreach ($valueIDs as $id)
+		{
+			$result[$id] = '';
+		}
+
+		$rs = $connection->query("SELECT ID, VALUE FROM ".$this->getTableName()." WHERE ID IN(".implode(',',$valueIDs).")");
+		while ($row = $rs->fetch())
+		{
+			$result[$row['ID']] = $row['VALUE'];
+		}
+
+		return $result;
+	}
 }

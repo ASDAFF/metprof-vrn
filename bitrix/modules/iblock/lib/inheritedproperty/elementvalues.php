@@ -18,7 +18,7 @@ class ElementValues extends BaseValues
 	public function __construct($iblockId, $elementId)
 	{
 		parent::__construct($iblockId);
-		$this->elementId = intval($elementId);
+		$this->elementId = (int)$elementId;
 	}
 
 	/**
@@ -80,7 +80,7 @@ class ElementValues extends BaseValues
 		}
 		else
 		{
-			$this->sectionId = intval($sectionId);
+			$this->sectionId = (int)$sectionId;
 		}
 	}
 

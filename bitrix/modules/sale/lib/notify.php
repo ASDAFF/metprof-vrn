@@ -10,6 +10,8 @@ namespace Bitrix\Sale;
 
 use Bitrix\Main;
 use Bitrix\Sale\Cashbox\CheckManager;
+use Bitrix\Sale\Cashbox\Internals\CashboxCheckTable;
+use Bitrix\Sale\Cashbox\Manager;
 use Bitrix\Sale\Compatible;
 use Bitrix\Sale\Internals;
 use Bitrix\Sale\Helpers;
@@ -29,6 +31,7 @@ class Notify
 	const EVENT_SHIPMENT_DELIVER_SEND_EMAIL_EVENT_NAME = "SALE_ORDER_DELIVERY";
 
 	const EVENT_ON_CHECK_PRINT_SEND_EMAIL = "SALE_CHECK_PRINT";
+	const EVENT_ON_CHECK_PRINT_ERROR_SEND_EMAIL = "SALE_CHECK_PRINT_ERROR";
 
 	const EVENT_ON_ORDER_PAID_SEND_EMAIL = "OnOrderPaySendEmail";
 
@@ -52,6 +55,7 @@ class Notify
 	const EVENT_MOBILE_PUSH_ORDER_STATUS_CHANGE = "ORDER_STATUS_CHANGED";
 	const EVENT_MOBILE_PUSH_ORDER_CANCELED = "ORDER_CANCELED";
 	const EVENT_MOBILE_PUSH_ORDER_PAID = "ORDER_PAYED";
+	const EVENT_MOBILE_PUSH_ORDER_CHECK_ERROR = "ORDER_CHECK_ERROR";
 	const EVENT_MOBILE_PUSH_SHIPMENT_ALLOW_DELIVERY = "ORDER_DELIVERY_ALLOWED";
 
 	private static $cacheUserData = array();
@@ -214,12 +218,19 @@ class Notify
 			"ORDER_ID" => $entity->getField("ACCOUNT_NUMBER"),
 			"ORDER_REAL_ID" => $entity->getField("ID"),
 			"ORDER_ACCOUNT_NUMBER_ENCODE" => urlencode(urlencode($entity->getField("ACCOUNT_NUMBER"))),
-			"ORDER_DATE" => $entity->getDateInsert()->toString(),
+			"ORDER_DATE" => '',
 			"EMAIL" => static::getUserEmail($entity),
 			"ORDER_CANCEL_DESCRIPTION" => $entity->getField('REASON_CANCELED'),
 			"SALE_EMAIL" => Main\Config\Option::get("sale", "order_email", "order@".$_SERVER["SERVER_NAME"]),
 			"ORDER_PUBLIC_URL" => Helpers\Order::isAllowGuestView($entity) ? Helpers\Order::getPublicLink($entity) : ""
 		);
+
+		$dateInsert = $entity->getDateInsert();
+		if (isset($dateInsert) && $dateInsert instanceof Main\Type\Date)
+		{
+			$fields['ORDER_DATE'] = $dateInsert->toString();
+		}
+
 
 		$eventName = static::EVENT_ORDER_CANCEL_SEND_EMAIL_EVENT_NAME;
 		$send = true;
@@ -276,15 +287,22 @@ class Notify
 			return $result;
 		}
 
+
+
 		$fields = Array(
 			"ORDER_ID" => $entity->getField("ACCOUNT_NUMBER"),
 			"ORDER_REAL_ID" => $entity->getField("ID"),
 			"ORDER_ACCOUNT_NUMBER_ENCODE" => urlencode(urlencode($entity->getField("ACCOUNT_NUMBER"))),
-			"ORDER_DATE" => $entity->getDateInsert()->toString(),
+			"ORDER_DATE" => '',
 			"EMAIL" => static::getUserEmail($entity),
 			"SALE_EMAIL" => Main\Config\Option::get("sale", "order_email", "order@".$_SERVER["SERVER_NAME"]),
 			"ORDER_PUBLIC_URL" => Helpers\Order::isAllowGuestView($entity) ? Helpers\Order::getPublicLink($entity) : ""
 		);
+		$dateInsert = $entity->getDateInsert();
+		if (isset($dateInsert) && $dateInsert instanceof Main\Type\Date)
+		{
+			$fields['ORDER_DATE'] = $dateInsert->toString();
+		}
 
 		$eventName = static::EVENT_ORDER_PAID_SEND_EMAIL_EVENT_NAME;
 		$send = true;
@@ -899,9 +917,10 @@ class Notify
 
 	/**
 	 * @param Internals\Entity $entity
-	 *
 	 * @return Result
+	 * @throws Main\ArgumentException
 	 * @throws Main\ArgumentNullException
+	 * @throws Main\ArgumentOutOfRangeException
 	 * @throws Main\ArgumentTypeException
 	 */
 	public static function sendPrintableCheck(Internals\Entity $entity)
@@ -913,20 +932,22 @@ class Notify
 			return $result;
 		}
 
-		if (!$entity instanceof Payment)
+		if (!($entity instanceof Payment)
+			&& !($entity instanceof Shipment)
+		)
 		{
-			throw new Main\ArgumentTypeException('entity', '\Bitrix\Sale\Payment');
+			return $result;
 		}
 
-		/** @var PaymentCollection $paymentCollection */
-		if (!$paymentCollection = $entity->getCollection())
+		/** @var PaymentCollection|ShipmentCollection $collection */
+		if (!$collection = $entity->getCollection())
 		{
-			$result->addError(new ResultError(Main\Localization\Loc::getMessage("SALE_NOTIFY_PAYMENT_COLLECTION_NOT_FOUND")));
+			$result->addError(new ResultError(Main\Localization\Loc::getMessage("SALE_NOTIFY_ENTITY_COLLECTION_NOT_FOUND")));
 			return $result;
 		}
 
 		/** @var Order $order */
-		if (!$order = $paymentCollection->getOrder())
+		if (!$order = $collection->getOrder())
 		{
 			$result->addError(new ResultError(Main\Localization\Loc::getMessage("SALE_NOTIFY_ORDER_NOT_FOUND")));
 			return $result;
@@ -950,8 +971,119 @@ class Notify
 			$event = new \CEvent;
 			$event->Send($eventName, $order->getField('LID'), $fields, "N");
 
-			static::addSentEvent('p'.$entity->getId(), $eventName);
+			if ($entity instanceof Payment)
+			{
+				static::addSentEvent('p'.$entity->getId(), $eventName);
+			}
+			elseif ($entity instanceof Shipment)
+			{
+				static::addSentEvent('s'.$entity->getId(), $eventName);
+			}
 		}
+
+		return $result;
+	}
+
+	/**
+	 * @param Internals\Entity $entity
+	 * @return Result
+	 * @throws Main\ArgumentException
+	 * @throws Main\ArgumentNullException
+	 * @throws Main\ArgumentOutOfRangeException
+	 * @throws Main\ArgumentTypeException
+	 * @throws Main\ObjectPropertyException
+	 * @throws Main\SystemException
+	 */
+	public static function sendCheckError(Internals\Entity $entity)
+	{
+		$result = new Result();
+
+		if (static::isNotifyDisabled())
+		{
+			return $result;
+		}
+
+		if (!($entity instanceof Payment)
+			&& !($entity instanceof Shipment)
+		)
+		{
+			throw new Main\ArgumentTypeException('entity', '\Bitrix\Sale\Payment or \Bitrix\Sale\Shipment');
+		}
+
+		/** @var PaymentCollection|ShipmentCollection $collection */
+		if (!$collection = $entity->getCollection())
+		{
+			$result->addError(new ResultError(Main\Localization\Loc::getMessage("SALE_NOTIFY_ENTITY_COLLECTION_NOT_FOUND")));
+			return $result;
+		}
+
+		/** @var Order $order */
+		if (!$order = $collection->getOrder())
+		{
+			$result->addError(new ResultError(Main\Localization\Loc::getMessage("SALE_NOTIFY_ORDER_NOT_FOUND")));
+			return $result;
+		}
+
+		$filter = array('STATUS' => 'E');
+		if ($entity instanceof Payment)
+		{
+			$filter['PAYMENT_ID'] = $entity->getId();
+		}
+		elseif ($entity instanceof Shipment)
+		{
+			$filter['SHIPMENT_ID'] = $entity->getId();
+		}
+
+		$dbRes = CashboxCheckTable::getList(
+			array(
+				'select' => array('*'),
+				'filter' => $filter,
+				'order' => array('DATE_PRINT_END' => 'DESC'),
+				'limit' => 1
+			)
+		);
+		$check = $dbRes->fetch();
+		if (!$check)
+		{
+			$result->addError(new ResultError(Main\Localization\Loc::getMessage("SALE_NOTIFY_ORDER_CHECK_NOT_FOUND")));
+			return $result;
+		}
+
+		$cashbox = Manager::getCashboxFromCache($check['CASHBOX_ID']);
+		if ($cashbox['EMAIL'])
+		{
+			$cashbox = Manager::getCashboxFromCache($check['CASHBOX_ID']);
+
+			$fields = array(
+				"ORDER_ACCOUNT_NUMBER" => $order->getField("ACCOUNT_NUMBER"),
+				"CHECK_ID" => $check['ID'],
+				"ORDER_ID" => $order->getId(),
+				"ORDER_DATE" => $order->getDateInsert()->toString(),
+				"EMAIL" => $cashbox['EMAIL'],
+				"SALE_EMAIL" => Main\Config\Option::get("sale", "order_email", "order@".$_SERVER["SERVER_NAME"]),
+			);
+
+			$eventName = static::EVENT_ON_CHECK_PRINT_ERROR_SEND_EMAIL;
+			$event = new \CEvent;
+			$event->Send($eventName, $order->getField('LID'), $fields, "N");
+
+			if ($entity instanceof Payment)
+			{
+				static::addSentEvent('p'.$entity->getId(), $eventName);
+			}
+			elseif ($entity instanceof Shipment)
+			{
+				static::addSentEvent('s'.$entity->getId(), $eventName);
+			}
+		}
+
+		\CSaleMobileOrderPush::send(
+			static::EVENT_MOBILE_PUSH_ORDER_CHECK_ERROR,
+			array(
+				'ORDER' => static::getOrderFields($order),
+				'CHECK' => $check
+			)
+		);
 
 		return $result;
 	}
@@ -966,9 +1098,9 @@ class Notify
 	{
 		$userEmail = "";
 
-		if (!empty(static::$cacheUserData[$order->getUserId()]))
+		if (!empty(static::$cacheUserData[$order->getId()]))
 		{
-			$userData = static::$cacheUserData[$order->getUserId()];
+			$userData = static::$cacheUserData[$order->getId()];
 			if (!empty($userData['EMAIL']))
 			{
 				$userEmail = $userData['EMAIL'];
@@ -984,7 +1116,7 @@ class Notify
 				if ($propUserEmail = $propertyCollection->getUserEmail())
 				{
 					$userEmail = $propUserEmail->getValue();
-					static::$cacheUserData[$order->getUserId()]['EMAIL'] = $userEmail;
+					static::$cacheUserData[$order->getId()]['EMAIL'] = $userEmail;
 				}
 			}
 		}
@@ -997,7 +1129,7 @@ class Notify
 											   ));
 			if ($userData = $userRes->fetch())
 			{
-				static::$cacheUserData[$order->getUserId()] = $userData;
+				static::$cacheUserData[$order->getId()] = $userData;
 				$userEmail = $userData['EMAIL'];
 			}
 		}

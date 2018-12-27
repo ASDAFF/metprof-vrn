@@ -1,4 +1,6 @@
 <?
+$MESS["MAIN_OPT_PROFILE"] = "User profile";
+$MESS["MAIN_OPT_PROFILE_HYSTORY"] = "Keep history of user profile field updates:";
 $MESS["MAIN_REGISTER"] = "Enable self-registration for users";
 $MESS["MAIN_EMAIL"] = "Send copies of all outgoing e-mails to:";
 $MESS["FILL_TO_MAIL_M"] = "E-mail address in caption";
@@ -217,4 +219,6 @@ $MESS["MAIN_REGISTER_AGREEMENT_TITLE"] = "Manage Agreements. <a href=\"#AGGREMEN
 $MESS["MAIN_REGISTER_AGREEMENT_DEFAUTL_VALUE"] = "(Select Agreement)";
 $MESS["MAIN_OPTIONS_PHONE_NUMBER_FORMAT"] = "Phone number format";
 $MESS["MAIN_OPTIONS_PHONE_NUMBER_DEFAULT_COUNTRY"] = "Default country:";
+$MESS["MAIN_OPTION_MAIL_GEN_TEXT_VERSION"] = "Create text version of HTML messages:";
+$MESS["MAIN_OPTION_MAIL_LINK_PROTOCOL"] = "Protocol for URL's in messages (relative links will be prepended with site domain and protocol):";
 ?>

@@ -67,4 +67,5 @@ $MESS["SOA_SHOW_NOT_CALCULATED_DELIVERIES_Y"] = "Wie gewöhnlich anzeigen";
 $MESS["SHOW_NOT_CALCULATED_DELIVERIES_TIP"] = "Option \"Lieferungen mit dem externen Zugriff auf Services vorher kalkulieren\" aktivieren, um die Lieferungen von diesem Typ sortieren zu können.";
 $MESS["SBB_SPOT_LOCATION_BY_GEOIP"] = "Standort des Kunden nach IP-Adresse bestimmen";
 $MESS["SOA_DELIVERY_NO_AJAX2"] = "Lieferungen sofort berechnen, wenn sie externen Zugriff auf Services haben";
+$MESS["SOA_USE_PHONE_NORMALIZATION"] = "Telefonnummer normalisieren";
 ?>

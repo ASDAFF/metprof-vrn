@@ -614,7 +614,10 @@ class CBitrixPersonalOrderListComponent extends CBitrixComponent
 			$oldOrder = Sale\Order::load($id);
 
 			$oldBasket = $oldOrder->getBasket();
-			$oldBasketItems = $oldBasket->getBasketItems();
+			$refreshStrategy = Sale\Basket\RefreshFactory::create(Sale\Basket\RefreshFactory::TYPE_FULL);
+			$oldBasket->refresh($refreshStrategy);
+			$oldBasketItems = $oldBasket->getOrderableItems();
+
 
 			/** @var Sale\BasketItem $oldBasketItem*/
 			foreach ($oldBasketItems as $oldBasketItem)
@@ -629,7 +632,7 @@ class CBitrixPersonalOrderListComponent extends CBitrixComponent
 
 				if ($item)
 				{
-					$resultItem = $item->setField('QUANTITY', $item->getQuantity() + $oldBasketItem->getQuantity());
+					$item->setField('QUANTITY', $item->getQuantity() + $oldBasketItem->getQuantity());
 				}
 				else
 				{
@@ -637,29 +640,24 @@ class CBitrixPersonalOrderListComponent extends CBitrixComponent
 					$oldBasketValues = array_intersect_key($oldBasketItem->getFieldValues(), $filterFields);
 					$item->setField('NAME', $oldBasketValues['NAME']);
 					$resultItem = $item->setFields($oldBasketValues);
+					if (!$resultItem->isSuccess())
+						continue;
 					$newPropertyCollection = $item->getPropertyCollection();
 
 					/** @var Sale\BasketPropertyItem $oldProperty*/
 					foreach ($propertyList as $oldPropertyFields)
 					{
-						$propertyItem = $newPropertyCollection->createItem();
+						$propertyItem = $newPropertyCollection->createItem($oldPropertyFields);
 						unset($oldPropertyFields['ID'], $oldPropertyFields['BASKET_ID']);
 
 						/** @var Sale\BasketPropertyItem $propertyItem*/
 						$propertyItem->setFields($oldPropertyFields);
 					}
 				}
-				if (!$resultItem->isSuccess())
-				{
-					$result->addErrors($resultItem->getErrors());
-				}
 			}
 
-			if ($result->isSuccess())
-			{
-				$basket->save();
-			}
-			else
+			$result = $basket->save();
+			if (!$result->isSuccess())
 			{
 				$errorList = $result->getErrors();
 				foreach ($errorList as $key => $error)

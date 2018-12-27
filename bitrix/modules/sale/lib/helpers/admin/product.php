@@ -68,11 +68,12 @@ class Product
 	 * @param array $productsData
 	 * @param string $siteId
 	 * @param int $userId
+	 * @param array $errors
 	 * @return array
 	 * @throws \Bitrix\Main\NotSupportedException
 	 * @throws \Bitrix\Main\ObjectNotFoundException
 	 */
-	public static function getProviderData(array $productsData, $siteId, $userId = null)
+	public static function getProviderData(array $productsData, $siteId, $userId = null, array &$errors = array())
 	{
 		if(empty($productsData))
 			return array();
@@ -103,10 +104,6 @@ class Product
 
 		foreach($productsData as $productFields)
 		{
-			$providerClassName = null;
-			if(isset($productFields["PRODUCT_PROVIDER_CLASS"]) && strlen($productFields["PRODUCT_PROVIDER_CLASS"]) > 0)
-				$providerClassName = trim($productFields["PRODUCT_PROVIDER_CLASS"]);
-
 			if (isset($productFields['OFFER_ID']))
 			{
 				$productFields['PRODUCT_ID'] = $productFields['OFFER_ID'];
@@ -115,14 +112,9 @@ class Product
 			$r = Catalog\Product\Basket::addProductToBasket($basket, $productFields, $context);
 			if (!$r->isSuccess())
 			{
+				$errors = $r->getErrorMessages();
 				return null;
 			}
-//			$item = BasketItem::create($basket, $productFields["MODULE"], $productFields["OFFER_ID"]);
-//
-//			$item->setField('QUANTITY', $productFields['QUANTITY']);
-//			$item->setField("NAME", $productFields["NAME"]);
-//
-//			$item->refresh();
 		}
 
 		return Provider::getProductData($basket, array("PRICE", "AVAILABLE_QUANTITY"));

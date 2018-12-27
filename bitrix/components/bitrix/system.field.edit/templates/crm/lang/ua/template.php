@@ -1,4 +1,5 @@
 <?
+$MESS["CRM_FF_ORDER"] = "Замовлення";
 $MESS["CRM_FF_LEAD"] = "Ліди";
 $MESS["CRM_FF_CONTACT"] = "Контакти";
 $MESS["CRM_FF_COMPANY"] = "Компанії";

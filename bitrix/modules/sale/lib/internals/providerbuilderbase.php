@@ -45,7 +45,11 @@ abstract class ProviderBuilderBase
 	public static function create($providerClass, $context)
 	{
 		$builder = new static();
-		$builder->providerClass = $providerClass;
+
+		if ($providerClass && !is_string($providerClass))
+		{
+			$builder->providerClass = $providerClass;
+		}
 		$builder->context = $context;
 
 		return $builder;
@@ -178,11 +182,9 @@ abstract class ProviderBuilderBase
 	 *
 	 * @return Sale\Result
 	 */
-	private function decomposeIntoProvider(Sale\Result $resultProvider, $outputName)
+	protected function decomposeIntoProvider(Sale\Result $resultProvider, $outputName)
 	{
 		$result = new Sale\Result();
-		$resultList = array();
-		$providerClass = $this->getProviderClass();
 		$providerData = $resultProvider->getData();
 
 		if (empty($providerData[$outputName]))
@@ -190,46 +192,8 @@ abstract class ProviderBuilderBase
 			return $result;
 		}
 
-		if ($providerClass)
-		{
-			$reflect = new \ReflectionClass($providerClass);
-			$providerName = trim($reflect->getName());
-
-			if (isset($providerData[$outputName][$providerName]))
-			{
-				$resultList[$outputName][$providerName] = $providerData[$outputName][$providerName];
-			}
-
-		}
-		else
-		{
-			$items = $this->getItems();
-
-			foreach ($items as $itemId => $item)
-			{
-				/** @var Sale\BasketItem $basketItem */
-				$basketItem = $item['BASKET_ITEM'];
-				$callbackFunction = trim($basketItem->getCallbackFunction());
-
-				if (!isset($resultList[$outputName][$callbackFunction]))
-				{
-					$resultList[$outputName][$callbackFunction] = array();
-				}
-
-				if (isset($providerData[$outputName][$callbackFunction]))
-				{
-					$resultList[$outputName][$callbackFunction] = $resultList[$outputName][$callbackFunction] + $providerData[$outputName][$callbackFunction];
-				}
-			}
-		}
-
-		if (!empty($resultList))
-		{
-			$result->setData($resultList);
-			return $result;
-		}
-
-		return $resultProvider;
+		$result->setData($providerData);
+		return $result;
 	}
 
 	/**
@@ -343,11 +307,67 @@ abstract class ProviderBuilderBase
 	}
 
 	/**
-	 * @param Sale\Result $result
+	 * @param Sale\Result $resultAfterDeliver
 	 *
 	 * @return Sale\Result
+	 * @throws Main\ObjectNotFoundException
 	 */
-	abstract public function createItemsResultAfterDeliver(Sale\Result $result);
+	public function createItemsResultAfterDeliver(Sale\Result $resultAfterDeliver)
+	{
+		$result = new Sale\Result();
+		$resultList = array();
+		$products = $this->getItems();
+
+		if (empty($products))
+		{
+			return $result;
+		}
+
+		$resultDeliverData = $resultAfterDeliver->getData();
+
+		foreach ($products as $productId => $productData)
+		{
+			$providerName = $this->getProviderName();
+			if (empty($resultDeliverData['DELIVER_PRODUCTS_LIST']) ||
+				empty($resultDeliverData['DELIVER_PRODUCTS_LIST'][$providerName]) ||
+				!array_key_exists($productId, $resultDeliverData['DELIVER_PRODUCTS_LIST'][$providerName]))
+			{
+				continue;
+			}
+
+			if (empty($productData['SHIPMENT_ITEM_LIST']))
+			{
+				continue;
+			}
+
+			/**
+			 * @var int $shipmentItemIndex
+			 * @var Sale\ShipmentItem $shipmentItem
+			 */
+			foreach ($productData['SHIPMENT_ITEM_LIST'] as $shipmentItemIndex => $shipmentItem)
+			{
+				$basketItem = $shipmentItem->getBasketItem();
+
+				if (!$basketItem)
+				{
+					throw new Main\ObjectNotFoundException('Entity "BasketItem" not found');
+				}
+
+				$resultList[$basketItem->getBasketCode()] = $resultDeliverData['DELIVER_PRODUCTS_LIST'][$providerName][$productId];
+			}
+		}
+
+		if (!empty($resultList))
+		{
+			$result->setData(
+				array(
+					'RESULT_AFTER_DELIVER_LIST' => $resultList
+				)
+			);
+		}
+
+		return $result;
+	}
 
 	/**
 	 * @param array $productData
@@ -358,14 +378,58 @@ abstract class ProviderBuilderBase
 	}
 
 	/**
-	 * @return mixed
+	 * @internal
+	 * @return string|null
 	 */
-	protected function getProviderClass()
+	public function getProviderClass()
 	{
 		return $this->providerClass;
 	}
 
 	/**
+	 * @internal
+	 * @return string|null
+	 */
+	public function getCallbackFunction()
+	{
+		return $this->callbackFunction;
+	}
+
+	/**
+	 * @internal
+	 * @return string
+	 */
+	public function getProviderName()
+	{
+		$providerName = null;
+		$providerClass = $this->getProviderClass();
+		if ($providerClass)
+		{
+			$reflect = new \ReflectionClass($this->getProviderClass());
+			$providerName = $reflect->getName();
+		}
+
+		return  $this->clearProviderName($providerName);
+	}
+
+	/**
+	 * @param $providerName
+	 *
+	 * @return string
+	 */
+	protected function clearProviderName($providerName)
+	{
+		if (substr($providerName, 0, 1) == "\\")
+		{
+			$providerName = substr($providerName, 1);
+		}
+
+		return $providerName;
+	}
+
+
+	/**
+	 * @internal
 	 * @return array
 	 */
 	protected function getContext()

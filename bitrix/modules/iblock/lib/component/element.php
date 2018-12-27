@@ -59,7 +59,6 @@ abstract class Element extends Base
 		}
 
 		$params['USE_MAIN_ELEMENT_SECTION'] = isset($params['USE_MAIN_ELEMENT_SECTION']) && $params['USE_MAIN_ELEMENT_SECTION'] === 'Y';
-		$params['STRICT_SECTION_CHECK'] = isset($params['STRICT_SECTION_CHECK']) && $params['STRICT_SECTION_CHECK'] === 'Y';
 		$params['ADD_ELEMENT_CHAIN'] = isset($params['ADD_ELEMENT_CHAIN']) && $params['ADD_ELEMENT_CHAIN'] === 'Y';
 		$params['LINK_IBLOCK_TYPE'] = trim($params['LINK_IBLOCK_TYPE']);
 		$params['LINK_IBLOCK_ID'] = (int)$params['LINK_IBLOCK_ID'];
@@ -980,8 +979,8 @@ abstract class Element extends Base
 
 		$params['USE_COMMENTS'] = $params['USE_COMMENTS'] === 'Y' ? 'Y' : 'N';
 		$params['BLOG_USE'] = $params['BLOG_USE'] === 'Y' ? 'Y' : 'N';
-		$params['VK_USE'] = $params['VK_USE'] === 'Y' ? 'Y' : 'N';
-		$params['FB_USE'] = $params['FB_USE'] === 'Y' ? 'Y' : 'N';
+		$params['VK_USE'] = $params['VK_USE'] === 'Y' && !empty($params['VK_API_ID']) ? 'Y' : 'N';
+		$params['FB_USE'] = $params['FB_USE'] === 'Y' && !empty($params['FB_APP_ID']) ? 'Y' : 'N';
 
 		if ($params['USE_COMMENTS'] === 'Y')
 		{
@@ -1015,7 +1014,7 @@ abstract class Element extends Base
 
 		if (empty($params['PRODUCT_PAY_BLOCK_ORDER']))
 		{
-			$params['PRODUCT_PAY_BLOCK_ORDER'] = 'rating,price,quantityLimit,quantity,buttons,compare';
+			$params['PRODUCT_PAY_BLOCK_ORDER'] = 'rating,price,quantityLimit,quantity,buttons';
 		}
 
 		if (is_string($params['PRODUCT_PAY_BLOCK_ORDER']))
@@ -1239,55 +1238,36 @@ abstract class Element extends Base
 
 	protected function editTemplateProductSets(&$item)
 	{
-		$ids = array($item['ID']);
-		$offerSet = array();
+		$result = array();
+		if (!\CBXFeatures::IsFeatureEnabled('CatCompleteSet'))
+			return $result;
+		if (!isset($item['PRODUCT']['TYPE']))
+			return $result;
 
-		foreach ($item['OFFERS'] as $offer)
+		$parentBundle = ($item['PRODUCT']['BUNDLE'] == 'Y');
+		if ($parentBundle)
+			$result[$item['ID']] = true;
+		if ($item['PRODUCT']['TYPE'] == Catalog\ProductTable::TYPE_SKU)
 		{
-			$ids[] = $offer['ID'];
-		}
-
-		if (!empty($ids) && \CBXFeatures::IsFeatureEnabled('CatCompleteSet'))
-		{
-			$offerSet = array_fill_keys($ids, false);
-			$productSetIterator = \CCatalogProductSet::getList(
-				array(),
-				array(
-					'@OWNER_ID' => $ids,
-					'=SET_ID' => 0,
-					'=TYPE' => \CCatalogProductSet::TYPE_GROUP
-				),
-				false,
-				false,
-				array('ID', 'OWNER_ID')
-			);
-			while ($set = $productSetIterator->Fetch())
+			foreach ($item['OFFERS'] as $offer)
 			{
-				$set['OWNER_ID'] = (int)$set['OWNER_ID'];
-				$offerSet[$set['OWNER_ID']] = true;
-				$item['OFFER_GROUP'] = true;
-			}
-
-			if ($offerSet[$item['ID']])
-			{
-				foreach ($offerSet as &$setOfferValue)
+				if (
+					$parentBundle
+					|| ($offer['PRODUCT']['BUNDLE'] == 'Y')
+				)
 				{
-					if ($setOfferValue === false)
-					{
-						$setOfferValue = true;
-					}
+					$result[$offer['ID']] = true;
 				}
-				unset($setOfferValue, $offerSet[$item['ID']]);
 			}
-
-			if ($item['OFFER_GROUP'])
-			{
-				$offerSet = array_filter($offerSet);
-				$item['OFFER_GROUP_VALUES'] = array_keys($offerSet);
-			}
+			unset($offer);
 		}
+		unset($parentBundle);
 
-		return $offerSet;
+		$item['OFFER_GROUP'] = !empty($result);
+		if (!empty($result))
+			$item['OFFER_GROUP_VALUES'] = array_keys($result);
+
+		return $result;
 	}
 
 	protected function editTemplateJsOffers(&$item, $offerSet)
@@ -1336,6 +1316,7 @@ abstract class Element extends Base
 				$item['OFFERS'][$keyOffer]['OFFER_GROUP'] = true;
 			}
 
+			$ratioSelectedIndex = $offer['ITEM_MEASURE_RATIO_SELECTED'];
 			$firstPhoto = reset($offer['MORE_PHOTO']);
 			$arOneRow = array(
 				'ID' => $offer['ID'],
@@ -1349,13 +1330,13 @@ abstract class Element extends Base
 				'ITEM_QUANTITY_RANGES' => $offer['ITEM_QUANTITY_RANGES'],
 				'ITEM_QUANTITY_RANGE_SELECTED' => $offer['ITEM_QUANTITY_RANGE_SELECTED'],
 				'ITEM_MEASURE_RATIOS' => $offer['ITEM_MEASURE_RATIOS'],
-				'ITEM_MEASURE_RATIO_SELECTED' => $offer['ITEM_MEASURE_RATIO_SELECTED'],
+				'ITEM_MEASURE_RATIO_SELECTED' => $ratioSelectedIndex,
 				'PREVIEW_PICTURE' => $firstPhoto,
 				'DETAIL_PICTURE' => $firstPhoto,
 				'CHECK_QUANTITY' => $offer['CHECK_QUANTITY'],
-				'MAX_QUANTITY' => $offer['CATALOG_QUANTITY'],
-				'STEP_QUANTITY' => $offer['ITEM_MEASURE_RATIOS'][$offer['ITEM_MEASURE_RATIO_SELECTED']]['RATIO'],
-				'QUANTITY_FLOAT' => is_float($offer['ITEM_MEASURE_RATIOS'][$offer['ITEM_MEASURE_RATIO_SELECTED']]['RATIO']),
+				'MAX_QUANTITY' => $offer['PRODUCT']['QUANTITY'],
+				'STEP_QUANTITY' => $offer['ITEM_MEASURE_RATIOS'][$ratioSelectedIndex]['RATIO'], // deprecated
+				'QUANTITY_FLOAT' => is_float($offer['ITEM_MEASURE_RATIOS'][$ratioSelectedIndex]['RATIO']), // deprecated
 				'MEASURE' => $offer['ITEM_MEASURE']['TITLE'],
 				'OFFER_GROUP' => (isset($offerSet[$offer['ID']]) && $offerSet[$offer['ID']]),
 				'CAN_BUY' => $offer['CAN_BUY'],
@@ -1363,6 +1344,7 @@ abstract class Element extends Base
 				'SLIDER' => $offer['MORE_PHOTO'],
 				'SLIDER_COUNT' => $offer['MORE_PHOTO_COUNT'],
 			);
+			unset($ratioSelectedIndex);
 
 			$matrix[$keyOffer] = $arOneRow;
 		}
@@ -1473,7 +1455,7 @@ abstract class Element extends Base
 
 		if ($item['MODULES']['catalog'] && $item['CATALOG'])
 		{
-			if ($item['CATALOG_TYPE'] == \CCatalogProduct::TYPE_PRODUCT || $item['CATALOG_TYPE'] == \CCatalogProduct::TYPE_SET)
+			if ($item['CATALOG_TYPE'] == Catalog\ProductTable::TYPE_PRODUCT || $item['CATALOG_TYPE'] == Catalog\ProductTable::TYPE_SET)
 			{
 				\CIBlockPriceTools::setRatioMinPrice($item, false);
 				$item['MIN_BASIS_PRICE'] = $item['MIN_PRICE'];
@@ -1482,26 +1464,12 @@ abstract class Element extends Base
 			if (
 				\CBXFeatures::IsFeatureEnabled('CatCompleteSet')
 				&& (
-					$item['CATALOG_TYPE'] == \CCatalogProduct::TYPE_PRODUCT
-					|| $item['CATALOG_TYPE'] == \CCatalogProduct::TYPE_SET
+					$item['CATALOG_TYPE'] == Catalog\ProductTable::TYPE_PRODUCT
+					|| $item['CATALOG_TYPE'] == Catalog\ProductTable::TYPE_SET
 				)
 			)
 			{
-				$productSetIterator = \CCatalogProductSet::getList(
-					array(),
-					array(
-						'@OWNER_ID' => $item['ID'],
-						'=SET_ID' => 0,
-						'=TYPE' => \CCatalogProductSet::TYPE_GROUP
-					),
-					false,
-					false,
-					array('ID', 'OWNER_ID')
-				);
-				if ($set = $productSetIterator->Fetch())
-				{
-					$item['OFFER_GROUP'] = true;
-				}
+				$item['OFFER_GROUP'] = (isset($item['PRODUCT']['BUNDLE']) && $item['PRODUCT']['BUNDLE'] === 'Y');
 			}
 		}
 

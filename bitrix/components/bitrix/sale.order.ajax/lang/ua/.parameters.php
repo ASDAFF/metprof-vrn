@@ -76,4 +76,5 @@ $MESS["SOA_DELIVERY_NO_AJAX_NO"] = "Не розраховувати";
 $MESS["SOA_DELIVERY_NO_AJAX_YES"] = "Розраховувати відразу";
 $MESS["SOA_DELIVERY_NO_AJAX_HANDLER"] = "Враховувати налаштування доставки";
 $MESS["SBB_SPOT_LOCATION_BY_GEOIP"] = "Визначати місце розташування покупця за IP-адресою";
+$MESS["SOA_USE_PHONE_NORMALIZATION"] = "Використовувати нормалізацію номера телефону";
 ?>

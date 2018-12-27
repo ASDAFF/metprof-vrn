@@ -210,7 +210,7 @@
 
 			if (!this.rows)
 			{
-				result = BX.Grid.Utils.getByTag(this.getParent().getTable(), 'tr');
+				result = [].slice.call(this.getParent().getTable().querySelectorAll('tr[data-id], thead > tr'));
 
 				this.rows = result.map(function(current) {
 					return new BX.Grid.Row(self.parent, current);
@@ -370,9 +370,13 @@
 		 */
 		getByIndex: function(rowIndex)
 		{
-			var filter = this.getBodyChild().filter(function(item) {
-				return item.getNode().rowIndex === rowIndex;
-			});
+			var filter = this.getBodyChild()
+				.filter(function(item) {
+					return item;
+				})
+				.filter(function(item) {
+					return item.getNode().rowIndex === rowIndex;
+				});
 
 			return filter.length ? filter[0] : null;
 		},
@@ -467,7 +471,10 @@
 		 */
 		getSourceRows: function()
 		{
-			return BX.Grid.Utils.getByTag(this.getParent().getTable(), 'tr');
+			return BX.Grid.Utils.getBySelector(this.getParent().getTable(), [
+				'.main-grid-header > tr',
+				'.main-grid-header + tbody > tr'
+			].join(', '));
 		},
 
 

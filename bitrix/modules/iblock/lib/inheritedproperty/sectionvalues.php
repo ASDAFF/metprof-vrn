@@ -17,7 +17,7 @@ class SectionValues extends BaseValues
 	public function __construct($iblockId, $sectionId)
 	{
 		parent::__construct($iblockId);
-		$this->sectionId = intval($sectionId);
+		$this->sectionId = (int)$sectionId;
 	}
 
 	/**

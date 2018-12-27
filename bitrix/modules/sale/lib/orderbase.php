@@ -7,6 +7,7 @@
  */
 namespace Bitrix\Sale;
 
+use Bitrix\Currency;
 use Bitrix\Main;
 use Bitrix\Main\Entity;
 use Bitrix\Main\Localization\Loc;
@@ -150,7 +151,14 @@ abstract class OrderBase
 			$order->setFieldNoDemand('USER_ID', $userId);
 
 		if ($currency == null)
+		{
 			$currency = Internals\SiteCurrencyTable::getSiteCurrency($siteId);
+		}
+
+		if ($currency == null)
+		{
+			$currency = Currency\CurrencyManager::getBaseCurrency();
+		}
 
 		$order->setFieldNoDemand('CURRENCY', $currency);
 
@@ -329,11 +337,20 @@ abstract class OrderBase
 			return new Result();
 		}
 
-		$fields = $this->fields->getChangedValues();
-		if (!array_key_exists("UPDATED_1C", $fields))
-			parent::setField("UPDATED_1C", "N");
+		$r = parent::setField($name, $value);
 
-		return parent::setField($name, $value);
+		if (!$r->isSuccess())
+		{
+			return $r;
+		}
+
+		$fields = $this->fields->getChangedValues();
+		if (!empty($fields) && !array_key_exists("UPDATED_1C", $fields) && $name != 'UPDATED_1C')
+		{
+			parent::setField("UPDATED_1C", "N");
+		}
+
+		return $r;
 	}
 
 	/**
@@ -364,8 +381,10 @@ abstract class OrderBase
 		}
 
 		$fields = $this->fields->getChangedValues();
-		if (!array_key_exists("UPDATED_1C", $fields))
+		if (!empty($fields) && !array_key_exists("UPDATED_1C", $fields) && $name != 'UPDATED_1C')
+		{
 			parent::setField("UPDATED_1C", "N");
+		}
 
 		parent::setFieldNoDemand($name, $value);
 	}

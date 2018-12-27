@@ -19,6 +19,7 @@ class TransferProviderCompatibility extends TransferProviderBase
 	 */
 	public function tryShip(array $products)
 	{
+		Main\Loader::includeModule('catalog');
 		$result = new Sale\Result();
 
 		$tryShipmentItemList = array();
@@ -124,6 +125,7 @@ class TransferProviderCompatibility extends TransferProviderBase
 	 */
 	public function isNeedShip(array $products)
 	{
+		Main\Loader::includeModule('catalog');
 		$result = new Sale\Result();
 
 		$resultNeedShipList = array();
@@ -628,11 +630,7 @@ class TransferProviderCompatibility extends TransferProviderBase
 			$providerName = $reflect->getName();
 		}
 
-		$items = array(
-			$providerName => $products
-		);
-
-		return Sale\Provider::getProductDataByList($items, array('PRICE','QUANTITY','CHECK_DISCOUNT', 'AVAILABLE_QUANTITY', 'COUPONS'), $this->getContext());
+		return Sale\Provider::getProductDataByList($products, $providerName, array('PRICE','QUANTITY','CHECK_DISCOUNT', 'AVAILABLE_QUANTITY', 'COUPONS'), $this->getContext());
 	}
 
 	/**
@@ -646,8 +644,6 @@ class TransferProviderCompatibility extends TransferProviderBase
 	}
 
 	/**
-	 * @param array $products
-	 *
 	 * @return Sale\Result
 	 */
 	public function getStoresCount()
@@ -666,6 +662,7 @@ class TransferProviderCompatibility extends TransferProviderBase
 	 */
 	public function deliver(array $products)
 	{
+		Main\Loader::includeModule('catalog');
 		$result = new Sale\Result();
 		$resultList = array();
 
@@ -680,23 +677,68 @@ class TransferProviderCompatibility extends TransferProviderBase
 			/** @var Sale\Order $order */
 			foreach ($productOrderList[$productId] as $order)
 			{
-				$fields = array(
-					"PRODUCT_ID" => $productId,
-					"USER_ID"    => $order->getUserId(),
-					"PAID"		 => $order->isPaid() ? 'Y' : 'N',
-					"ORDER_ID"   => $order->getId(),
-				);
-
-				$r = Sale\Provider::deliverProductData($this->getProviderClass(), $fields);
-				if ($r->isSuccess())
+				$resultList[$productId] = false;
+				if (!empty($productData['SHIPMENT_ITEM_LIST']))
 				{
-					$resultData = $r->getData();
 
-					if (array_key_exists($productId, $resultData))
+					$quantityList = array();
+
+					if (isset($productData['QUANTITY_LIST']))
 					{
-						$resultList[$productId] = $resultData[$productId];
+						$quantityList = $productData['QUANTITY_LIST'];
+					}
+					/**
+					 * @var $shipmentIndex
+					 * @var Sale\ShipmentItem $shipmentItem
+					 */
+					foreach ($productData['SHIPMENT_ITEM_LIST'] as $shipmentIndex => $shipmentItem)
+					{
+
+						/** @var Sale\ShipmentItemCollection $shipmentItemCollection */
+						$shipmentItemCollection = $shipmentItem->getCollection();
+						if (!$shipmentItemCollection)
+						{
+							throw new Main\ObjectNotFoundException('Entity "ShipmentItemCollection" not found');
+						}
+
+						$shipment = $shipmentItemCollection->getShipment();
+
+						$basketItem = $shipmentItem->getBasketItem();
+
+						$basketCode = $basketItem->getBasketCode();
+						$quantity = null;
+
+						if (isset($quantityList[$basketCode]))
+						{
+							$quantity = $quantityList[$basketCode];
+						}
+
+						$fields = array(
+							"PRODUCT_ID" => $productId,
+							"USER_ID"    => $order->getUserId(),
+							"PAID"		 => $order->isPaid() ? 'Y' : 'N',
+							"ORDER_ID"   => $order->getId(),
+
+							"BASKET_CODE"   => $basketCode,
+							"CALLBACK_FUNC"   => $basketItem->getField('CALLBACK_FUNC'),
+							"MODULE"   => $basketItem->getField('MODULE'),
+							"ALLOW_DELIVERY"   => $shipment->getField('ALLOW_DELIVERY'),
+							"QUANTITY"   => $quantity,
+						);
+
+						$r = Sale\Provider::deliverProductData($this->getProviderClass(), $fields);
+						if ($r->isSuccess())
+						{
+							$resultData = $r->getData();
+
+							if (array_key_exists($productId, $resultData))
+							{
+								$resultList[$productId] = $resultData[$productId];
+							}
+						}
 					}
 				}
+
 			}
 
 		}
@@ -723,6 +765,7 @@ class TransferProviderCompatibility extends TransferProviderBase
 	public function viewProduct(array $products)
 	{
 		global $USER;
+		Main\Loader::includeModule('catalog');
 		$result = new Sale\Result();
 		$resultList = array();
 
@@ -798,6 +841,7 @@ class TransferProviderCompatibility extends TransferProviderBase
 	 */
 	public function getProductListStores(array $products)
 	{
+		Main\Loader::includeModule('catalog');
 		$result = new Sale\Result();
 		$resultList = array();
 
@@ -921,6 +965,8 @@ class TransferProviderCompatibility extends TransferProviderBase
 	public function recurring(array $products)
 	{
 		global $USER;
+		Main\Loader::includeModule('catalog');
+
 		$result = new Sale\Result();
 		$resultList = array();
 

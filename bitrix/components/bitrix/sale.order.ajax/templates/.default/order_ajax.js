@@ -68,6 +68,7 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 		isMobile: BX.browser.IsMobile(),
 		isHttps: window.location.protocol === "https:",
 		orderSaveAllowed: false,
+		socServiceHiddenNode: false,
 
 		/**
 		 * Initialization of sale.order.ajax component js
@@ -160,22 +161,27 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 		 */
 		sendRequest: function(action, actionData)
 		{
-			var loaderTimer, form;
-			if (!(loaderTimer = this.startLoader()))
+			var form;
+
+			if (!this.startLoader())
 				return;
 
 			this.firstLoad = false;
-			action = BX.type.isString(action) ? action : 'refreshOrderAjax';
 
-			if (action == 'saveOrderAjax')
+			action = BX.type.isNotEmptyString(action) ? action : 'refreshOrderAjax';
+
+			if (action === 'saveOrderAjax')
 			{
 				form = BX('bx-soa-order-form');
 				if (form)
+				{
 					form.querySelector('input[type=hidden][name=sessid]').value = BX.bitrix_sessid();
+				}
 
 				BX.ajax.submit(BX('bx-soa-order-form'), BX.proxy(this.saveOrder, this));
 			}
 			else
+			{
 				BX.ajax({
 					method: 'POST',
 					dataType: 'json',
@@ -221,12 +227,13 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 								break;
 						}
 						BX.cleanNode(this.savedFilesBlockNode);
-						this.endLoader(loaderTimer);
+						this.endLoader();
 					}, this),
 					onfailure: BX.delegate(function(){
-						this.endLoader(loaderTimer);
+						this.endLoader();
 					}, this)
 				});
+			}
 		},
 
 		getData: function(action, actionData)
@@ -254,8 +261,12 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 				i;
 
 			for (i in prepared.data)
+			{
 				if (prepared.data.hasOwnProperty(i) && i == '')
+				{
 					delete prepared.data[i];
+				}
+			}
 
 			return !!prepared && prepared.data ? prepared.data : {};
 		},
@@ -358,37 +369,41 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 
 			if (!this.loadingScreen)
 			{
-				this.loadingScreen = new BX.PopupWindow("loading_screen", null, {
-					overlay: {backgroundColor: 'white', opacity: '80'},
+				this.loadingScreen = new BX.PopupWindow('loading_screen', null, {
+					overlay: {backgroundColor: 'white', opacity: 1},
 					events: {
 						onAfterPopupShow: BX.delegate(function(){
 							BX.cleanNode(this.loadingScreen.popupContainer);
 							BX.removeClass(this.loadingScreen.popupContainer, 'popup-window');
 							this.loadingScreen.popupContainer.appendChild(
-								BX.create('IMG', {props: {src: this.templateFolder + "/images/loader.gif"}})
+								BX.create('IMG', {props: {src: this.templateFolder + '/images/loader.gif'}})
 							);
 							this.loadingScreen.popupContainer.removeAttribute('style');
 							this.loadingScreen.popupContainer.style.display = 'block';
 						}, this)
 					}
 				});
-				BX.addClass(this.loadingScreen.popupContainer, 'bx-step-opacity');
+				BX.addClass(this.loadingScreen.overlay.element, 'bx-step-opacity');
 			}
 
-			return setTimeout(BX.delegate(function(){this.loadingScreen.show()}, this), 100);
+			this.loadingScreen.overlay.element.style.opacity = '0';
+			this.loadingScreen.show();
+			this.loadingScreen.overlay.element.style.opacity = '0.6';
+
+			return true;
 		},
 
 		/**
 		 * Hiding loader image with overlay.
 		 */
-		endLoader: function(loaderTimer)
+		endLoader: function()
 		{
 			this.BXFormPosting = false;
 
 			if (this.loadingScreen && this.loadingScreen.isShown())
+			{
 				this.loadingScreen.close();
-
-			clearTimeout(loaderTimer);
+			}
 		},
 
 		htmlspecialcharsEx: function(str)
@@ -1640,7 +1655,13 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 			}
 
 			if (this.firstLoad && this.result.IS_AUTHORIZED && typeof this.result.LAST_ORDER_DATA.FAIL === 'undefined')
+			{
 				this.showActualBlock();
+			}
+			else if (!this.result.SHOW_AUTH)
+			{
+				this.changeVisibleContent();
+			}
 
 			this.checkNotifications();
 
@@ -1747,7 +1768,7 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 
 			this.fade(actionSection);
 			this.show(section.next);
-			this.animateScrollTo(section.next, 500);
+			this.animateScrollTo(section.next, 800);
 			return BX.PreventDefault(event);
 		},
 
@@ -1809,7 +1830,7 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 					skip = this.result.PAY_SYSTEM && this.result.PAY_SYSTEM.length === 1 && this.result.PAY_FROM_ACCOUNT !== 'Y';
 				}
 			}
-			
+
 			return skip;
 		},
 
@@ -2009,7 +2030,7 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 			}
 
 			new BX.easing({
-				duration: nextSection ? 1000 : 600,
+				duration: nextSection ? 800 : 600,
 				start: {height: objHeightOrig, scrollTop: windowScrollTop},
 				finish: {height: objHeight, scrollTop: scrollTo},
 				transition: BX.easing.makeEaseOut(BX.easing.transitions.quad),
@@ -2108,15 +2129,20 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 
 			while (allSections[i])
 			{
-				if (allSections[i].id == this.regionBlockNode.id)
+				if (allSections[i].id === this.regionBlockNode.id)
 					this.isValidRegionBlock();
 
-				if (allSections[i].id == this.propsBlockNode.id)
+				if (allSections[i].id === this.propsBlockNode.id)
 					this.isValidPropertiesBlock();
 
 				if (!this.checkBlockErrors(allSections[i]) || !this.checkPreload(allSections[i]))
 				{
-					this.show(allSections[i]);
+					if (this.activeSectionId !== allSections[i].id)
+					{
+						BX(this.activeSectionId) && this.fade(BX(this.activeSectionId));
+						this.show(allSections[i]);
+					}
+
 					break;
 				}
 
@@ -2280,7 +2306,7 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 		 */
 		changeVisibleContent: function()
 		{
-			var sections = this.orderBlockNode.querySelectorAll('.bx-soa-section[data-visited]'),
+			var sections = this.orderBlockNode.querySelectorAll('.bx-soa-section.bx-active'),
 				i, state;
 
 			var orderDataLoaded = !!this.result.IS_AUTHORIZED && this.params.USE_PRELOAD === 'Y' && this.result.LAST_ORDER_DATA.FAIL !== true,
@@ -2380,11 +2406,6 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 
 			this.editTotalBlock();
 			this.totalBlockFixFont();
-
-			if (!this.result.SHOW_AUTH)
-			{
-				this.changeVisibleContent();
-			}
 
 			this.showErrors(this.result.ERROR, false);
 			this.showWarnings();
@@ -2885,32 +2906,38 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 
 			if (socServiceHiddenNode)
 			{
+				if (this.socServiceHiddenNode === false)
+				{
+					this.socServiceHiddenNode = socServiceHiddenNode.innerHTML;
+					BX.remove(socServiceHiddenNode);
+				}
+
 				nodes.push(BX.create('DIV', {
-						props: {className: 'bx-authform-social'},
-						children: [
-							BX.create('H3', {props: {className: 'bx-title'}, text: BX.message('SOA_DO_SOC_SERV')}),
-							socServiceHiddenNode.cloneNode(true)
-						]
-					})
-				);
+					props: {className: 'bx-authform-social'},
+					html: '<h3 class="bx-title">' + BX.message('SOA_DO_SOC_SERV') + '</h3>' + this.socServiceHiddenNode,
+				}));
 				nodes.push(BX.create('hr', {props: {className: 'bxe-light'}}));
 			}
-			nodes.push(BX.create('DIV', {
-				props: {className: 'bx-soa-reg-block'},
-				children: [
-					BX.create('P', {html: this.params.MESS_REGISTRATION_REFERENCE}),
-					BX.create('A', {
-						props: {className: 'btn btn-default btn-lg'},
-						text: BX.message('STOF_DO_REGISTER'),
-						events: {
-							click: BX.delegate(function(e){
-								this.toggleAuthForm(e);
-								return BX.PreventDefault(e);
-							}, this)
-						}
-					})
-				]
-			}));
+
+			if (this.result.AUTH.new_user_registration === 'Y')
+			{
+				nodes.push(BX.create('DIV', {
+					props: {className: 'bx-soa-reg-block'},
+					children: [
+						BX.create('P', {html: this.params.MESS_REGISTRATION_REFERENCE}),
+						BX.create('A', {
+							props: {className: 'btn btn-default btn-lg'},
+							text: BX.message('STOF_DO_REGISTER'),
+							events: {
+								click: BX.delegate(function(e){
+									this.toggleAuthForm(e);
+									return BX.PreventDefault(e);
+								}, this)
+							}
+						})
+					]
+				}));
+			}
 
 			authContent.appendChild(BX.create('DIV', {props: {className: 'col-md-6'}, children: nodes}));
 		},
@@ -3077,7 +3104,9 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 					node.appendChild(basketContent);
 				}
 				else
+				{
 					BX.cleanNode(basketContent);
+				}
 
 				this.editBasketItems(basketTable, true);
 
@@ -3093,8 +3122,10 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 					})
 				);
 
-				if (this.params.SHOW_COUPONS_BASKET == 'Y')
+				if (this.params.SHOW_COUPONS_BASKET === 'Y')
+				{
 					this.editCoupons(basketContent);
+				}
 
 				this.getBlockFooter(basketContent);
 
@@ -3137,8 +3168,10 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 					})
 				);
 
-				if (this.params.SHOW_COUPONS_BASKET == 'Y')
+				if (this.params.SHOW_COUPONS_BASKET === 'Y')
+				{
 					this.editCouponsFade(newContent);
+				}
 
 				node.appendChild(newContent);
 				this.alignBasketColumns();
@@ -3161,12 +3194,18 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 
 			var index = 0, i;
 
-			if (this.params.SHOW_BASKET_HEADERS == 'Y')
+			if (this.params.SHOW_BASKET_HEADERS === 'Y')
+			{
 				this.editBasketItemsHeader(basketItemsNode);
+			}
 
 			for (i in this.result.GRID.ROWS)
+			{
 				if (this.result.GRID.ROWS.hasOwnProperty(i))
+				{
 					this.createBasketItem(basketItemsNode, this.result.GRID.ROWS[i], index++, !!active);
+				}
+			}
 		},
 
 		editBasketItemsHeader: function(basketItemsNode)
@@ -3833,16 +3872,16 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 							children: [
 								BX.create('INPUT', {
 									props: {
-										id: 'coupon',
 										className: 'form-control bx-ios-fix',
 										type: 'text'
 									},
 									events: {
-										change: BX.delegate(function(){
-											var newCoupon = BX('coupon');
+										change: BX.delegate(function(event){
+											var newCoupon = BX.getEventTarget(event);
 											if (newCoupon && newCoupon.value)
 											{
 												this.sendRequest('enterCoupon', newCoupon.value);
+												newCoupon.value = '';
 											}
 										}, this)
 									}
@@ -3973,25 +4012,22 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 			return BX.create('DIV', {
 				props: {className: 'bx-soa-coupon-label'},
 				children: active
-					? [BX.create('LABEL', {attr: {'for': 'coupon'}, html: this.params.MESS_USE_COUPON + ':'})]
+					? [BX.create('LABEL', {html: this.params.MESS_USE_COUPON + ':'})]
 					: [this.params.MESS_COUPON + ':']
 			});
 		},
 
 		addCoupon: function(coupon)
 		{
-			var couponListNodes = this.orderBlockNode.querySelectorAll('.bx-soa-coupon:not(.bx-soa-coupon-item-fixed) .bx-soa-coupon-item'),
-				couponInput = BX('coupon'), i;
+			var couponListNodes = this.orderBlockNode.querySelectorAll('.bx-soa-coupon:not(.bx-soa-coupon-item-fixed) .bx-soa-coupon-item');
 
-			for (i = 0; i < couponListNodes.length; i++)
+			for (var i = 0; i < couponListNodes.length; i++)
 			{
-				if (couponListNodes[i].querySelector('[data-coupon="' + BX.util.htmlspecialchars(coupon) + '"'))
+				if (couponListNodes[i].querySelector('[data-coupon="' + BX.util.htmlspecialchars(coupon) + '"]'))
 					break;
 
 				couponListNodes[i].appendChild(this.getCouponNode({text: coupon}, true, 'bx-soa-coupon-item-danger'));
 			}
-
-			couponInput && (couponInput.value = '');
 		},
 
 		removeCoupon: function(coupon)
@@ -4153,10 +4189,12 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 
 			locationString = this.getLocationString(this.regionHiddenBlockNode);
 			if (locationProperty && locationString.length)
-				addedHtml += '<strong>' + BX.util.htmlspecialchars(locationProperty.NAME) + ':</strong> ' + locationString + '<br>';
+				addedHtml += '<strong>' + BX.util.htmlspecialchars(locationProperty.NAME) + ':</strong> '
+					+ BX.util.htmlspecialchars(locationString) + '<br>';
 
 			if (zipProperty && zipValue.length)
-				addedHtml += '<strong>' + BX.util.htmlspecialchars(zipProperty.NAME) + ':</strong> ' + zipValue;
+				addedHtml += '<strong>' + BX.util.htmlspecialchars(zipProperty.NAME) + ':</strong> '
+					+ BX.util.htmlspecialchars(zipValue);
 
 			node.innerHTML += addedHtml;
 
@@ -4555,12 +4593,15 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 				i, label, options = [],
 				profileChangeInput, input;
 
-			if (profilesLength && this.params.ALLOW_USER_PROFILES === 'Y')
+			if (profilesLength)
 			{
-				this.regionBlockNotEmpty = true;
-
-				if (profilesLength > 1 || this.params.ALLOW_NEW_PROFILE === 'Y')
+				if (
+					this.params.ALLOW_USER_PROFILES === 'Y'
+					&& (profilesLength > 1 || this.params.ALLOW_NEW_PROFILE === 'Y')
+				)
 				{
+					this.regionBlockNotEmpty = true;
+
 					label = BX.create('LABEL', {props: {className: 'bx-soa-custom-label'}, html: this.params.MESS_SELECT_PROFILE});
 
 					for (i in this.result.USER_PROFILES)
@@ -4605,7 +4646,7 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 
 					node.appendChild(
 						BX.create('DIV', {
-							props: {className: "form-group bx-soa-location-input-container"},
+							props: {className: 'form-group bx-soa-location-input-container'},
 							children: [label, profileChangeInput, input]
 						})
 					);
@@ -4623,7 +4664,7 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 								BX.create('INPUT', {
 									props: {
 										name: 'PROFILE_ID',
-										type: "hidden",
+										type: 'hidden',
 										value: this.result.USER_PROFILES[i].ID}
 								})
 							);
@@ -5907,10 +5948,13 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 			{
 				currentProperty = this.locations[locationId][0].coordinates;
 
-				if (parseFloat(currentProperty.LONGITUDE) != 0 && parseFloat(currentProperty.LATITUDE) != 0)
+				var long = parseFloat(currentProperty.LONGITUDE),
+					lat = parseFloat(currentProperty.LATITUDE);
+
+				if (!isNaN(long) && !isNaN(lat) && long != 0 && lat != 0)
 				{
-					data.lat = parseFloat(currentProperty.LATITUDE);
-					data.lon = parseFloat(currentProperty.LONGITUDE);
+					data.lon = long;
+					data.lat = lat;
 				}
 			}
 
@@ -7460,7 +7504,14 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 
 				if (value.length > 0 && arProperty.PATTERN && arProperty.PATTERN.length)
 				{
-					re = new RegExp(arProperty.PATTERN);
+					var pattern = arProperty.PATTERN;
+					var clearPattern = pattern.substr(1, pattern.lastIndexOf(pattern[0]) - 1);
+					if (clearPattern && clearPattern.length)
+					{
+						pattern = clearPattern;
+					}
+
+					re = new RegExp(pattern);
 					if (!re.test(value))
 						errors.push(field + ' ' + BX.message('SOA_INVALID_PATTERN'));
 				}
@@ -7601,8 +7652,13 @@ BX.namespace('BX.Sale.OrderAjaxComponent');
 			if (arProperty.MULTIPLE == 'Y')
 				return errors;
 
-			if (arProperty.REQUIRED == 'Y' && files.length == 0 && defaultValue == '' && !arProperty.DEFAULT_VALUE.length)
+			if (
+				arProperty.REQUIRED == 'Y' && files.length == 0 && defaultValue == ''
+				&& (!arProperty.DEFAULT_VALUE || !arProperty.DEFAULT_VALUE.length)
+			)
+			{
 				errors.push(field + ' ' + BX.message('SOA_REQUIRED'));
+			}
 			else
 			{
 				for (i = 0; i < files.length; i++)

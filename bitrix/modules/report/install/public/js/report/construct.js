@@ -2016,19 +2016,9 @@ function fillFilterColumnEvent(e, popupElem)
 
 	var cpControl = null;
 	var tipicalControl = true;
-	if (isUF && fieldType === 'enum')
-	{
-		cpControl = BX.clone(
-			BX.findChild(
-				BX('report-filter-value-control-examples-ufenums'),
-				{attr:{name:'report-filter-value-control-' + ufId + '_' + ufName}}
-			),
-			true
-		);
-	}
-	else if (isUF
-			&& (fieldType === "crm" || fieldType === "crm_status"
-				|| fieldType === "iblock_element" || fieldType === "iblock_section"))
+	if (isUF
+		&& (fieldType === 'enum' || fieldType === "crm" || fieldType === "crm_status"
+			|| fieldType === "iblock_element" || fieldType === "iblock_section"))
 	{
 		var filterFieldSelector = null;
 		if (BX.Report && BX.Report.FilterFieldSelectorManager)
@@ -2120,6 +2110,7 @@ function initFilterPopupItems()
 {
 	BX.ready(function() {
 		var fList = BX.findChildren(BX('reports-add_filcol-popup-cont'), {className:'reports-add-popup-it-text'}, true);
+		var iCheckBox, cpSelect, doHide = true;
 
 		for (var i in fList)
 		{
@@ -2132,7 +2123,27 @@ function initFilterPopupItems()
 				continue;
 			}
 
-			BX.bind(fList[i], 'click', fillFilterColumnEvent);
+			doHide = true;
+			iCheckBox = BX.findChild(fList[i].parentNode, {tag:'input', attr:{type:'checkbox'}}, true);
+			if (iCheckBox)
+			{
+				cpSelect = BX.clone(
+					BX('report-filter-compare-'+iCheckBox.name)
+					|| BX('report-filter-compare-'+iCheckBox.getAttribute('fieldType')),
+					true
+				);
+				if (cpSelect)
+				{
+					doHide = false;
+					BX.bind(fList[i], 'click', fillFilterColumnEvent);
+				}
+			}
+
+			// hide elements without controls for compare
+			if (doHide)
+			{
+				fList[i].parentNode.style.display = "none";
+			}
 		}
 	});
 }

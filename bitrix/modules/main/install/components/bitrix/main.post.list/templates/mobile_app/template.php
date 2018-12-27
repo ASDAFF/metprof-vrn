@@ -190,14 +190,9 @@ if (empty($arParams["RECORDS"]))
 }
 else
 {
-	if ($arParams["NAV_STRING"] && $arParams["NAV_RESULT"])
+	if ($arParams["NAV_STRING"])
 	{
-		$count = $arParams["NAV_RESULT"]->NavRecordCount;
-		if ($arParams["VISIBLE_RECORDS_COUNT"] > 0)
-			$count -= $arParams["VISIBLE_RECORDS_COUNT"];
-		else
-			$count -= ($arParams["NAV_RESULT"]->NavPageNomer * $arParams["NAV_RESULT"]->NavPageSize);
-		if ($count > 0)
+		if ($arResult["NAV_STRING_COUNT_MORE"] > 0)
 		{
 			ob_start();
 
@@ -207,7 +202,7 @@ else
 			}
 			?><div class="post-comments-button" ontouchstart="BX.toggleClass(this, 'post-comments-button-press');" ontouchend="BX.toggleClass(this, 'post-comments-button-press');">
 				<a class="feed-com-all" href="<?=$arParams["NAV_STRING"]?>" id="<?=$arParams["ENTITY_XML_ID"]?>_page_nav"><?
-					?><?=GetMessage("BLOG_C_VIEW")?> (<?=$count?>)<i></i></a>
+					?><?=GetMessage("BLOG_C_VIEW")?> (<?=$arResult["NAV_STRING_COUNT_MORE"]?>)<i></i></a>
 			</div><?
 
 			if ($arParams["PREORDER"] != "Y")
@@ -228,6 +223,11 @@ else
 	?><!--RCRDLIST_<?=$arParams["ENTITY_XML_ID"]?>--><?
 	foreach ($arParams["RECORDS"] as $key => $res)
 	{
+		if (intval($res["ID"]) <= 0)
+		{
+			continue;
+		}
+
 		$res["AUTHOR"] = (is_array($res["AUTHOR"]) ? $res["AUTHOR"] : array());
 		$iCount++;
 		?><div id="record-<?=$arParams["ENTITY_XML_ID"]?>-<?=$res["ID"]?>-cover" class="feed-com-block-cover"><?

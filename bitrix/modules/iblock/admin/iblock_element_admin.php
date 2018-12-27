@@ -5,14 +5,13 @@
 
 use Bitrix\Main\Loader,
 	Bitrix\Main,
-	Bitrix\Currency,
 	Bitrix\Iblock,
+	Bitrix\Currency,
 	Bitrix\Catalog;
 
 require_once($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_admin_before.php");
 Loader::includeModule("iblock");
 require_once($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/iblock/prolog.php");
-
 IncludeModuleLangFile(__FILE__);
 IncludeModuleLangFile($_SERVER["DOCUMENT_ROOT"].BX_ROOT."/modules/main/interface/admin_lib.php");
 
@@ -20,17 +19,32 @@ $bBizproc = Loader::includeModule("bizproc");
 $bWorkflow = Loader::includeModule("workflow");
 $bFileman = Loader::includeModule("fileman");
 $bExcel = isset($_REQUEST["mode"]) && ($_REQUEST["mode"] == "excel");
-$dsc_cookie_name = COption::GetOptionString('main', 'cookie_name', 'BITRIX_SM')."_DSC";
+$dsc_cookie_name = (string)Main\Config\Option::get('main', 'cookie_name', 'BITRIX_SM')."_DSC";
 
 $bSearch = false;
 $bCurrency = false;
 $arCurrencyList = array();
 $elementsList = array();
 
+$listImageSize = Main\Config\Option::get('iblock', 'list_image_size');
+$minImageSize = array("W" => 1, "H"=>1);
+$maxImageSize = array(
+	"W" => $listImageSize,
+	"H" => $listImageSize,
+);
+unset($listImageSize);
+$useCalendarTime = (string)Main\Config\Option::get('iblock', 'list_full_date_edit') == 'Y';
+
 if (isset($_REQUEST['mode']) && ($_REQUEST['mode']=='list' || $_REQUEST['mode']=='frame'))
 	CFile::DisableJSFunction(true);
 
-$arIBTYPE = CIBlockType::GetByIDLang($_REQUEST["type"], LANGUAGE_ID);
+$type = '';
+if (isset($_REQUEST['type']) && is_string($_REQUEST['type']))
+	$type = trim($_REQUEST['type']);
+if ($type === '')
+	$APPLICATION->AuthForm(GetMessage("IBLOCK_BAD_BLOCK_TYPE_ID"));
+
+$arIBTYPE = CIBlockType::GetByIDLang($type, LANGUAGE_ID);
 if($arIBTYPE===false)
 	$APPLICATION->AuthForm(GetMessage("IBLOCK_BAD_BLOCK_TYPE_ID"));
 
@@ -63,15 +77,6 @@ while($arSite = $rsSites->Fetch())
 $bWorkFlow = $bWorkflow && (CIBlock::GetArrayByID($IBLOCK_ID, "WORKFLOW") != "N");
 $bBizproc = $bBizproc && (CIBlock::GetArrayByID($IBLOCK_ID, "BIZPROC") != "N");
 
-$listImageSize = Main\Config\Option::get('iblock', 'list_image_size');
-$minImageSize = array("W" => 1, "H"=>1);
-$maxImageSize = array(
-	"W" => $listImageSize,
-	"H" => $listImageSize,
-);
-unset($listImageSize);
-$useCalendarTime = (string)Main\Config\Option::get('iblock', 'list_full_date_edit') == 'Y';
-
 define("MODULE_ID", "iblock");
 define("ENTITY", "CIBlockDocument");
 define("DOCUMENT_TYPE", "iblock_".$IBLOCK_ID);
@@ -93,8 +98,8 @@ $showCatalogWithOffers = false;
 $productTypeList = array();
 if ($bCatalog)
 {
-	$strUseStoreControl = COption::GetOptionString('catalog', 'default_use_store_control');
-	$strSaveWithoutPrice = COption::GetOptionString('catalog','save_product_without_price');
+	$strUseStoreControl = (string)Main\Config\Option::get('catalog', 'default_use_store_control');
+	$strSaveWithoutPrice = (string)Main\Config\Option::get('catalog','save_product_without_price');
 	$boolCatalogRead = $USER->CanDoOperation('catalog_read');
 	$boolCatalogPrice = $USER->CanDoOperation('catalog_price');
 	$boolCatalogPurchasInfo = $USER->CanDoOperation('catalog_purchas_info');
@@ -118,7 +123,7 @@ if ($bCatalog)
 			$bCatalog = false;
 		$productTypeList = CCatalogAdminTools::getIblockProductTypeList($arIBlock['ID'], true);
 	}
-	$showCatalogWithOffers = (COption::GetOptionString('catalog', 'show_catalog_tab_with_offers') == 'Y');
+	$showCatalogWithOffers = ((string)Main\Config\Option::get('catalog', 'show_catalog_tab_with_offers') == 'Y');
 	if ($boolCatalogPurchasInfo)
 		$catalogPurchasInfoEdit = $boolCatalogPrice && $strUseStoreControl != 'Y';
 }
@@ -413,6 +418,11 @@ if($lAdmin->EditAction())
 	if(is_array($_FILES['FIELDS']))
 		CAllFile::ConvertFilesToPost($_FILES['FIELDS'], $_POST['FIELDS']);
 
+	if ($bCatalog)
+	{
+		Catalog\Product\Sku::enableDeferredCalculation();
+	}
+
 	foreach($_POST['FIELDS'] as $ID=>$arFields)
 	{
 		if(!$lAdmin->IsUpdated($ID))
@@ -666,22 +676,20 @@ if($lAdmin->EditAction())
 						$arCatalogProduct['QUANTITY'] = $arFields['CATALOG_QUANTITY'];
 				}
 
-				$product = Catalog\ProductTable::getList(array(
-					'select' => array('ID', 'SUBSCRIBE_ORIG'),
+				$product = Catalog\Model\Product::getList(array(
+					'select' => array('ID'),
 					'filter' => array('=ID' => $ID)
 				))->fetch();
 				if (empty($product))
 				{
 					$arCatalogProduct['ID'] = $ID;
-					CCatalogProduct::Add($arCatalogProduct, false);
+					$result = Catalog\Model\Product::add(array('fields' => $arCatalogProduct));
 				}
 				else
 				{
 					if (!empty($arCatalogProduct))
 					{
-						if ($strUseStoreControl != 'Y')
-							$arCatalogProduct['SUBSCRIBE'] = $product['SUBSCRIBE_ORIG'];
-						CCatalogProduct::Update($ID, $arCatalogProduct);
+						$result = Catalog\Model\Product::update($ID, array('fields' => $arCatalogProduct));
 					}
 				}
 				unset($product);
@@ -859,6 +867,12 @@ if($lAdmin->EditAction())
 			unset($arCatalogGroupList);
 		}
 	}
+
+	if ($bCatalog)
+	{
+		Catalog\Product\Sku::disableDeferredCalculation();
+		Catalog\Product\Sku::calculate();
+	}
 }
 
 if ($arID = $lAdmin->GroupAction())
@@ -868,6 +882,11 @@ if ($arID = $lAdmin->GroupAction())
 		$rsData = CIBlockElement::GetList($arOrder, $arFilter, false, false, array('ID'));
 		while($arRes = $rsData->Fetch())
 			$arID[] = $arRes['ID'];
+	}
+
+	if ($bCatalog)
+	{
+		Catalog\Product\Sku::enableDeferredCalculation();
 	}
 
 	foreach($arID as $ID)
@@ -1125,6 +1144,12 @@ if ($arID = $lAdmin->GroupAction())
 		$_SESSION['CHANGE_PRICE_PARAMS']['UNITS'] = $changePriceParams['UNITS'];
 		$_SESSION['CHANGE_PRICE_PARAMS']['FORMAT_RESULTS'] = $changePriceParams['FORMAT_RESULTS'];
 		$_SESSION['CHANGE_PRICE_PARAMS']['INITIAL_PRICE_TYPE'] = $changePriceParams['INITIAL_PRICE_TYPE'];
+	}
+
+	if ($bCatalog)
+	{
+		Catalog\Product\Sku::disableDeferredCalculation();
+		Catalog\Product\Sku::calculate();
 	}
 
 	if(isset($return_url) && strlen($return_url)>0)
@@ -1621,10 +1646,13 @@ if (isset($_REQUEST["mode"]) && $_REQUEST["mode"] == "excel")
 }
 else
 {
-	$arNavParams = array("nPageSize"=>CAdminResult::GetNavSize(
+	//TODO:: remove this hack after refactoring CAdminResult::GetNavSize
+	$navResult = new CAdminResult(null, '');
+	$arNavParams = array("nPageSize"=>$navResult->GetNavSize(
 			$sTableID,
 			array('nPageSize' => 20, 'sNavID' => $APPLICATION->GetCurPage().'?IBLOCK_ID='.$IBLOCK_ID))
 	);
+	unset($navResult);
 }
 
 $rsData = CIBlockElement::GetList(
@@ -2326,7 +2354,7 @@ $arElementOps = CIBlockElementRights::UserHasRightTo(
 	"",
 	CIBlockRights::RETURN_OPERATIONS
 );
-$availQuantityTrace = COption::GetOptionString("catalog", "default_quantity_trace");
+$availQuantityTrace = (string)Main\Config\Option::get("catalog", "default_quantity_trace");
 $arQuantityTrace = array(
 	"D" => GetMessage("IBEL_DEFAULT_VALUE")." (".($availQuantityTrace=='Y' ? GetMessage("IBEL_YES_VALUE") : GetMessage("IBEL_NO_VALUE")).")",
 	"Y" => GetMessage("IBEL_YES_VALUE"),
@@ -2337,15 +2365,12 @@ if ($bCatalog && !empty($arRows))
 	$arRowKeys = array_keys($arRows);
 	if ($strUseStoreControl == "Y" && in_array("CATALOG_BAR_CODE", $arSelectedFields))
 	{
-		$rsProducts = CCatalogProduct::GetList(
-			array(),
-			array('@ID' => $arRowKeys),
-			false,
-			false,
-			array('ID', 'BARCODE_MULTI')
-		);
 		$productsWithBarCode = array();
-		while ($product = $rsProducts->Fetch())
+		$rsProducts = Catalog\ProductTable::getList(array(
+			'select' => array('ID', 'BARCODE_MULTI'),
+			'filter' => array('@ID' => $arRowKeys)
+		));
+		while ($product = $rsProducts->fetch())
 		{
 			if (isset($arRows[$product["ID"]]))
 			{
@@ -2390,10 +2415,9 @@ if ($bCatalog && !empty($arRows))
 foreach($arRows as $f_ID => $row)
 {
 	/** @var CAdminListRow $row */
-
-	if(array_key_exists("PREVIEW_TEXT", $arSelectedFieldsMap))
+	if (isset($arSelectedFieldsMap["PREVIEW_TEXT"]))
 		$row->AddViewField("PREVIEW_TEXT", ($row->arRes["PREVIEW_TEXT_TYPE"]=="text" ? htmlspecialcharsEx($row->arRes["PREVIEW_TEXT"]) : HTMLToTxt($row->arRes["PREVIEW_TEXT"])));
-	if(array_key_exists("DETAIL_TEXT", $arSelectedFieldsMap))
+	if (isset($arSelectedFieldsMap["DETAIL_TEXT"]))
 		$row->AddViewField("DETAIL_TEXT", ($row->arRes["DETAIL_TEXT_TYPE"]=="text" ? htmlspecialcharsEx($row->arRes["DETAIL_TEXT"]) : HTMLToTxt($row->arRes["DETAIL_TEXT"])));
 
 	if(isset($arElementOps[$f_ID]) && isset($arElementOps[$f_ID]["element_edit"]))

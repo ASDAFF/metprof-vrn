@@ -83,6 +83,22 @@ if (typeof WeakMap === "undefined")
 	})();
 }
 
+if (!Object.values)
+{
+	Object.values = function values(obj)
+	{
+		var result = [];
+		for (var key in obj)
+		{
+			if(obj.hasOwnProperty(key) && obj.propertyIsEnumerable(key))
+			{
+				result.push(obj[key]);
+			}
+		}
+		return result;
+	};
+}
+
 ;(function(window){
 
 if (!!window.BX && !!window.BX.extend)
@@ -338,7 +354,13 @@ BX.debug = function()
 	if (BX.debugStatus())
 	{
 		if (window.console && window.console.log)
+		{
 			window.console.log('BX.debug: ', arguments.length > 0 ? arguments : arguments[0]);
+			if(arguments[0] instanceof Error && arguments[0].stack)
+			{
+				window.console.log('BX.debug error stack trace', arguments[0].stack);
+			}
+		}
 		if (window.console && window.console.trace)
 			console.trace();
 	}
@@ -1234,6 +1256,11 @@ BX.getCaretPosition = function(node)
 
 BX.setCaretPosition = function(node, pos)
 {
+	if(!BX.isNodeInDom(node) || BX.isNodeHidden(node) || node.disabled)
+	{
+		return;
+	}
+
 	if(node.setSelectionRange)
 	{
 		node.focus();
@@ -1965,7 +1992,7 @@ BX.bindDebouncedChange = function(node, fn, fnInstant, timeout, ctx)
 BX.parseJSON = function(data, context)
 {
 	var result = null;
-	if (BX.type.isString(data))
+	if (BX.type.isNotEmptyString(data))
 	{
 		try {
 			if (data.indexOf("\n") >= 0)
@@ -2624,6 +2651,31 @@ BX.util = {
 		return str;
 	},
 
+	getCssName: function(jsName)
+	{
+		if (!BX.type.isNotEmptyString(jsName))
+		{
+			return "";
+		}
+
+		return jsName.replace(/[A-Z]/g, function(match) {
+			return "-" + match.toLowerCase();
+		});
+	},
+
+	getJsName: function(cssName)
+	{
+		var regex = /\-([a-z]){1}/g;
+		if (regex.test(cssName))
+		{
+			return cssName.replace(regex, function(match, letter) {
+				return letter.toUpperCase();
+			});
+		}
+
+		return cssName;
+	},
+
 	nl2br: function(str)
 	{
 		if (!str || !str.replace)
@@ -2797,7 +2849,7 @@ BX.util = {
 				{
 					s2 = ii[1].toString().toLowerCase();
 				}
-				
+
 				if (s1 < s2)
 					return 1;
 				else if (s1 > s2)
@@ -2903,6 +2955,35 @@ BX.util = {
 		}
 
 		return url;
+	},
+
+	/*
+	{'param1': 'value1', 'param2': 'value2'}
+	 */
+	buildQueryString: function(params)
+	{
+		var result = '';
+		for (var key in params)
+		{
+			var value = params[key];
+			if(BX.type.isArray(value))
+			{
+				value.forEach(function(valueElement, index)
+				{
+					result += encodeURIComponent(key + "[" + index + "]") + "=" + encodeURIComponent(valueElement) + "&";
+				});
+			}
+			else
+			{
+				result += encodeURIComponent(key) + "=" + encodeURIComponent(value) + "&";
+			}
+		}
+
+		if(result.length > 0)
+		{
+			result = result.substr(0, result.length - 1);
+		}
+		return result;
 	},
 
 	even: function(digit)
@@ -3752,7 +3833,11 @@ BX.setJSList = function(scripts)
 {
 	if (BX.type.isArray(scripts))
 	{
-		jsList = scripts;
+		scripts = scripts.map(function(script) {
+			return normalizeUrl(script)
+		});
+
+		jsList = jsList.concat(scripts);
 	}
 };
 
@@ -3762,11 +3847,15 @@ BX.getJSList = function()
 	return jsList;
 };
 
-BX.setCSSList = function(scripts)
+BX.setCSSList = function(cssFiles)
 {
-	if (BX.type.isArray(scripts))
+	if (BX.type.isArray(cssFiles))
 	{
-		cssList = scripts;
+		cssFiles = cssFiles.map(function(cssFile) {
+			return normalizeUrl(cssFile);
+		});
+
+		cssList = cssList.concat(cssFiles);
 	}
 };
 
@@ -4439,7 +4528,7 @@ BX.parseDate = function(str, bUTC, formatDate, formatDatetime)
 				d.setUTCFullYear(aResult['YYYY']);
 				d.setUTCMonth(aResult['MM'] - 1);
 				d.setUTCDate(aResult['DD']);
-				d.setUTCHours(0, 0, 0);
+				d.setUTCHours(0, 0, 0, 0);
 			}
 			else
 			{
@@ -4447,7 +4536,7 @@ BX.parseDate = function(str, bUTC, formatDate, formatDatetime)
 				d.setFullYear(aResult['YYYY']);
 				d.setMonth(aResult['MM'] - 1);
 				d.setDate(aResult['DD']);
-				d.setHours(0, 0, 0);
+				d.setHours(0, 0, 0, 0);
 			}
 
 			if(
@@ -6111,7 +6200,7 @@ if(typeof(BX.Promise) === "undefined")
 			this.reject(new TypeError('Promise cannot fulfill or reject itself')); // avoid recursion
 		}
 		// allow "pausing" promise chaining until promise x is fulfilled or rejected
-		else if(x instanceof BX.Promise)
+		else if(x && x.toString() === "[object BX.Promise]")
 		{
 			x.then(function(value){
 				this_.fulfill(value);
@@ -6124,6 +6213,12 @@ if(typeof(BX.Promise) === "undefined")
 			this.fulfill(x);
 		}
 	};
+
+	BX.Promise.prototype.toString = function()
+	{
+		return "[object BX.Promise]";
+	};
+
 	BX.Promise.prototype.execute = function()
 	{
 		if(this.state === null)
@@ -6221,65 +6316,3 @@ if(typeof(BX.Promise) === "undefined")
 }
 
 })(window);
-
-/* Polyfill section */
-
-if (!Array.prototype.find)
-{
-	Array.prototype.find = function(predicate)
-	{
-		if (this == null)
-		{
-			throw new TypeError('Array.prototype.find called on null or undefined');
-		}
-		if (typeof predicate !== 'function')
-		{
-			throw new TypeError('predicate must be a function');
-		}
-		var list = Object(this);
-		var length = list.length >>> 0;
-		var thisArg = arguments[1];
-		var value;
-
-		for (var i = 0; i < length; i++)
-		{
-			value = list[i];
-			if (predicate.call(thisArg, value, i, list))
-			{
-				return value;
-			}
-		}
-		return undefined;
-	};
-}
-
-if (!Array.prototype.findIndex)
-{
-	Array.prototype.findIndex = function(predicate)
-	{
-		if (this == null)
-		{
-			throw new TypeError('Array.prototype.findIndex called on null or undefined');
-		}
-
-		if (typeof predicate !== 'function')
-		{
-			throw new TypeError('predicate must be a function');
-		}
-
-		var list = Object(this);
-		var length = list.length >>> 0;
-		var thisArg = arguments[1];
-		var value;
-
-		for (var i = 0; i < length; i++)
-		{
-			value = list[i];
-			if (predicate.call(thisArg, value, i, list))
-			{
-				return i;
-			}
-		}
-		return -1;
-	};
-}

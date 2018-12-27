@@ -230,3 +230,25 @@ button.no-style {
     font: 700 18px/20px 'Fira Sans',sans-serif;
     color: #ff2a2a;
 }
+
+@media screen and (max-width: 420px){
+
+    .p-view__param-col {
+        width: 280px;
+        padding-left: 0px;
+    }
+
+    .p-view__order-table th,
+    .p-view__order-table td{
+        padding: 0px;
+    }
+
+    .toShopBox:before{
+        display: none;
+    }
+
+    .toShopBox{
+        padding-left: 0px;
+    }
+
+}

@@ -812,7 +812,7 @@ class CIBlockXMLFile
 			return false;
 
 		$hZip = zip_open($file_name);
-		if(!$hZip)
+		if(!is_resource($hZip))
 			return false;
 		//Skip from last step
 		if($last_zip_entry)

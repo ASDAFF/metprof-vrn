@@ -184,7 +184,12 @@ class MFIController
 		$response['status'] = self::STATUS_ERRORED;
 		if (($uid = intval($this->request->getPost("uniqueID"))) && $uid > 0) // for custom components
 		{
-			$this->sendJSResponse("<script>parent.FILE_UPLOADER_CALLBACK_{$uid}('".CUtil::JSEscape(implode("", $errorsText))."', {$uid});</script>");
+			$this->sendJSResponse("
+				<script>
+					var target = (parent.frameElement ? parent : window);
+					target.FILE_UPLOADER_CALLBACK_{$uid}('".CUtil::JSEscape(implode("", $errorsText))."', {$uid});
+				</script>
+			");
 		}
 		else
 		{
@@ -199,7 +204,12 @@ class MFIController
 	{
 		if (($uid = intval($this->request->getPost("uniqueID"))) && $uid > 0) // for custom components
 		{
-			$this->sendJSResponse("<script>parent.FILE_UPLOADER_CALLBACK_{$uid}(".CUtil::PhpToJsObject($response).", {$uid});</script>");
+			$this->sendJSResponse("
+				<script>
+					var target = (parent.frameElement ? parent : window);
+					target.FILE_UPLOADER_CALLBACK_{$uid}(".CUtil::PhpToJsObject($response).", {$uid});
+				</script>
+			");
 		}
 		else
 		{

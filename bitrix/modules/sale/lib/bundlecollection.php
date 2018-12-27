@@ -202,18 +202,4 @@ class BundleCollection extends BasketItemCollection
 
 		return $result;
 	}
-
-	/**
-	 * @param BasketItemCollection $basket
-	 * @param $moduleId
-	 * @param $productId
-	 * @param $basketCode
-	 * @return BasketItemBase
-	 */
-	protected function createItemInternal(BasketItemCollection $basket, $moduleId, $productId, $basketCode = null)
-	{
-		/** @var BasketItem $basketItemClassName */
-		$basketItemClassName = $this->getBasketItemCollectionElementClassName();
-		return $basketItemClassName::create($basket, $moduleId, $productId, $basketCode);
-	}
 }

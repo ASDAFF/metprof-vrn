@@ -44,6 +44,19 @@ class Sanitizer
 		$sanitizer = new \CBXSanitizer();
 		$sanitizer->setLevel(\CBXSanitizer::SECURE_LEVEL_LOW);
 		$sanitizer->addTags($tags);
+		$sanitizer->allowAttributes([
+			Editor::BLOCK_PHP_ATTR => [
+				'tag' => function ()
+				{
+					return true;
+				},
+				'content' => function ()
+				{
+					return true;
+				},
+			]
+		]);
+		$sanitizer->applyDoubleEncode(false);
 		$html = $sanitizer->sanitizeHtml($html);
 
 		return $html;
@@ -52,6 +65,7 @@ class Sanitizer
 	protected static function getCommonAttributes()
 	{
 		return array(
+			Editor::BLOCK_PHP_ATTR,
 			'style', 'id', 'class', 'color', 'align', 'valign',
 			'height', 'width', 'title', 'style', 'class',
 			Editor::BLOCK_PLACE_ATTR,

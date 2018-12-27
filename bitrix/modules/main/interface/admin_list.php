@@ -36,6 +36,7 @@ class CAdminList
 	var $bShowActions;
 	var $onLoadScript;
 	var $arEditedRows;
+	var $isPublicMode = false;
 
 	private $filter;
 
@@ -47,6 +48,8 @@ class CAdminList
 	{
 		$this->table_id = $table_id;
 		$this->sort = $sort;
+
+		$this->isPublicMode = (defined("PUBLIC_MODE") && PUBLIC_MODE == 1);
 	}
 
 	/**
@@ -291,6 +294,15 @@ class CAdminList
 
 	public function ActionRedirect($url)
 	{
+		if ($this->isPublicMode)
+		{
+			$selfFolderUrl = (defined("SELF_FOLDER_URL") ? SELF_FOLDER_URL : "/bitrix/admin/");
+			if (strpos($url, $selfFolderUrl) === false)
+			{
+				$url = $selfFolderUrl.$url;
+			}
+		}
+
 		if(strpos($url, "lang=")===false)
 		{
 			if(strpos($url, "?")===false)
@@ -908,7 +920,7 @@ BX.adminChain.addItems("<?=$tbl?>_navchain_div");
 
 	public function EndEpilogContent()
 	{
-		$this->sEpilogContent = ob_get_contents();
+		$this->sEpilogContent .= ob_get_contents();
 		ob_end_clean();
 	}
 
@@ -1019,12 +1031,15 @@ class CAdminListRow
 	var $link;
 	var $title;
 	var $pList;
+	var $isPublicMode = false;
 
 	public function __construct(&$aHeaders, $table_id)
 	{
 		$this->aHeaders = $aHeaders;
 		$this->aHeadersID = array_keys($aHeaders);
 		$this->table_id = $table_id;
+
+		$this->isPublicMode = (defined("PUBLIC_MODE") && PUBLIC_MODE == 1);
 	}
 
 	/** @deprecated */
@@ -1039,15 +1054,16 @@ class CAdminListRow
 		$this->aFeatures = $aFeatures;
 	}
 
-	function AddField($id, $text, $edit=false)
+	function AddField($id, $text, $edit=false, $isHtml = true)
 	{
 		$this->aFields[$id] = array();
-		if($edit !== false)
+		if ($edit !== false)
 		{
-			$this->aFields[$id]["edit"] = Array("type"=>"input", "value"=>$edit);
+			$this->aFields[$id]["edit"] = array("type" => "input", "value" => $edit);
 			$this->pList->bCanBeEdited = true;
 		}
-		$this->aFields[$id]["view"] = Array("type"=>"html", "value"=>$text);
+		$type = $isHtml ? "html" : "text";
+		$this->aFields[$id]["view"] = array("type" => $type, "value" => $text);
 	}
 
 	/**
@@ -1187,9 +1203,13 @@ class CAdminListRow
 		$sDefAction = $sDefTitle = "";
 		if(!$this->bEditMode)
 		{
+			global $adminSidePanelHelper;
+
 			if(!empty($this->link))
 			{
-				$sDefAction = "BX.adminPanel.Redirect([], '".CUtil::JSEscape($this->link)."', event);";
+				$sDefAction = ((is_object($adminSidePanelHelper) && $adminSidePanelHelper->isPublicSidePanel()) ?
+					"BX.adminSidePanel.onOpenPage('".CUtil::JSEscape($this->link)."');" :
+					"BX.adminPanel.Redirect([], '".CUtil::JSEscape($this->link)."', event);");
 				$sDefTitle = $this->title;
 			}
 			else
@@ -1199,7 +1219,17 @@ class CAdminListRow
 				{
 					if($action["DEFAULT"] == true)
 					{
-						$sDefAction = ($action["ACTION"]? $action["ACTION"] : "BX.adminPanel.Redirect([], '".CUtil::JSEscape($action["LINK"])."', event)");
+						if (!empty($action["ACTION"]))
+						{
+							$sDefAction = $action["ACTION"];
+						}
+						else
+						{
+							$sDefAction = ((is_object($adminSidePanelHelper) && $adminSidePanelHelper->isPublicSidePanel()) ?
+								"BX.adminSidePanel.onOpenPage('".CUtil::JSEscape($this->link)."');" :
+								"BX.adminPanel.Redirect([], '".CUtil::JSEscape($action["LINK"])."', event)");
+						}
+
 						$sDefTitle = (!empty($action["TITLE"])? $action["TITLE"] : $action["TEXT"]);
 						break;
 					}

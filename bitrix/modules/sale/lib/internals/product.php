@@ -131,7 +131,8 @@ class ProductTable extends Main\Entity\DataManager
 						AND
 						( b_catalog_price.quantity_from <= 1 OR b_catalog_price.quantity_from IS NULL )
 						AND
-						( b_catalog_price.quantity_to >= 1 OR b_catalog_price.quantity_to IS NULL))', 'ID'
+						( b_catalog_price.quantity_to >= 1 OR b_catalog_price.quantity_to IS NULL)
+					LIMIT 1)', 'ID'
 				)
 			),
 			'CURRENCY' => array(
@@ -146,7 +147,8 @@ class ProductTable extends Main\Entity\DataManager
 						AND
 						( b_catalog_price.quantity_from <= 1 OR b_catalog_price.quantity_from IS NULL )
 						AND
-						( b_catalog_price.quantity_to >= 1 OR b_catalog_price.quantity_to IS NULL))', 'ID'
+						( b_catalog_price.quantity_to >= 1 OR b_catalog_price.quantity_to IS NULL)
+					LIMIT 1)', 'ID'
 				)
 			),
 			'SUMMARY_PRICE' => array(

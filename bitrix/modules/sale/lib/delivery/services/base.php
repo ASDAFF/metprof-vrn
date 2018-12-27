@@ -75,7 +75,7 @@ abstract class Base
 		if(!isset($initParams["NAME"]))
 			$initParams["NAME"] = "";
 
-		if(!isset($initParams["CONFIG"]))
+		if(!isset($initParams["CONFIG"]) || !is_array($initParams["CONFIG"]))
 			$initParams["CONFIG"] = array();
 
 		if(!is_array($initParams["CONFIG"]))
@@ -241,8 +241,12 @@ abstract class Base
 	/**
 	 * @param \Bitrix\Sale\Shipment $shipment.
 	 * @return \Bitrix\Sale\Delivery\CalculationResult
+	 * @throws SystemException
 	 */
-	abstract protected function calculateConcrete(\Bitrix\Sale\Shipment $shipment);
+	protected function calculateConcrete(\Bitrix\Sale\Shipment $shipment)
+	{
+		throw new SystemException('Not implemented');
+	}
 
 	/**
 	 * @param array $fields
@@ -252,8 +256,8 @@ abstract class Base
 	public function prepareFieldsForSaving(array $fields)
 	{
 		$strError = "";
-
 		$structure = $fields["CLASS_NAME"]::getConfigStructure();
+
 		foreach($structure as $key1 => $rParams)
 		{
 			foreach($rParams["ITEMS"] as $key2 => $iParams)
@@ -272,6 +276,11 @@ abstract class Base
 
 		if($strError != "")
 			throw new SystemException($strError);
+
+		if(strpos($fields['CLASS_NAME'], '\\') !== 0)
+		{
+			$fields['CLASS_NAME'] = '\\'.$fields['CLASS_NAME'];
+		}
 
 		return $fields;
 	}
@@ -464,11 +473,18 @@ abstract class Base
 	}
 
 	/**
-	 * @return Base
+	 * @return Base|null
+	 * @throws SystemException
+	 * @throws \Bitrix\Main\ArgumentNullException
 	 */
 	public function getParentService()
 	{
-		return null;
+		$result = null;
+
+		if(intval($this->parentId) > 0)
+			$result =  Manager::getObjectById($this->parentId);
+
+		return $result;
 	}
 
 	/**
@@ -797,5 +813,10 @@ abstract class Base
 	public function getDeliveryRequestHandler()
 	{
 		return $this->deliveryRequestHandler;
+	}
+
+	public function createProfileObject($fields)
+	{
+		return Manager::createObject($fields);
 	}
 }

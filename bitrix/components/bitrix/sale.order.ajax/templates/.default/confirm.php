@@ -20,7 +20,7 @@ if ($arParams["SET_TITLE"] == "Y")
 		<tr>
 			<td>
 				<?=Loc::getMessage("SOA_ORDER_SUC", array(
-					"#ORDER_DATE#" => $arResult["ORDER"]["DATE_INSERT"],
+					"#ORDER_DATE#" => $arResult["ORDER"]["DATE_INSERT"]->format('d.m.Y H:i'),
 					"#ORDER_ID#" => $arResult["ORDER"]["ACCOUNT_NUMBER"]
 				))?>
 				<? if (!empty($arResult['ORDER']["PAYMENT_ID"])): ?>
@@ -47,7 +47,7 @@ if ($arParams["SET_TITLE"] == "Y")
 						&& array_key_exists($payment["PAY_SYSTEM_ID"], $arResult['PAY_SYSTEM_LIST'])
 					)
 					{
-						$arPaySystem = $arResult['PAY_SYSTEM_LIST'][$payment["PAY_SYSTEM_ID"]];
+						$arPaySystem = $arResult['PAY_SYSTEM_LIST_BY_PAYMENT_ID'][$payment["ID"]];
 
 						if (empty($arPaySystem["ERROR"]))
 						{

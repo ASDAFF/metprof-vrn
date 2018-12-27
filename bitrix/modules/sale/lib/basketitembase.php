@@ -427,8 +427,8 @@ abstract class BasketItemBase extends Internals\CollectableEntity
 		}
 
 		$priorityFields = array(
-			'CUSTOM_PRICE', 'VAT_RATE', 'VAT_INCLUDED',
-			'PRODUCT_PROVIDER_CLASS', 'SUBSCRIBE', 'TYPE'
+			'CURRENCY', 'CUSTOM_PRICE', 'VAT_RATE', 'VAT_INCLUDED',
+			'PRODUCT_PROVIDER_CLASS', 'SUBSCRIBE', 'TYPE', 'LID', 'FUSER_ID', 'SUBSCRIBE'
 		);
 		foreach ($priorityFields as $fieldName)
 		{
@@ -483,7 +483,7 @@ abstract class BasketItemBase extends Internals\CollectableEntity
 			return false;
 		}
 
-		if (Main\Loader::includeModule($module))
+		if (!empty($module) && Main\Loader::includeModule($module))
 		{
 			return Internals\Catalog\Provider::getProviderEntity($productProviderName);
 		}
@@ -508,7 +508,7 @@ abstract class BasketItemBase extends Internals\CollectableEntity
 			|| (strval($productProviderName) == "")
 		)
 		{
-			return false;
+			return null;
 		}
 
 		$providerName = Internals\Catalog\Provider::getProviderName($module, $productProviderName);
@@ -529,7 +529,6 @@ abstract class BasketItemBase extends Internals\CollectableEntity
 	 */
 	protected function onFieldModify($name, $oldValue, $value)
 	{
-		global $USER;
 		$result = new Result();
 
 		if ($name == "QUANTITY" && $value != 0)
@@ -538,21 +537,9 @@ abstract class BasketItemBase extends Internals\CollectableEntity
 			$oldValue = (float)$oldValue;
 			$deltaQuantity = $value - $oldValue;
 
-			/** @var BasketItemCollection $collection */
-			$collection = $this->getCollection();
-			$context = array();
-
-
-			/** @var Order $order */
-			$order = $collection->getOrder();
-			if (!$order)
-			{
-				$context = array(
-					'SITE_ID' => SITE_ID,
-					'USER_ID' => $USER->GetID() > 0 ? $USER->GetID() : 0,
-					'CURRENCY' => CurrencyManager::getBaseCurrency(),
-				);
-			}
+			/** @var Basket $basket */
+			$basket = $this->getCollection();
+			$context = $basket->getContext();
 
 			/** @var Result $r */
 			$r = Internals\Catalog\Provider::getAvailableQuantityAndPriceByBasketItem($this, $context);
@@ -590,6 +577,14 @@ abstract class BasketItemBase extends Internals\CollectableEntity
 			else
 			{
 				$availableQuantity = $value;
+			}
+
+			if (!empty($providerData['PRICE_DATA']))
+			{
+				if (isset($providerData['PRICE_DATA']['CUSTOM_PRICE']))
+				{
+					$this->setField('CUSTOM_PRICE', $providerData['PRICE_DATA']['CUSTOM_PRICE']);
+				}
 			}
 
 			if ($value != 0
@@ -645,6 +640,14 @@ abstract class BasketItemBase extends Internals\CollectableEntity
 
 			if ($this->getField("CUSTOM_PRICE") != "Y")
 			{
+
+				$providerName = $this->getProviderName();
+				if (strval($providerName) == '')
+				{
+					$providerName = $this->getCallbackFunction();
+				}
+
+
 				if (!empty($providerData['PRICE_DATA']))
 				{
 					if (isset($providerData['PRICE_DATA']['PRICE']))
@@ -662,7 +665,7 @@ abstract class BasketItemBase extends Internals\CollectableEntity
 						$this->setField('DISCOUNT_PRICE', $providerData['PRICE_DATA']['DISCOUNT_PRICE']);
 					}
 				}
-				else
+				elseif ($providerName && !$this->isCustom())
 				{
 					$result->addError(
 						new ResultError(
@@ -1307,4 +1310,16 @@ abstract class BasketItemBase extends Internals\CollectableEntity
 	 * @return float
 	 */
 	abstract public function getReservedQuantity();
+
+	/**
+	 * @return bool
+	 */
+	public function isCustom()
+	{
+		$moduleId = trim($this->getField('MODULE'));
+		$providerClassName = trim($this->getField('PRODUCT_PROVIDER_CLASS'));
+		$callbackFunct = trim($this->getField('CALLBACK_FUNC'));
+
+		return (empty($moduleId) && empty($providerClassName) && empty($callbackFunct));
+	}
 }

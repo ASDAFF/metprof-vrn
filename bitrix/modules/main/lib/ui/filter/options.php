@@ -82,6 +82,19 @@ class Options
 			$this->options["filters"] = $this->options["default_presets"];
 		}
 
+		// Move additional fields from options to session
+		if (is_array($this->options["filters"]))
+		{
+			foreach ($this->options["filters"] as $presetId => $options)
+			{
+				if (is_array($options["additional"]))
+				{
+					$this->setAdditionalPresetFields($presetId, $options["additional"]);
+					unset($this->options["filters"][$presetId]["additional"]);
+				}
+			}
+		}
+
 		if (isset($this->options["update_default_presets"]) &&
 			$this->options["update_default_presets"] == true &&
 			!empty($filterPresets) &&
@@ -433,6 +446,11 @@ class Options
 			}
 		}
 
+		if ($request["FIND"] !== null)
+		{
+			$result["fields"]["FIND"] = $request["FIND"];
+		}
+
 		if (empty($result["fields"]) && empty($result["rows"]))
 		{
 			$result = null;
@@ -449,6 +467,29 @@ class Options
 	public function getSessionFilterId()
 	{
 		return $_SESSION["main.ui.filter"][$this->getId()]["filter"];
+	}
+
+
+	/**
+	 * Gets additional preset fields
+	 * @param string $presetId
+	 * @return array
+	 */
+	public function getAdditionalPresetFields($presetId)
+	{
+		$additional = $_SESSION["main.ui.filter"][$this->getId()]["filters"][$presetId]["additional"];
+		return is_array($additional) ? $additional : array();
+	}
+
+
+	/**
+	 * Sets additional fields
+	 * @param string $presetId
+	 * @param array $additional
+	 */
+	public function setAdditionalPresetFields($presetId, $additional = array())
+	{
+		$_SESSION["main.ui.filter"][$this->getId()]["filters"][$presetId]["additional"] = $additional;
 	}
 
 
@@ -476,13 +517,18 @@ class Options
 
 	protected function trySetFilterFromRequest($fields = array())
 	{
-		if (self::isSetFromRequest($this->getRequest()))
+		$request = $this->getRequest();
+
+		if (self::isSetFromRequest($request))
 		{
 			$settings = self::fetchSettingsFromQuery($fields, $this->getRequest());
+			$clear = strtoupper($request->get("clear_filter")) == "Y";
 
-			if ($settings !== null)
+			if ($settings !== null || $clear)
 			{
-				$this->setFilterSettings(self::TMP_FILTER, $settings);
+				$presetId = $clear ? self::DEFAULT_FILTER : self::TMP_FILTER;
+
+				$this->setFilterSettings($presetId, $settings);
 				$this->save();
 			}
 		}
@@ -503,9 +549,10 @@ class Options
 	/**
 	 * Fetches filter fields from filter settings
 	 * @param array $filterSettings
+	 * @param array $additionalFields
 	 * @return array
 	 */
-	protected static function fetchFieldsFromFilterSettings($filterSettings = array())
+	protected static function fetchFieldsFromFilterSettings($filterSettings = array(), $additionalFields = array())
 	{
 		$filterFields = array();
 
@@ -516,9 +563,9 @@ class Options
 				$filterFields = $filterSettings["fields"];
 			}
 
-			if (is_array($filterSettings["additional"]))
+			if (is_array($additionalFields))
 			{
-				$filterFields = array_merge($filterFields, $filterSettings["additional"]);
+				$filterFields = array_merge($filterFields, $additionalFields);
 			}
 		}
 
@@ -541,6 +588,7 @@ class Options
 	 * @param string $key
 	 * @param array $filterFields
 	 * @return array
+	 * @throws \Bitrix\Main\ObjectException
 	 */
 	public static function fetchDateFieldValue($key = "", $filterFields = array())
 	{
@@ -602,14 +650,24 @@ class Options
 	}
 
 
-	public static function fetchFieldValuesFromFilterSettings($filterSettings = array())
+	public static function fetchFieldValuesFromFilterSettings($filterSettings = array(), $additionalFields = array(), $sourceFields = array())
 	{
-		$filterFields = self::fetchFieldsFromFilterSettings($filterSettings);
+		$filterFields = self::fetchFieldsFromFilterSettings($filterSettings, $additionalFields);
 		$resultFields = array();
 
 		foreach ($filterFields as $key => $field)
 		{
-			if ($field !== "" && strpos($key, -6) !== "_label")
+			$isStrictField = false;
+
+			foreach ($sourceFields as $sourceKey => $sourceField)
+			{
+				if ($key === $sourceField["id"] && $sourceField["strict"])
+				{
+					$isStrictField = true;
+				}
+			}
+
+			if (($field !== "" && strpos($key, -6) !== "_label") || $isStrictField)
 			{
 				if (self::isDateField($key))
 				{
@@ -658,7 +716,8 @@ class Options
 		if (!self::isDefaultFilter($currentPresetId))
 		{
 			$filterSettings = $this->getFilterSettings($currentPresetId);
-			$fieldsValues = self::fetchFieldValuesFromFilterSettings($filterSettings);
+			$additionalFields = $this->getAdditionalPresetFields($currentPresetId);
+			$fieldsValues = self::fetchFieldValuesFromFilterSettings($filterSettings, $additionalFields, $sourceFields);
 
 			$result = $fieldsValues;
 			$searchString = $this->getSearchString();
@@ -753,19 +812,41 @@ class Options
 		if (self::isCurrentUserEditOtherSettings())
 		{
 			$allUserOptions = $this->getAllUserOptions();
-			$currentOptions = $this->options;
 
-			while ($allUserOptions && $userOptions = $allUserOptions->fetch())
+			if ($allUserOptions)
 			{
-				if (!self::isCommon($userOptions))
+				$currentOptions = $this->options;
+
+				$forAllPresets = array();
+
+				foreach ($currentOptions["filters"] as $key => $preset)
 				{
-					$currentOptions["default_presets"] = $currentOptions["filters"];
+					if ($preset["for_all"])
+					{
+						$forAllPresets[$key] = $preset;
+					}
 				}
 
-				$this->saveOptionsForUser($currentOptions, $userOptions["USER_ID"]);
+				while ($userOptions = $allUserOptions->fetch())
+				{
+					$currentUserOptions = unserialize($userOptions["VALUE"]);
+
+					if (is_array($currentUserOptions))
+					{
+						if (!self::isCommon($userOptions))
+						{
+							$currentUserOptions["deleted_presets"] = $currentOptions["deleted_presets"];
+							$currentUserOptions["default_presets"] = $forAllPresets;
+							$currentUserOptions["filters"] = $forAllPresets;
+						}
+
+						$this->saveOptionsForUser($currentUserOptions, $userOptions["USER_ID"]);
+					}
+				}
+
+				$this->saveCommon();
 			}
 
-			$this->saveCommon();
 		}
 	}
 
@@ -798,6 +879,20 @@ class Options
 			\CUserOptions::SetOption("main.ui.filter.presets", $this->getCommonPresetsId(), $presets, null, $userId);
 		}
 
+		$userOptions = \CUserOptions::GetOption("main.ui.filter", $this->getId(), array("filters" => array(), "default_presets" => array()), $userId);
+
+		if (is_array($options["deleted_presets"]))
+		{
+			foreach ($options["deleted_presets"] as $key => $isDeleted)
+			{
+				if (array_key_exists($key, $userOptions["filters"]))
+				{
+					unset($userOptions["filters"][$key]);
+				}
+			}
+		}
+
+		$options["filters"] = array_merge($userOptions["filters"], $options["filters"]);
 		\CUserOptions::SetOption("main.ui.filter", $this->getId(), $options, null, $userId);
 	}
 
@@ -807,7 +902,20 @@ class Options
 	 */
 	public function saveCommon()
 	{
-		\CUserOptions::setOption("main.ui.filter.common", $this->id, $this->options, true);
+		$presets = array();
+		$options = $this->getOptions();
+
+		foreach ($options["filters"] as $key => $preset)
+		{
+			if ($preset["for_all"])
+			{
+				$presets[$key] = $preset;
+			}
+		}
+
+		$options["filters"] = $presets;
+
+		\CUserOptions::setOption("main.ui.filter.common", $this->id, $options, true);
 	}
 
 
@@ -897,8 +1005,9 @@ class Options
 				$request = $this->getRequest();
 				$isApplyFilter = (strtoupper($request->get("apply_filter")) == "Y");
 				$isClearFilter = (strtoupper($request->get("clear_filter")) == "Y");
+				$isWithPreset = (strtoupper($request->get("with_preset")) == "Y");
 
-				if (($useRequest && ($isApplyFilter || $isClearFilter)) || $useRequest === false)
+				if (($useRequest && ($isApplyFilter || $isClearFilter) && !$isWithPreset) || $useRequest === false)
 				{
 					$_SESSION["main.ui.filter"][$this->id]["filter"] = $presetId;
 				}
@@ -912,6 +1021,11 @@ class Options
 			if (isset($settings["name"]) && !empty($settings["name"]))
 			{
 				$this->options["filters"][$presetId]["name"] = $settings["name"];
+			}
+
+			if (isset($settings["for_all"]))
+			{
+				$this->options["filters"][$presetId]["for_all"] = $settings["for_all"] === "true";
 			}
 
 			if (isset($settings["sort"]) && is_numeric($settings["sort"]))
@@ -934,8 +1048,9 @@ class Options
 				else
 				{
 					$this->options["filters"][$presetId]["fields"] = $settings["fields"];
-					$this->options["filters"][$presetId]["additional"] = is_array($settings["additional"]) ?
-						$settings["additional"] : array();
+
+					$additionalFields = is_array($settings["additional"]) ? $settings["additional"] : array();
+					$this->setAdditionalPresetFields($presetId, $additionalFields);
 				}
 			}
 
@@ -1021,6 +1136,7 @@ class Options
 	 * @param string $fieldId
 	 * @param array $source Source values
 	 * @param array $result Result values
+	 * @throws \Bitrix\Main\ObjectException
 	 */
 	public static function calcDates($fieldId, $source, &$result)
 	{
@@ -1232,6 +1348,7 @@ class Options
 				{
 					$dateTime = new Filter\DateTime();
 					$days = (int) $source[$fieldId."_days"];
+					$days = max($days, 0);
 
 					$result[$fieldId."_datesel"] = DateType::PREV_DAYS;
 					$result[$fieldId."_month"] = $dateTime->month();
@@ -1239,11 +1356,72 @@ class Options
 					$result[$fieldId."_days"] = $source[$fieldId."_days"];
 					$result[$fieldId."_year"] = $dateTime->year();
 					$result[$fieldId."_from"] = $dateTime->offset("- ".$days." days");
-					$result[$fieldId."_to"] = $dateTime->offset("-1 second");
+					$result[$fieldId."_to"] = $dateTime->offset("1 days -1 second");
 				}
 
 				break;
 			}
+
+			case AdditionalDateType::PREV_DAY :
+			{
+				if (is_numeric($source[$fieldId."_days"]))
+				{
+					$dateTime = new Filter\DateTime();
+					$days = (int) $source[$fieldId."_days"];
+
+					$result[$fieldId."_days"] = $source[$fieldId."_days"];
+					$result[$fieldId."_from"] = $dateTime->offset(-$days." days");
+					$result[$fieldId."_to"] = $dateTime->offset(-($days-1)." days -1 second");
+				}
+
+				break;
+			}
+
+			case AdditionalDateType::NEXT_DAY :
+			{
+				if (is_numeric($source[$fieldId."_days"]))
+				{
+					$dateTime = new Filter\DateTime();
+					$days = (int) $source[$fieldId."_days"];
+
+					$result[$fieldId."_days"] = $source[$fieldId."_days"];
+					$result[$fieldId."_from"] = $dateTime->offset($days." days");
+					$result[$fieldId."_to"] = $dateTime->offset(($days+1)." days -1 second");
+				}
+
+				break;
+			}
+
+			case AdditionalDateType::MORE_THAN_DAYS_AGO :
+			{
+				if (is_numeric($source[$fieldId."_days"]))
+				{
+					$dateTime = new Filter\DateTime();
+					$days = (int) $source[$fieldId."_days"];
+
+					$result[$fieldId."_days"] = $source[$fieldId."_days"];
+					$result[$fieldId."_from"] = $dateTime->offset(-($days+1)." days");
+					$result[$fieldId."_to"] = $dateTime->offset(-$days." days -1 second");
+				}
+
+				break;
+			}
+
+			case AdditionalDateType::AFTER_DAYS :
+				{
+					if (is_numeric($source[$fieldId."_days"]))
+					{
+						$dateTime = new Filter\DateTime();
+						$days = (int) $source[$fieldId."_days"];
+
+						$result[$fieldId."_days"] = $source[$fieldId."_days"];
+						$result[$fieldId."_from"] = $dateTime->offset($days." days");
+						$result[$fieldId."_to"] = $dateTime->offset(($days+1)." days -1 second");
+					}
+
+					break;
+				}
+
 
 			case DateType::QUARTER :
 			{
@@ -1399,5 +1577,83 @@ class Options
 		\CUserOptions::deleteOption("main.ui.filter.presets", $filterId);
 		unset($_SESSION["main.ui.filter"][$filterId]);
 		unset($_SESSION["main.ui.filter.presets"][$filterId]);
+	}
+
+
+	public static function getRowsFromFields($fields = array())
+	{
+		$rows = array();
+
+		foreach ($fields as $key => $field)
+		{
+			$rows[] = str_replace(
+				array(
+					"_datesel",
+					"_numsel",
+					"_from",
+					"_to",
+					"_days",
+					"_month",
+					"_quarter",
+					"_id",
+					"_year",
+					"_name",
+					"_label",
+					"_value",
+					"_days",
+					"_months",
+					"_years"
+				),
+				"",
+				$key
+			);
+		}
+
+		return array_unique($rows);
+	}
+
+
+	/**
+	 * Fetches preset fields list
+	 * @param array $preset
+	 * @return array
+	 */
+	public static function fetchPresetFields($preset)
+	{
+		if (is_string($preset["filter_rows"]))
+		{
+			$fields = explode(",", $preset["filter_rows"]);
+			return array_unique($fields);
+		}
+
+		return static::getRowsFromFields($preset["fields"]);
+	}
+
+
+	/**
+	 * Gets used fields
+	 * @return array
+	 */
+	public function getUsedFields()
+	{
+		$fields = array();
+
+		// Fetch fields from user presets
+		foreach ($this->getPresets() as $key => $preset)
+		{
+			$presetFields = static::fetchPresetFields($preset);
+			$fields = array_merge($fields, $presetFields);
+		}
+
+		// Fetch fields from default presets
+		foreach ($this->getDefaultPresets() as $key => $preset)
+		{
+			$presetFields = static::fetchPresetFields($preset);
+			$fields = array_merge($fields, $presetFields);
+		}
+
+		$fields = array_unique($fields);
+
+		return $fields;
 	}
 }

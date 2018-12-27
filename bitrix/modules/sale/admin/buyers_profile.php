@@ -613,7 +613,7 @@ if(!empty($arUser))
 		$dateFrom = MkDateTime(FmtDate($filter_date_order_from,"D.M.Y"),"d.m.Y");
 
 		if ($dateFrom)
-			$arOrderFilter["DATE_FROM"] = Trim($filter_date_order_from);
+			$arOrderFilter[">=DATE_INSERT"] = Trim($filter_date_order_from);
 	}
 
 	if (strlen($filter_date_order_to) > 0)
@@ -628,7 +628,7 @@ if(!empty($arUser))
 			}
 
 			$filter_date_order_to = date($DB->DateFormatToPHP(CSite::GetDateFormat("FULL", SITE_ID)), mktime($arDate["HH"], $arDate["MI"], $arDate["SS"], $arDate["MM"], $arDate["DD"], $arDate["YYYY"]));
-			$arOrderFilter["DATE_TO"] = $filter_date_order_to;
+			$arOrderFilter["<=DATE_INSERT"] = $filter_date_order_to;
 		}
 		else
 			$filter_date_order_to = "";
@@ -645,7 +645,7 @@ if(!empty($arUser))
 		$dateFrom = MkDateTime(FmtDate($filter_order_date_up_from,"D.M.Y"),"d.m.Y");
 
 		if ($dateFrom)
-			$arOrderFilter["DATE_UPDATE_FROM"] = trim($filter_order_date_up_from);
+			$arOrderFilter[">=DATE_UPDATE"] = trim($filter_order_date_up_from);
 	}
 	if (strlen($filter_order_date_up_to) > 0)
 	{
@@ -659,7 +659,7 @@ if(!empty($arUser))
 			}
 
 			$filter_order_date_up_to = date($DB->DateFormatToPHP(CSite::GetDateFormat("FULL", SITE_ID)), mktime($arDate["HH"], $arDate["MI"], $arDate["SS"], $arDate["MM"], $arDate["DD"], $arDate["YYYY"]));
-			$arOrderFilter["DATE_UPDATE_TO"] = $filter_order_date_up_to;
+			$arOrderFilter["<=DATE_UPDATE"] = $filter_order_date_up_to;
 		}
 		else
 			$filter_order_date_up_to = "";
@@ -1056,8 +1056,16 @@ if(!empty($arUser))
 
 	//BUYERS VIEWED PRODUCT
 	$sTableID_tab5 = "t_stat_list_tab5";
-	$oSort_tab5 = new CAdminSorting($sTableID_tab5);
+	$oSort_tab5 = new CAdminSorting($sTableID_tab5, false, false, 'viewed_by', 'viewed_sort');
 	$lAdmin_tab5 = new CAdminList($sTableID_tab5, $oSort_tab5);
+
+	$viewedBy = (!empty($_REQUEST["viewed_by"]) ? trim($_REQUEST["viewed_by"]) : "DATE_VISIT");
+	$viewedSort = (!empty($_REQUEST["viewed_sort"]) ? trim($_REQUEST["viewed_sort"]) : "DESC");
+
+	if (!isset($_REQUEST["viewed_by"]))
+		$viewedProductsSort = array("DATE_VISIT" => "DESC", "SITE_ID" => "ASC");
+	else
+		$viewedProductsSort[$viewedBy] = $viewedSort;
 
 	//FILTER VIEWED
 	$arFilterFields = array(
@@ -1109,7 +1117,9 @@ if(!empty($arUser))
 	CAdminMessage::ShowMessage($viewedError);
 
 
-	$newFilter = array();
+	$newFilter = array(
+		'FUSER_ID' => \Bitrix\Sale\Fuser::getIdByUserId($ID)
+	);
 	foreach($arFilter as $key => $value)
 	{
 		if($key == "DATE_FROM")
@@ -1119,10 +1129,6 @@ if(!empty($arUser))
 		elseif($key == "DATE_TO")
 		{
 			$newFilter['<DATE_VISIT'] = $value;
-		}
-		else
-		{
-			$newFilter[$key] = $value;
 		}
 	}
 
@@ -1140,7 +1146,9 @@ if(!empty($arUser))
 			"CURRENCY" => "PRODUCT.CURRENCY",
 			"RATE" => "PRODUCT.CURRENT_CURRENCY_RATE",
 			"CURRENCY_RATE" => "PRODUCT.CURRENT_CURRENCY_RATE_CNT"
-		))->setfilter($newFilter);
+		))->setfilter($newFilter)
+		->setOrder($viewedProductsSort)
+		;
 		$viewedIterator = $viewedQuery->exec();
 	}
 	else

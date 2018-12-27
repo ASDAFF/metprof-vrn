@@ -15,10 +15,13 @@ require_once($_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/sale/prolog.php');
 $saleModulePermissions = $APPLICATION->GetGroupRight('sale');
 $readOnly = ($saleModulePermissions < 'W');
 if ($saleModulePermissions < 'R')
-	$APPLICATION->AuthForm(GetMessage("ACCESS_DENIED"));
+	$APPLICATION->AuthForm('');
 
 Loader::includeModule('sale');
 Loc::loadMessages(__FILE__);
+
+$catalogNamePostfix = ' (' . Loc::getMessage('BT_SALE_DISCOUNT_LIST_MESS_TITLE_CATALOG_ID') . ')';
+$catalogNamePostfixLength = strlen($catalogNamePostfix);
 
 $adminListTableID = 'tbl_sale_discount';
 
@@ -175,7 +178,13 @@ if ($filterValues['filter_date_active_to'] !== null)
 }
 
 if ($filterValues['filter_name'] !== null)
-	$filter['%NAME'] = $filterValues['filter_name'];
+{
+	$nameFilter = $filterValues['filter_name'];
+	if (substr($nameFilter, -$catalogNamePostfixLength) == $catalogNamePostfix)
+		$nameFilter = substr($nameFilter, 0, -$catalogNamePostfixLength);
+	$filter['%NAME'] = $nameFilter;
+	unset($nameFilter);
+}
 
 if ($filterValues['filter_priority'] !== null)
 	$filter['=PRIORITY'] = $filterValues['filter_priority'];
@@ -216,28 +225,22 @@ if (!$readOnly && $adminList->EditAction())
 
 			if (isset($fields['ACTIVE_FROM']) && is_string($fields['ACTIVE_FROM']))
 			{
-				try
-				{
-					$fields['ACTIVE_FROM'] = trim($fields['ACTIVE_FROM']);
-					$fields['ACTIVE_FROM'] = ($fields['ACTIVE_FROM'] !== '' ? new Main\Type\DateTime($fields['ACTIVE_FROM']) : null);
-				}
-				catch (Main\ObjectException $e)
-				{
-					$fields['ACTIVE_FROM'] = new Main\Type\Date($fields['ACTIVE_FROM']);
-				}
+				$fields['ACTIVE_FROM'] = trim($fields['ACTIVE_FROM']);
+				$fields['ACTIVE_FROM'] = (
+					$fields['ACTIVE_FROM'] === ''
+					? null
+					: Main\Type\DateTime::createFromUserTime($fields['ACTIVE_FROM'])
+				);
 			}
 
 			if (isset($fields['ACTIVE_TO']) && is_string($fields['ACTIVE_TO']))
 			{
-				try
-				{
-					$fields['ACTIVE_TO'] = trim($fields['ACTIVE_TO']);
-					$fields['ACTIVE_TO'] = ($fields['ACTIVE_TO'] !== '' ? new Main\Type\DateTime($fields['ACTIVE_TO']) : null);
-				}
-				catch (Main\ObjectException $e)
-				{
-					$fields['ACTIVE_TO'] = new Main\Type\Date($fields['ACTIVE_TO']);
-				}
+				$fields['ACTIVE_TO'] = trim($fields['ACTIVE_TO']);
+				$fields['ACTIVE_TO'] = (
+					$fields['ACTIVE_TO'] === ''
+					? null
+					: Main\Type\DateTime::createFromUserTime($fields['ACTIVE_TO'])
+				);
 			}
 
 			$conn->startTransaction();
@@ -513,8 +516,32 @@ if(Option::get('sale', 'use_sale_discount_only', false) === 'Y' && Loader::inclu
 	);
 	$getListParams['select']['CATALOG_DISCOUNT_ID'] = 'CATALOG_DISCOUNT.ID';
 }
+
 if ($usePageNavigation)
 {
+	$getListParams['limit'] = $navyParams['SIZEN'];
+	$getListParams['offset'] = $navyParams['SIZEN']*($navyParams['PAGEN']-1);
+}
+$totalCount = 0;
+$totalPages = 0;
+if ($usePageNavigation)
+{
+	$countQuery = new Main\Entity\Query(Internals\DiscountTable::getEntity());
+	$countQuery->addSelect(new Main\Entity\ExpressionField('CNT', 'COUNT(1)'));
+	$countQuery->setFilter($getListParams['filter']);
+	$totalCount = $countQuery->setLimit(null)->setOffset(null)->exec()->fetch();
+	unset($countQuery);
+	$totalCount = (int)$totalCount['CNT'];
+	if ($totalCount > 0)
+	{
+		$totalPages = ceil($totalCount/$navyParams['SIZEN']);
+		if ($navyParams['PAGEN'] > $totalPages)
+			$navyParams['PAGEN'] = $totalPages;
+	}
+	else
+	{
+		$navyParams['PAGEN'] = 1;
+	}
 	$getListParams['limit'] = $navyParams['SIZEN'];
 	$getListParams['offset'] = $navyParams['SIZEN']*($navyParams['PAGEN']-1);
 }
@@ -522,13 +549,6 @@ if ($usePageNavigation)
 $discountIterator = new CAdminResult(Internals\DiscountTable::getList($getListParams), $adminListTableID);
 if ($usePageNavigation)
 {
-	$countQuery = new Main\Entity\Query(Internals\DiscountTable::getEntity());
-	$countQuery->addSelect(new Main\Entity\ExpressionField('CNT', 'COUNT(1)'));
-	$countQuery->setFilter($getListParams['filter']);
-	$totalCount = $countQuery->setLimit(null)->setOffset(null)->exec()->fetch();
-	$totalCount = (int)$totalCount['CNT'];
-	$totalPages = ceil($totalCount/$getListParams['limit']);
-	unset($countQuery);
 	$discountIterator->NavStart($getListParams['limit'], $navyParams['SHOW_ALL'], $navyParams['PAGEN']);
 	$discountIterator->NavRecordCount = $totalCount;
 	$discountIterator->NavPageCount = $totalPages;
@@ -580,10 +600,6 @@ $arRows = array();
 while ($discount = $discountIterator->Fetch())
 {
 	$discount['ID'] = (int)$discount['ID'];
-	if(!empty($discount['CATALOG_DISCOUNT_ID']))
-	{
-		$discount['NAME'] .= ' (' . Loc::getMessage('BT_SALE_DISCOUNT_LIST_MESS_TITLE_CATALOG_ID') . ')';
-	}
 
 	if ($selectFieldsMap['CREATED_BY'])
 	{
@@ -633,6 +649,11 @@ while ($discount = $discountIterator->Fetch())
 	if ($selectFieldsMap['USE_COUPONS'])
 		$row->AddCheckField('USE_COUPONS', false);
 
+	if (!empty($discount['CATALOG_DISCOUNT_ID']))
+	{
+		if ($selectFieldsMap['NAME'])
+			$row->AddViewField('NAME', htmlspecialcharsbx($discount['NAME'].$catalogNamePostfix));
+	}
 	if (!$readOnly)
 	{
 		if ($selectFieldsMap['LID'])

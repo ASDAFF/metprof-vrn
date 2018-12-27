@@ -7,11 +7,19 @@ use Bitrix\Main\IO\File;
 
 class Extension
 {
-	public static function load($extName)
+	public static function load($extNames)
 	{
-		if (static::register($extName))
+		if (!is_array($extNames))
 		{
-			\CJSCore::init($extName);
+			$extNames = [$extNames];
+		}
+
+		foreach ($extNames as $extName)
+		{
+			if (static::register($extName))
+			{
+				\CJSCore::init($extName);
+			}
 		}
 	}
 
@@ -84,10 +92,10 @@ class Extension
 			return null;
 		}
 
-		$path = static::getFolderPath();
+		$path = "js";
 		foreach ($namespaces as $namespace)
 		{
-			if (!preg_match("/^[a-z0-9_\\.]+$/i", $namespace))
+			if (!preg_match("/^[a-z0-9_\\.\\-]+$/i", $namespace))
 			{
 				return null;
 			}
@@ -95,18 +103,6 @@ class Extension
 			$path .= "/".$namespace;
 		}
 
-		return $path;
-	}
-
-	private static function getFolderPath()
-	{
-		static $path;
-
-		if (is_null($path))
-		{
-			$path = \getLocalPath("js", BX_PERSONAL_ROOT);
-		}
-
-		return $path;
+		return \getLocalPath($path, BX_PERSONAL_ROOT);
 	}
 }

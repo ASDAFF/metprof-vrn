@@ -656,8 +656,10 @@ BX.Finder.onFinderAjaxLoadAll = function(data, obDestination, entity)
 	}
 };
 
-BX.Finder.syncClientDb = function(obDestination, name, oDbData, oAjaxData)
+BX.Finder.syncClientDb = function(obDestination, name, oDbData, oAjaxData, store)
 {
+	store = (BX.type.isNotEmptyString(store) ? store : 'users');
+
 	if (
 		typeof oDbData != 'undefined'
 		&& typeof oAjaxData != 'undefined'
@@ -670,9 +672,13 @@ BX.Finder.syncClientDb = function(obDestination, name, oDbData, oAjaxData)
 				&& !BX.util.in_array(oDbData[key], oAjaxData)
 			)
 			{
-				BX.indexedDB.deleteValueByIndex(obDestination.obClientDb, 'users', 'id', oDbData[key]);
-				delete obDestination.obItems[name].users[oDbData[key]];
-				obDestination.deleteItem(oDbData[key], 'users', name);
+				BX.indexedDB.deleteValueByIndex(obDestination.obClientDb, store, 'id', oDbData[key]);
+
+				if (BX.type.isNotEmptyString(name))
+				{
+					delete obDestination.obItems[name].users[oDbData[key]];
+					obDestination.deleteItem(oDbData[key], store, name);
+				}
 			}
 		}
 	}

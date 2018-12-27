@@ -208,7 +208,7 @@ class Actions
 	}
 
 	/**
-	 * Increment current apply counter. Use BEFORE discount apply.
+	 * Increment current apply counter. Use BEFORE discount action apply.
 	 *
 	 * @return void
 	 */
@@ -259,14 +259,18 @@ class Actions
 	 */
 	public static function fillCompatibleFields(array &$order)
 	{
-		if (Main\Context::getCurrent()->getRequest()->isAdminSection())
-			return;
+		$adminSection = Main\Context::getCurrent()->getRequest()->isAdminSection();
 		if (empty($order) || !is_array($order))
 			return;
 		if (!empty($order['BASKET_ITEMS']) && is_array($order['BASKET_ITEMS']))
 		{
 			foreach ($order['BASKET_ITEMS'] as &$item)
 			{
+				if (isset($item['PRICE_DEFAULT']))
+					$item['PRICE_DEFAULT'] = $item['PRICE'];
+				if ($adminSection)
+					continue;
+
 				foreach (self::$compatibleBasketFields as &$fieldName)
 				{
 					if (array_key_exists($fieldName, $item) && !is_array($item[$fieldName]))
@@ -427,7 +431,7 @@ class Actions
 	 *        <li>float|int VALUE                Discount value.
 	 *        <li>char UNIT                    Discount type.
 	 *        <li>string CURRENCY                Currency discount (optional).
-	 *        <li>char MAX_BOUND                Max bound.
+	 *        <li>char MAX_BOUND                Max bound (optional).
 	 *        </ul>.
 	 * @param callable $filter Filter for basket items.
 	 * @return void
@@ -504,8 +508,7 @@ class Actions
 		if ($unit == self::VALUE_TYPE_SUMM || $unit == self::VALUE_TYPE_FIX)
 		{
 			if ($currency != $orderCurrency)
-				/** @noinspection PhpMethodOrClassCallIsNotCaseSensitiveInspection */
-				$value = \CCurrencyRates::convertCurrency($value, $currency, $orderCurrency);
+				$value = \CCurrencyRates::ConvertCurrency($value, $currency, $orderCurrency);
 			if ($unit == self::VALUE_TYPE_SUMM)
 			{
 				$value = static::getPercentByValue($applyBasket, $value);
@@ -533,12 +536,7 @@ class Actions
 			);
 			if ($result >= 0)
 			{
-				if (!isset($basketRow['DISCOUNT_PRICE']))
-					$basketRow['DISCOUNT_PRICE'] = 0;
-				$basketRow['PRICE'] = $result;
-				if (isset($basketRow['PRICE_DEFAULT']))
-					$basketRow['PRICE_DEFAULT'] = $result;
-				$basketRow['DISCOUNT_PRICE'] -= $calculateValue;
+				self::fillDiscountPrice($basketRow, $result, -$calculateValue);
 
 				$order['BASKET_ITEMS'][$basketCode] = $basketRow;
 
@@ -563,6 +561,16 @@ class Actions
 		unset($basketCode, $basketRow);
 	}
 
+	/**
+	 * Cumulative action.
+	 *
+	 * @param array &$order				Order data.
+	 * @param array $ranges
+	 * @param array $configuration
+	 * @param callable|null $filter
+	 * @return void
+	 * @throws Main\ArgumentOutOfRangeException
+	 */
 	public static function applyCumulativeToBasket(array &$order, array $ranges, array $configuration = array(), $filter = null)
 	{
 		static::increaseApplyCounter();
@@ -571,7 +579,6 @@ class Actions
 
 		$sumConfiguration = $configuration['sum']?: array();
 		$applyIfMoreProfitable = $configuration['apply_if_more_profitable'] === 'Y';
-
 
 		if (in_array(self::getUseMode(), array(self::MODE_MANUAL, self::MODE_MIXED)))
 		{
@@ -649,8 +656,7 @@ class Actions
 
 		if ($unit == self::VALUE_TYPE_FIX && $currency != $orderCurrency)
 		{
-			/** @noinspection PhpMethodOrClassCallIsNotCaseSensitiveInspection */
-			$value = \CCurrencyRates::convertCurrency($value, $currency, $orderCurrency);
+			$value = \CCurrencyRates::ConvertCurrency($value, $currency, $orderCurrency);
 		}
 
 		$value = static::roundZeroValue($value);
@@ -712,12 +718,7 @@ class Actions
 			);
 			if ($result >= 0)
 			{
-				if (!isset($basketRow['DISCOUNT_PRICE']))
-					$basketRow['DISCOUNT_PRICE'] = 0;
-				$basketRow['PRICE'] = $result;
-				if (isset($basketRow['PRICE_DEFAULT']))
-					$basketRow['PRICE_DEFAULT'] = $result;
-				$basketRow['DISCOUNT_PRICE'] -= $calculateValue;
+				self::fillDiscountPrice($basketRow, $result, -$calculateValue);
 
 				$order['BASKET_ITEMS'][$basketCode] = $basketRow;
 
@@ -782,7 +783,7 @@ class Actions
 
 			$prevPrice = $basketItem['PRICE'];
 			$basketItem['PRICE'] = $basketItem['BASE_PRICE'];
-			list(, $newPrice) = Actions::calculateDiscountPrice(
+			list(, $newPrice) = self::calculateDiscountPrice(
 				$value,
 				$unit,
 				$basketItem,
@@ -847,8 +848,7 @@ class Actions
 				$actionDescription['VALUE_TYPE'] = Sale\OrderDiscountManager::DESCR_VALUE_TYPE_CURRENCY;
 				$actionDescription['VALUE_UNIT'] = $currency;
 				if ($currency != $orderCurrency)
-					/** @noinspection PhpMethodOrClassCallIsNotCaseSensitiveInspection */
-					$value = \CCurrencyRates::convertCurrency($value, $currency, $orderCurrency);
+					$value = \CCurrencyRates::ConvertCurrency($value, $currency, $orderCurrency);
 				break;
 		}
 		static::setActionDescription(self::RESULT_ENTITY_DELIVERY, $actionDescription);
@@ -1272,7 +1272,6 @@ class Actions
 	/**
 	 * Return check result for error mode.
 	 *
-	 * @internal
 	 * @param array $action			Action description.
 	 * @param array $resultDescr	Result description.
 	 * @return bool
@@ -1341,15 +1340,17 @@ class Actions
 	}
 
 	/**
-	 * @param $value
-	 * @param $unit
-	 * @param $basketRow
-	 * @param $limitValue
-	 * @param $maxBound
+	 * Calculate simple discount result.
+	 *
+	 * @param int|float $value				Discount value.
+	 * @param string $unit					Discount value type.
+	 * @param array $basketRow				Basket item.
+	 * @param int|float|null $limitValue	Max discount value.
+	 * @param bool $maxBound				Allow set price to 0, if discount more than price.
 	 *
 	 * @return array
 	 */
-	protected static function calculateDiscountPrice($value, $unit, $basketRow, $limitValue, $maxBound)
+	protected static function calculateDiscountPrice($value, $unit, array $basketRow, $limitValue, $maxBound)
 	{
 		$calculateValue = $value;
 		if ($unit == self::VALUE_TYPE_PERCENT)
@@ -1357,9 +1358,7 @@ class Actions
 		$calculateValue = static::roundValue($calculateValue, $basketRow['CURRENCY']);
 
 		if (!empty($limitValue) && $limitValue + $calculateValue <= 0)
-		{
 			$calculateValue = -$limitValue;
-		}
 
 		$result = static::roundZeroValue($basketRow['PRICE'] + $calculateValue);
 		if ($maxBound && $result < 0)
@@ -1368,6 +1367,22 @@ class Actions
 			$calculateValue = -$basketRow['PRICE'];
 		}
 
-		return array($calculateValue, $result);
+		return [$calculateValue, $result];
+	}
+
+	/**
+	 * Fill price fields in basket item.
+	 *
+	 * @param array &$basketRow		Basket item fields.
+	 * @param int|float $price		New price.
+	 * @param int|float $discount	Value of the discount change.
+	 * @return void
+	 */
+	protected static function fillDiscountPrice(array &$basketRow, $price, $discount)
+	{
+		if (!isset($basketRow['DISCOUNT_PRICE']))
+			$basketRow['DISCOUNT_PRICE'] = 0;
+		$basketRow['PRICE'] = $price;
+		$basketRow['DISCOUNT_PRICE'] += $discount;
 	}
 }

@@ -95,6 +95,8 @@ $arFilterFields = array(
 	"filter_delivery_service",
 	"filter_xml_id",
 	"filter_tracking_number",
+	"filter_delivery_doc_date_from",
+	"filter_delivery_doc_date_to",
 	"filter_source",
 	"filter_company_id",
 	"filter_responsible_id",
@@ -325,6 +327,31 @@ if(floatval($filter_price_from)>0) $arFilter[">=PRICE"] = floatval($filter_price
 if(floatval($filter_price_to)>0) $arFilter["<=PRICE"] = floatval($filter_price_to);
 if(strlen($filter_xml_id)>0) $arFilter["%XML_ID"] = trim($filter_xml_id);
 if(strlen($filter_tracking_number)>0) $arFilter["%SHIPMENT.TRACKING_NUMBER"] = trim($filter_tracking_number);
+
+if(strval(trim($filter_delivery_doc_date_from)) != '')
+{
+	$arFilter[">=SHIPMENT.DELIVERY_DOC_DATE"] = trim($filter_delivery_doc_date_from);
+}
+if(strval(trim($filter_delivery_doc_date_to)) != '')
+{
+	if($arDate = ParseDateTime($filter_delivery_doc_date_to, CSite::GetDateFormat("FULL", SITE_ID)))
+	{
+		if(StrLen($filter_delivery_doc_date_to) < 11)
+		{
+			$arDate["HH"] = 23;
+			$arDate["MI"] = 59;
+			$arDate["SS"] = 59;
+		}
+
+		$filter_delivery_doc_date_to = date($DB->DateFormatToPHP(CSite::GetDateFormat("FULL", SITE_ID)), mktime($arDate["HH"], $arDate["MI"], $arDate["SS"], $arDate["MM"], $arDate["DD"], $arDate["YYYY"]));
+		$arFilter["<=SHIPMENT.DELIVERY_DOC_DATE"] = $filter_delivery_doc_date_to;
+	}
+	else
+	{
+		$filter_delivery_doc_date_to = "";
+	}
+}
+
 
 if(isset($filter_universal) && strlen($filter_universal) > 0)
 	$arFilter["NAME_SEARCH"] = trim($filter_universal);
@@ -666,7 +693,7 @@ if($lAdmin->EditAction() && $saleModulePermissions >= "U")
 			if($isOrderNeedSave)
 			{
 				$res = $editOrder->save();
-
+				Sale\Provider::resetTrustData($editOrder->getSiteId());
 				if(!$res->isSuccess())
 				{
 					$errMessages = $res->getErrorMessages();
@@ -822,6 +849,7 @@ if(($arID = $lAdmin->GroupAction()) && $saleModulePermissions >= "P")
 		}
 		else
 		{
+			$isOrderSaved = false;
 			switch ($_REQUEST['action'])
 			{
 				case "delete":
@@ -861,6 +889,8 @@ if(($arID = $lAdmin->GroupAction()) && $saleModulePermissions >= "P")
 						$lAdmin->AddGroupError(implode("<br>\n", $res->getErrorMessages()), $ID);
 						break;
 					}
+					$isOrderSaved = true;
+
 					$res = $saleOrder->save();
 					if(!$res->isSuccess())
 						$lAdmin->AddGroupError(implode("<br>\n", $res->getErrorMessages()), $ID);
@@ -886,6 +916,8 @@ if(($arID = $lAdmin->GroupAction()) && $saleModulePermissions >= "P")
 						$lAdmin->AddGroupError(implode("<br>\n", $res->getErrorMessages()), $ID);
 						break;
 					}
+					$isOrderSaved = true;
+
 					$res = $saleOrder->save();
 					if(!$res ->isSuccess())
 						$lAdmin->AddGroupError(implode("<br>\n", $res->getErrorMessages()), $ID);
@@ -971,6 +1003,8 @@ if(($arID = $lAdmin->GroupAction()) && $saleModulePermissions >= "P")
 										$lAdmin->AddGroupError($message.' '.$shpMsg);
 								}
 
+								$isOrderSaved = true;
+
 								$saveResult = $saleOrder->save();
 
 								if (!$saveResult->isSuccess())
@@ -1018,9 +1052,29 @@ if(($arID = $lAdmin->GroupAction()) && $saleModulePermissions >= "P")
 
 							if ($setResult->isSuccess())
 							{
-								$warnings = $setResult->getWarningMessages();
+								$warningsList = array();
+								$hasErrors = false;
 
-								if (empty($warnings))
+								$warnings = $setResult->getWarningMessages();
+								$hasWarnings = false;
+								if (!empty($warnings))
+								{
+									foreach ($warnings as $message)
+									{
+										$warningsList[] = $message.' '.$shpMsg;
+									}
+								}
+
+								$isOrderSaved = true;
+
+								$saveResult = $saleOrder->save();
+								if (!$saveResult->isSuccess())
+								{
+									$hasErrors = true;
+									$lAdmin->AddGroupError(join("\n", $saveResult->getErrorMessages()).' '.$shpMsg);
+								}
+
+								if(empty($warnings) && !$hasErrors)
 								{
 									if($_REQUEST['action'] == 'deducted')
 										$mess = Loc::getMessage('SALE_SHIPMENT_DEDUCTED');
@@ -1031,14 +1085,19 @@ if(($arID = $lAdmin->GroupAction()) && $saleModulePermissions >= "P")
 								}
 								else
 								{
+
 									foreach ($warnings as $message)
-										$lAdmin->AddGroupError($message.' '.$shpMsg);
+									{
+										$warningsList[] = $message.' '.$shpMsg;
+									}
+
+									$warningsList = array_unique($warningsList);
+
+									foreach ($warningsList as $warning)
+									{
+										$lAdmin->AddGroupError($warning);
+									}
 								}
-
-								$saveResult = $saleOrder->save();
-
-								if (!$saveResult->isSuccess())
-									$lAdmin->AddGroupError(join("\n", $saveResult->getErrorMessages()).' '.$shpMsg);
 							}
 							else
 							{
@@ -1048,6 +1107,12 @@ if(($arID = $lAdmin->GroupAction()) && $saleModulePermissions >= "P")
 									$lAdmin->AddGroupError(join("\n", $serResultMessage).' '.$shpMsg);
 								else
 									$lAdmin->AddGroupError(Loc::getMessage('SALE_SHIPMENT_ALLOW_DELIVERY_ERR').'. '.$shpMsg);
+
+								if ($setResult->hasWarnings())
+								{
+									$isOrderSaved = true;
+									$saveResult = $saleOrder->save();
+								}
 							}
 						}
 					}
@@ -1140,6 +1205,7 @@ if(($arID = $lAdmin->GroupAction()) && $saleModulePermissions >= "P")
 						}
 						else
 						{
+							$isOrderSaved = true;
 
 							$res = $saleOrder->save();
 
@@ -1213,6 +1279,7 @@ if(($arID = $lAdmin->GroupAction()) && $saleModulePermissions >= "P")
 										}
 										else
 										{
+											$isOrderSaved = true;
 											$res = $saleOrder->save();
 
 											if(!$res ->isSuccess())
@@ -1233,6 +1300,11 @@ if(($arID = $lAdmin->GroupAction()) && $saleModulePermissions >= "P")
 					}
 
 				break;
+			}
+
+			if ($isOrderSaved)
+			{
+				Sale\Provider::resetTrustData($saleOrder->getSiteId());
 			}
 		}
 	}
@@ -1267,7 +1339,8 @@ $arColumn2Field = array(
 		"SOURCE_NAME" => array("SOURCE_NAME"),
 		"XML_ID" => array("XML_ID"),
 		"COMPANY_ID" => array("COMPANY_ID"),
-		"RESPONSIBLE_ID" => array("RESPONSIBLE_ID")
+		"RESPONSIBLE_ID" => array("RESPONSIBLE_ID"),
+		"AFFILIATE_ID" => array("AFFILIATE_ID"),
 	);
 
 $arHeaders = array(
@@ -1314,6 +1387,7 @@ $arHeaders = array(
 	array("id"=>"DATE_ALLOW_DELIVERY", "content"=>Loc::getMessage("SALE_F_DATE_ALLOW_DELIVERY"), "sort"=>"", "default"=>false),
 	array("id"=>"ACCOUNT_NUMBER","content"=>Loc::getMessage("SOA_ACCOUNT_NUMBER"), "sort"=>""),
 	array("id"=>"TRACKING_NUMBER","content"=>Loc::getMessage("SOA_TRACKING_NUMBER"), "sort"=>"", "default"=>false),
+	array("id"=>"DELIVERY_DOC_DATE","content"=>Loc::getMessage("SOA_DELIVERY_DOC_DATE"), "sort"=>"", "default"=>false),
 	array("id"=>"EXTERNAL_ORDER","content"=>Loc::getMessage("SOA_EXTERNAL_ORDER"), "sort"=>"", "default"=> false),
 	array("id"=>"SHIPMENTS","content"=>Loc::getMessage("SOA_SHIPMENTS"), "sort"=>"", "default"=> true),
 	array("id"=>"PAYMENTS","content"=>Loc::getMessage("SOA_PAYMENTS"), "sort"=>"", "default"=> true),
@@ -1321,6 +1395,8 @@ $arHeaders = array(
 	array("id"=>"XML_ID","content"=>Loc::getMessage("SO_XML_ID"), "sort"=>"XML_ID", "default"=>false),
 	array("id"=>"COMPANY_ID","content"=>Loc::getMessage("SALE_F_COMPANY_ID"), "sort"=>"COMPANY_ID", "default"=>false),
 	array("id"=>"RESPONSIBLE_ID","content"=>Loc::getMessage("SALE_F_RESPONSIBLE_ID"), "sort"=>"RESPONSIBLE_ID", "default"=>false),
+
+	array("id"=>"AFFILIATE_ID","content"=>Loc::getMessage("SI_AFFILIATE"), "sort"=>"AFFILIATE_ID", "default"=>false),
 );
 
 if($DBType == "mysql")
@@ -1656,6 +1732,8 @@ if (!empty($orderList) && is_array($orderList))
 	}
 	$permUpdateOrderList = CSaleOrder::checkUserPermissionOrderList(array_keys($orderList), 'update', $arUserGroups);
 	$permDeleteOrderList = CSaleOrder::checkUserPermissionOrderList(array_keys($orderList), 'delete', $arUserGroups, $USER->GetID());
+
+	$affiliateCache = array();
 
 	foreach ($orderList as $orderId => $arOrder)
 	{
@@ -2507,7 +2585,7 @@ if (!empty($orderList) && is_array($orderList))
 
 			while($shipment = $res->fetch())
 			{
-				$shipment["ID_LINKED"] = '[<a href="/bitrix/admin/sale_order_shipment_edit.php?order_id='.$arOrder['ID'].'&shipment_id='.$shipment["ID"].'&lang='.LANGUAGE_ID.'">'.$shipment["ID"].'</a>]';
+				$shipment["ID_LINKED"] = '[<a href="/bitrix/admin/sale_order_shipment_edit.php?order_id='.$arOrder['ID'].'&shipment_id='.$shipment["ID"].'&lang='.LANGUAGE_ID.'"  title="'.Loc::getMessage('SALE_O_SHIPMENT_ID_TITLE', array('#SHIPMENT_ID#' => $shipment["ID"])).'">'.$shipment["ID"].'</a>]';
 				$shipments[] = $shipment;
 			}
 
@@ -2664,11 +2742,10 @@ if (!empty($orderList) && is_array($orderList))
 				foreach($shipments as $shipment)
 				{
 					$tmp = '<span id="DEDUCTED_'.$shipment["ID"].'">'.(($shipment["DEDUCTED"] == "Y") ? Loc::getMessage("SO_YES") : Loc::getMessage("SO_NO"))."</span>";
+					$fieldValue .= $shipment["ID_LINKED"]." ".$tmp;
 
 					if(count($shipments) > 1)
-						$fieldValue .= $shipment["ID_LINKED"]." ".$tmp."<hr>";
-					else
-						$fieldValue .= $tmp;
+						$fieldValue .= "<hr>";
 
 					$fieldValueTmp = $shipment["DATE_DEDUCTED"];
 					if(strlen($shipment["DATE_DEDUCTED"]) > 0)
@@ -2754,6 +2831,44 @@ if (!empty($orderList) && is_array($orderList))
 				$fieldValue = $formattedUserNames[$arOrder["RESPONSIBLE_ID"]];
 		}
 		$row->AddField("RESPONSIBLE_ID", $fieldValue);
+
+
+		//AFFILIATE
+		$fieldValue = "";
+		if(in_array("AFFILIATE_ID", $arVisibleColumns) && intval($arOrder["AFFILIATE_ID"]) > 0)
+		{
+			$affiliateId = intval($arOrder["AFFILIATE_ID"]);
+			if (isset($affiliateCache[$affiliateId]))
+			{
+				$fieldValue = $affiliateCache[$affiliateId];
+			}
+			else
+			{
+				$affiliateRes = \CSaleAffiliate::GetList(
+					array(),
+					array("ID" => $affiliateId),
+					false,
+					false,
+					array("ID", "USER_ID")
+				);
+
+				if($affiliateData = $affiliateRes->Fetch())
+				{
+					if (isset($formattedUserNames[$affiliateData["USER_ID"]]))
+					{
+						$fieldValue = $formattedUserNames[$affiliateData["USER_ID"]];
+					}
+					else
+					{
+						$fieldValue = GetFormatedUserName($affiliateData["USER_ID"], false, false);
+						$formattedUserNames[$affiliateData["USER_ID"]] = $fieldValue;
+					}
+
+					$affiliateCache[$affiliateId] = $fieldValue;
+				}
+			}
+		}
+		$row->AddField("AFFILIATE_ID", $fieldValue);
 
 		$arActions = array();
 
@@ -3005,7 +3120,7 @@ foreach($arFooterArray as $val)
 
 $arResult = array(
 	'RECOMMENDATION_ORDERS_COUNT' => $rcmCount,
-	'RECOMMENDATION_ORDERS_VALUE' => htmlspecialcharsbx(join(' / ', $rcmValue))
+	'RECOMMENDATION_ORDERS_VALUE' => htmlspecialcharsEx(join(' / ', $rcmValue))
 );
 
 // prepare recommendation widget
@@ -3357,6 +3472,7 @@ $arFilterFieldsTmp = array(
 	"filter_sum_paid" => Loc::getMessage("SO_SUM_PAID"),
 	"filter_xml_id" => Loc::getMessage("SO_XML_ID"),
 	"filter_tracking_number" => Loc::getMessage("SOA_TRACKING_NUMBER"),
+	"filter_delivery_doc_date" => Loc::getMessage("SOA_DELIVERY_DOC_DATE"),
 	"filter_source" => Loc::getMessage("SALE_F_SOURCE"),
 	"filter_company_id" => Loc::getMessage("SALE_F_COMPANY_ID"),
 	"filter_responsible_id" => Loc::getMessage("SALE_F_RESPONSIBLE_ID")
@@ -3526,7 +3642,7 @@ $oFilter->Begin();
 		</td>
 	</tr>
 	<tr>
-		<td valign="top"><?echo Loc::getMessage("SALE_F_STATUS")?>:<br /><img src="/bitrix/images/sale/mouse.gif" width="44" height="21" border="0" alt=""></td>
+		<td valign="top"><?echo Loc::getMessage("SALE_F_STATUS")?>:</td>
 		<td valign="top">
 			<select name="filter_status[]" multiple size="3">
 				<?
@@ -3901,6 +4017,12 @@ $oFilter->Begin();
 		<td><?=Loc::getMessage('SOA_TRACKING_NUMBER')?>:</td>
 		<td>
 			<input type="text" name="filter_tracking_number" value="<?echo htmlspecialcharsbx($filter_tracking_number)?>" size="40">
+		</td>
+	</tr>
+	<tr>
+		<td><?echo Loc::getMessage("SALE_F_DELIVERY_DOC_DATE");?>:</td>
+		<td>
+			<?echo CalendarPeriod("filter_delivery_doc_date_from", $filter_delivery_doc_date_from, "filter_delivery_doc_date_to", $filter_delivery_doc_date_to, "find_form", "Y")?>
 		</td>
 	</tr>
 	<?

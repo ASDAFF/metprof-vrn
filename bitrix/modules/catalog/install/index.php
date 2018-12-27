@@ -109,21 +109,17 @@ class catalog extends CModule
 		$eventManager->registerEventHandler('currency', 'onAfterUpdateCurrencyBaseRate', 'catalog', '\Bitrix\Catalog\Product\Price', 'handlerAfterUpdateCurrencyBaseRate');
 
 		$eventManager->registerEventHandlerCompatible('main', 'onUserDelete', 'catalog', '\Bitrix\Catalog\SubscribeTable', 'onUserDelete');
-		$eventManager->registerEventHandlerCompatible('iblock', 'OnIBlockElementDelete', 'catalog', '\Bitrix\Catalog\SubscribeTable', 'onIblockElementDelete');
-		$eventManager->registerEventHandlerCompatible('catalog', 'OnProductUpdate', 'catalog', '\Bitrix\Catalog\SubscribeTable', 'onProductUpdate');
-		$eventManager->registerEventHandlerCompatible('catalog', 'OnProductSetAvailableUpdate', 'catalog', '\Bitrix\Catalog\SubscribeTable', 'onProductSetAvailableUpdate');
 		$eventManager->registerEventHandlerCompatible('catalog', 'onAddContactType', 'catalog', '\Bitrix\Catalog\SubscribeTable', 'onAddContactType');
 		$eventManager->registerEventHandler('sale', 'OnSaleOrderSaved', 'catalog', '\Bitrix\Catalog\SubscribeTable', 'onSaleOrderSaved');
 
+		RegisterModuleDependences("iblock", "OnBeforeIBlockUpdate", "catalog", "CCatalog", "OnBeforeIBlockUpdate");
+		RegisterModuleDependences("iblock", "OnAfterIBlockUpdate", "catalog", "CCatalog", "OnAfterIBlockUpdate");
 		RegisterModuleDependences("iblock", "OnIBlockDelete", "catalog", "CCatalog", "OnIBlockDelete");
 		RegisterModuleDependences("iblock", "OnIBlockElementDelete", "catalog", "CCatalogProduct", "OnIBlockElementDelete");
-		RegisterModuleDependences("iblock", "OnIBlockElementDelete", "catalog", "CPrice", "OnIBlockElementDelete");
-		RegisterModuleDependences("iblock", "OnIBlockElementDelete", "catalog", "CCatalogStoreProduct", "OnIBlockElementDelete");
 		RegisterModuleDependences("iblock", "OnIBlockElementDelete", "catalog", "CCatalogDocs", "OnIBlockElementDelete");
 		RegisterModuleDependences("iblock", "OnBeforeIBlockElementDelete", "catalog", "CCatalogDocs", "OnBeforeIBlockElementDelete");
 		RegisterModuleDependences("currency", "OnCurrencyDelete", "catalog", "CPrice", "OnCurrencyDelete");
 		RegisterModuleDependences("main", "OnGroupDelete", "catalog", "CCatalogProductGroups", "OnGroupDelete");
-		RegisterModuleDependences("iblock", "OnAfterIBlockElementUpdate", "catalog", "CCatalogProduct", "OnAfterIBlockElementUpdate");
 		RegisterModuleDependences("currency", "OnModuleUnInstall", "catalog", "", "CurrencyModuleUnInstallCatalog");
 		RegisterModuleDependences("iblock", "OnBeforeIBlockDelete", "catalog", "CCatalog", "OnBeforeCatalogDelete", 300);
 		RegisterModuleDependences("iblock", "OnBeforeIBlockElementDelete", "catalog", "CCatalog", "OnBeforeIBlockElementDelete", 10000);
@@ -156,6 +152,8 @@ class catalog extends CModule
 		RegisterModuleDependences('iblock', 'OnAfterIBlockElementDelete', 'catalog', '\Bitrix\Catalog\Product\Sku', 'handlerAfterIblockElementDelete');
 		RegisterModuleDependences('iblock', 'OnIBlockElementSetPropertyValues', 'catalog', '\Bitrix\Catalog\Product\Sku', 'handlerIblockElementSetPropertyValues');
 		RegisterModuleDependences('iblock', 'OnAfterIBlockElementSetPropertyValues', 'catalog', '\Bitrix\Catalog\Product\Sku', 'handlerAfterIBlockElementSetPropertyValues');
+		RegisterModuleDependences('iblock', 'OnIBlockElementSetPropertyValuesEx', 'catalog', '\Bitrix\Catalog\Product\Sku', 'handlerIblockElementSetPropertyValuesEx');
+		RegisterModuleDependences('iblock', 'OnAfterIBlockElementSetPropertyValuesEx', 'catalog', '\Bitrix\Catalog\Product\Sku', 'handlerAfterIblockElementSetPropertyValuesEx');
 
 		RegisterModuleDependences('perfmon', 'OnGetTableSchema', 'catalog', 'catalog', 'getTableSchema');
 
@@ -174,50 +172,6 @@ class catalog extends CModule
 			$DB->Query("insert into b_catalog_measure (CODE, SYMBOL_INTL, SYMBOL_LETTER_INTL, IS_DEFAULT) values(163, 'g', 'GRM', 'N')", true);
 			$DB->Query("insert into b_catalog_measure (CODE, SYMBOL_INTL, SYMBOL_LETTER_INTL, IS_DEFAULT) values(166, 'kg', 'KGM', 'N')", true);
 			$DB->Query("insert into b_catalog_measure (CODE, SYMBOL_INTL, SYMBOL_LETTER_INTL, IS_DEFAULT) values(796, 'pc. 1', 'PCE. NMB', 'Y')", true);
-		}
-
-		if (!$bitrix24)
-		{
-			$languageID = '';
-			$siteIterator = SiteTable::getList(array(
-				'select' => array('LID', 'LANGUAGE_ID'),
-				'filter' => array('=DEF' => 'Y', '=ACTIVE' => 'Y')
-			));
-			if ($site = $siteIterator->fetch())
-			{
-				$languageID = (string)$site['LANGUAGE_ID'];
-			}
-			if ($languageID == '')
-				$languageID = 'en';
-
-			if ($languageID == 'ru')
-			{
-				$mess = Loc::getMessage('CATALOG_INSTALL_PROFILE_IRR2', null, 'ru');
-				if ($mess == '')
-					$mess = 'irr.ru';
-				$strQuery = "select COUNT(CE.ID) as CNT from b_catalog_export CE where CE.IS_EXPORT = 'Y' and CE.FILE_NAME ='yandex' and CE.NAME = '".$DB->ForSql($mess)."'";
-				$rsProfiles = $DB->Query($strQuery, true);
-				if (false !== $rsProfiles)
-				{
-					$arProfile = $rsProfiles->Fetch();
-					if ((int)$arProfile['CNT'] == 0)
-					{
-						$arFields = array(
-							'FILE_NAME' => 'yandex',
-							'NAME' => $mess,
-							'DEFAULT_PROFILE' => 'N',
-							'IN_MENU' => 'N',
-							'IN_AGENT' => 'N',
-							'IN_CRON' => 'N',
-							'NEED_EDIT' => 'Y',
-							'IS_EXPORT' => 'Y'
-						);
-						$arInsert = $DB->PrepareInsert("b_catalog_export", $arFields);
-						$strQuery = "INSERT INTO b_catalog_export(".$arInsert[0].") VALUES(".$arInsert[1].")";
-						$DB->Query($strQuery, true);
-					}
-				}
-			}
 		}
 
 		return true;
@@ -286,14 +240,13 @@ class catalog extends CModule
 			COption::RemoveOption("catalog");
 		}
 
+		UnRegisterModuleDependences("iblock", "OnBeforeIBlockUpdate", "catalog", "CCatalog", "OnBeforeIBlockUpdate");
+		UnRegisterModuleDependences("iblock", "OnAfterIBlockUpdate", "catalog", "CCatalog", "OnAfterIBlockUpdate");
 		UnRegisterModuleDependences("iblock", "OnIBlockDelete", "catalog", "CCatalog", "OnIBlockDelete");
 		UnRegisterModuleDependences("iblock", "OnIBlockElementDelete", "catalog", "CProduct", "OnIBlockElementDelete");
-		UnRegisterModuleDependences("iblock", "OnIBlockElementDelete", "catalog", "CPrice", "OnIBlockElementDelete");
-		UnRegisterModuleDependences("iblock", "OnIBlockElementDelete", "catalog", "CCatalogStoreProduct", "OnIBlockElementDelete");
 		UnRegisterModuleDependences("iblock", "OnIBlockElementDelete", "catalog", "CCatalogDocs", "OnIBlockElementDelete");
 		UnRegisterModuleDependences("iblock", "OnBeforeIBlockElementDelete", "catalog", "CCatalogDocs", "OnBeforeIBlockElementDelete");
 		UnRegisterModuleDependences("currency", "OnCurrencyDelete", "catalog", "CPrice", "OnCurrencyDelete");
-		UnRegisterModuleDependences("iblock", "OnAfterIBlockElementUpdate", "catalog", "CCatalogProduct", "OnAfterIBlockElementUpdate");
 		UnRegisterModuleDependences("currency", "OnModuleUnInstall", "catalog", "", "CurrencyModuleUnInstallCatalog");
 		UnRegisterModuleDependences("iblock", "OnBeforeIBlockDelete", "catalog", "CCatalog", "OnBeforeCatalogDelete");
 		UnRegisterModuleDependences("iblock", "OnBeforeIBlockElementDelete", "catalog", "CCatalog", "OnBeforeIBlockElementDelete");
@@ -326,6 +279,8 @@ class catalog extends CModule
 		UnRegisterModuleDependences('iblock', 'OnAfterIBlockElementDelete', 'catalog', '\Bitrix\Catalog\Product\Sku', 'handlerAfterIblockElementDelete');
 		UnRegisterModuleDependences('iblock', 'OnIBlockElementSetPropertyValues', 'catalog', '\Bitrix\Catalog\Product\Sku', 'handlerIblockElementSetPropertyValues');
 		UnRegisterModuleDependences('iblock', 'OnAfterIBlockElementSetPropertyValues', 'catalog', '\Bitrix\Catalog\Product\Sku', 'handlerAfterIBlockElementSetPropertyValues');
+		UnRegisterModuleDependences('iblock', 'OnIBlockElementSetPropertyValuesEx', 'catalog', '\Bitrix\Catalog\Product\Sku', 'handlerIblockElementSetPropertyValuesEx');
+		UnRegisterModuleDependences('iblock', 'OnAfterIBlockElementSetPropertyValuesEx', 'catalog', '\Bitrix\Catalog\Product\Sku', 'handlerAfterIblockElementSetPropertyValuesEx');
 
 		UnRegisterModuleDependences('perfmon', 'OnGetTableSchema', 'catalog', 'catalog', 'getTableSchema');
 
@@ -336,9 +291,6 @@ class catalog extends CModule
 		$eventManager->unRegisterEventHandler('currency', 'onAfterUpdateCurrencyBaseRate', 'catalog', '\Bitrix\Catalog\Product\Price', 'handlerAfterUpdateCurrencyBaseRate');
 
 		$eventManager->unRegisterEventHandler('main', 'onUserDelete', 'catalog', '\Bitrix\Catalog\SubscribeTable', 'onUserDelete');
-		$eventManager->unRegisterEventHandler('iblock', 'OnIBlockElementDelete', 'catalog', '\Bitrix\Catalog\SubscribeTable', 'onIblockElementDelete');
-		$eventManager->unRegisterEventHandler('catalog', 'OnProductUpdate', 'catalog', '\Bitrix\Catalog\SubscribeTable', 'onProductUpdate');
-		$eventManager->unRegisterEventHandler('catalog', 'OnProductSetAvailableUpdate', 'catalog', '\Bitrix\Catalog\SubscribeTable', 'onProductSetAvailableUpdate');
 		$eventManager->unRegisterEventHandler('catalog', 'onAddContactType', 'catalog', '\Bitrix\Catalog\SubscribeTable', 'onAddContactType');
 		$eventManager->unRegisterEventHandler('sale', 'OnSaleOrderSaved', 'catalog', '\Bitrix\Catalog\SubscribeTable', 'onSaleOrderSaved');
 

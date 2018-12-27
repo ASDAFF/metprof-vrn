@@ -2,6 +2,7 @@
 namespace Bitrix\Sale\Helpers\Admin;
 
 use Bitrix\Main\Error;
+use Bitrix\Sale\BasketItemBase;
 use Bitrix\Sale\Fuser;
 use Bitrix\Sale\Order;
 use Bitrix\Main\Loader;
@@ -184,7 +185,9 @@ class OrderEdit
 
 		$curFormat = \CCurrencyLang::GetFormatDescription($currencyId);
 		$currencyLang = preg_replace("/(^|[^&])#/", '$1', $curFormat["FORMAT_STRING"]);
-		$langPhrases = array("SALE_ORDEREDIT_DISCOUNT_UNKNOWN", "SALE_ORDEREDIT_REFRESHING_DATA", "SALE_ORDEREDIT_FIX", "SALE_ORDEREDIT_UNFIX", "SALE_ORDEREDIT_CLOSE", "SALE_ORDEREDIT_MESSAGE");
+		$langPhrases = array("SALE_ORDEREDIT_DISCOUNT_UNKNOWN", "SALE_ORDEREDIT_REFRESHING_DATA", "SALE_ORDEREDIT_FIX",
+			"SALE_ORDEREDIT_UNFIX", "SALE_ORDEREDIT_CLOSE", "SALE_ORDEREDIT_MESSAGE", "SALE_ORDEREDIT_CONFIRM",
+			"SALE_ORDEREDIT_CONFIRM_CONTINUE", "SALE_ORDEREDIT_CONFIRM_ABORT");
 
 		$result = '
 			<script type="text/javascript">
@@ -527,13 +530,13 @@ class OrderEdit
 				if($item)
 				{
 					//Let's extract cached provider product data from field
-					if(!empty($productData["PROVIDER_DATA"]))
+					if(!empty($productData["PROVIDER_DATA"]) && CheckSerializedData($productData["PROVIDER_DATA"]))
 					{
 						$providerData = unserialize($productData["PROVIDER_DATA"]);
 						self::setProviderTrustData($item, $order, $providerData);
 					}
 
-					if(!empty($productData["SET_ITEMS_DATA"]))
+					if(!empty($productData["SET_ITEMS_DATA"]) && CheckSerializedData($productData["SET_ITEMS_DATA"]))
 						$productData["SET_ITEMS"] = unserialize($productData["SET_ITEMS_DATA"]);
 
 					$res = $item->setField("QUANTITY", $item->getField("QUANTITY")+$productData["QUANTITY"]);
@@ -550,7 +553,13 @@ class OrderEdit
 					else
 						$setBasketCode = null;
 
-					$item = $basket->createItem($productData["MODULE"],	$productData["OFFER_ID"], $setBasketCode);
+					$productId = $productData["PRODUCT_ID"];
+					if (isset($productData["OFFER_ID"]) && !empty($productData["OFFER_ID"]))
+					{
+						$productId = $productData["OFFER_ID"];
+					}
+
+					$item = $basket->createItem($productData["MODULE"],	$productId, $setBasketCode);
 
 					if ($basketCode != $productData["BASKET_CODE"])
 						$productData["BASKET_CODE"] = $item->getBasketCode();
@@ -592,7 +601,7 @@ class OrderEdit
 			if(!$res->isSuccess())
 			{
 				$opResult->addErrors($res->getErrors());
-//				return null;
+				return null;
 			}
 
 			if ($isStartField)
@@ -737,7 +746,6 @@ class OrderEdit
 		$itemsBasketCodes = array();
 		$maxBasketCodeIdx = 0;
 		$productAdded = false;
-		$productDeleted = false;
 
 		if(isset($formData["PRODUCT"]) && is_array($formData["PRODUCT"]) && !empty($formData["PRODUCT"]))
 		{
@@ -837,10 +845,6 @@ class OrderEdit
 					$result->addError(new Error($errMess));
 					return null;
 				}
-				else
-				{
-					$productDeleted = true;
-				}
 			}
 		}
 
@@ -934,7 +938,7 @@ class OrderEdit
 							$itemFields["MEASURE_NAME"] = $measures[$itemFields["MEASURE_CODE"]];
 					}
 
-					if(!empty($productData["PROVIDER_DATA"]) && !self::$needUpdateNewProductPrice)
+					if(!empty($productData["PROVIDER_DATA"]) && !self::$needUpdateNewProductPrice && CheckSerializedData($productData["PROVIDER_DATA"]))
 					{
 						$providerData = unserialize($productData["PROVIDER_DATA"]);
 					}
@@ -942,7 +946,7 @@ class OrderEdit
 					if(is_array($providerData) && !empty($providerData))
 						self::setProviderTrustData($item, $order, $providerData);
 
-					if(!empty($productData["SET_ITEMS_DATA"]))
+					if(!empty($productData["SET_ITEMS_DATA"]) && CheckSerializedData($productData["SET_ITEMS_DATA"]))
 						$productData["SET_ITEMS"] = unserialize($productData["SET_ITEMS_DATA"]);
 
 					/** @var \Bitrix\Sale\Result $res */
@@ -1009,7 +1013,7 @@ class OrderEdit
 			$result->addError(new EntityError(Loc::getMessage("SALE_ORDEREDIT_ERROR_NO_PRODUCTS")));
 		}
 
-		if($productAdded || $productDeleted)
+		if($productAdded)
 		{
 			$res = $basket->refreshData(array('PRICE', 'COUPONS'));
 
@@ -1144,7 +1148,9 @@ class OrderEdit
 			$isDataNeedUpdate = in_array($basketCode, $needDataUpdate);
 
 			if(isset($productData["PRODUCT_PROVIDER_CLASS"]) && strlen($productData["PRODUCT_PROVIDER_CLASS"]) > 0)
+			{
 				$item->setField("PRODUCT_PROVIDER_CLASS", trim($productData["PRODUCT_PROVIDER_CLASS"]));
+			}
 
 			/*
 			 * Let's extract cached provider product data from field
@@ -1152,13 +1158,13 @@ class OrderEdit
 			 */
 			if(self::$isTrustProductFormData && !$isDataNeedUpdate)
 			{
-				if(!empty($productData["PROVIDER_DATA"]))
+				if(!empty($productData["PROVIDER_DATA"]) && CheckSerializedData($productData["PROVIDER_DATA"]))
 					$trustData[$basketCode] = unserialize($productData["PROVIDER_DATA"]);
 
 				// if quantity changed we must get fresh data from provider
 				if(!empty($trustData[$basketCode]) && $trustData[$basketCode]["QUANTITY"] == $productData["QUANTITY"])
 				{
-					if(!empty($productData["SET_ITEMS_DATA"]))
+					if(!empty($productData["SET_ITEMS_DATA"]) && CheckSerializedData($productData["SET_ITEMS_DATA"]))
 						$productData["SET_ITEMS"] = unserialize($productData["SET_ITEMS_DATA"]);
 
 					if(is_array($trustData[$basketCode]) && !empty($trustData[$basketCode]))
@@ -1176,11 +1182,23 @@ class OrderEdit
 			if(!$res->isSuccess())
 			{
 				$result->addErrors($res->getErrors());
-				//return $result;
+				return $result;
 			}
 
 			if(isset($productData["MODULE"]) && $productData["MODULE"] == "catalog")
+			{
 				$catalogProductsIds[] = $item->getField('PRODUCT_ID');
+			}
+			elseif(empty($productData["PRODUCT_PROVIDER_CLASS"]))
+			{
+				$availableFields = BasketItemBase::getAvailableFields();
+				$availableFields = array_fill_keys($availableFields, true);
+				$fillFields = array_intersect_key($productData, $availableFields);
+				if (!empty($fillFields))
+				{
+					$r = $item->setFields($fillFields);
+				}
+			}
 		}
 
 		$catalogData = array();
@@ -1330,7 +1348,7 @@ class OrderEdit
 				$product = array_merge($product, $productData);
 			}
 
-			if(isset($product["OFFER_ID"]) || intval($product["OFFER_ID"]) >= 0)
+			if(isset($product["OFFER_ID"]) && intval($product["OFFER_ID"]) > 0)
 				$product["PRODUCT_ID"] = $product["OFFER_ID"];
 
 			$product = array_intersect_key($product, array_flip($item::getAvailableFields()));
@@ -1397,13 +1415,13 @@ class OrderEdit
 		 */
 		if(self::$isTrustProductFormData && !$needDataUpdate)
 		{
-			if(!empty($productData["PROVIDER_DATA"]))
+			if(!empty($productData["PROVIDER_DATA"]) && CheckSerializedData($productData["PROVIDER_DATA"]))
 				$data[$basketCode] = unserialize($productData["PROVIDER_DATA"]);
 
 			// if quantity changed we must get fresh data from provider
 			if(!empty($data[$basketCode]) && $data[$basketCode] == $productData["QUANTITY"])
 			{
-				if(!empty($productData["SET_ITEMS_DATA"]))
+				if(!empty($productData["SET_ITEMS_DATA"]) && CheckSerializedData($productData["SET_ITEMS_DATA"]))
 					$productData["SET_ITEMS"] = unserialize($productData["SET_ITEMS_DATA"]);
 
 				if(is_array($data[$basketCode]) && !empty($data[$basketCode]))

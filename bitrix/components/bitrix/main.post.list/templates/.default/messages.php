@@ -46,13 +46,17 @@ if (BX.CommentAux)
 	BX.CommentAux.init({
 		currentUserSonetGroupIdList: <?=CUtil::PhpToJSObject(\Bitrix\Socialnetwork\ComponentHelper::getUserSonetGroupIdList($USER->GetID(), SITE_ID))?>,
 		mobile: false,
-		publicSection: <?=(isset($arParams["bPublicPage"]) && $arParams["bPublicPage"] ? 'true' : 'false')?>
+		publicSection: <?=(isset($arParams["bPublicPage"]) && $arParams["bPublicPage"] ? 'true' : 'false')?>,
+		currentExtranetUser: <?=($arResult["currentExtranetUser"] ? 'true' : 'false')?>,
+		availableUsersList: <?=CUtil::PhpToJSObject($arResult["availableUsersList"])?>,
 	});
 }
 <? endif ?>
 
 BX.message({
 	MPL_HAVE_WRITTEN : ' <?=GetMessageJS("MPL_HAVE_WRITTEN")?>', // space here is important
+	MPL_HAVE_WRITTEN_M : ' <?=GetMessageJS("MPL_HAVE_WRITTEN_M")?>',
+	MPL_HAVE_WRITTEN_F : ' <?=GetMessageJS("MPL_HAVE_WRITTEN_F")?>',
 	B_B_MS_LINK : '<?=GetMessageJS("B_B_MS_LINK2")?>',
 	MPL_MES_HREF : '<?=GetMessageJS("MPL_MES_HREF")?>',
 	BPC_MES_EDIT : '<?=GetMessageJS("BPC_MES_EDIT")?>',

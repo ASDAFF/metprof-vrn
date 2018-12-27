@@ -26,10 +26,19 @@ if($APPLICATION->GetTitle() == '')
 $aUserOpt = CUserOptions::GetOption("admin_panel", "settings");
 $aUserOptGlobal = CUserOptions::GetOption("global", "settings");
 
+$isSidePanel = (isset($_REQUEST["IFRAME"]) && $_REQUEST["IFRAME"] === "Y");
+
 $adminPage->Init();
 $adminMenu->Init($adminPage->aModules);
 
 $bShowAdminMenu = !empty($adminMenu->aGlobalMenu);
+
+global $adminSidePanelHelper;
+if (!is_object($adminSidePanelHelper))
+{
+	require_once($_SERVER["DOCUMENT_ROOT"].BX_ROOT."/modules/main/interface/admin_lib.php");
+	$adminSidePanelHelper = new CAdminSidePanelHelper();
+}
 
 $aOptMenuPos = array();
 if($bShowAdminMenu && class_exists("CUserOptions"))
@@ -77,6 +86,10 @@ $APPLICATION->ShowHeadScripts();
 <script type="text/javascript">
 BX.message({MENU_ENABLE_TOOLTIP: <?=($aUserOptGlobal['start_menu_title'] <> 'N' ? 'true' : 'false')?>});
 BX.InitializeAdmin();
+if (!top.window["adminSidePanel"] || !BX.is_subclass_of(top.window["adminSidePanel"], top.BX.adminSidePanel))
+{
+	top.window["adminSidePanel"] = new top.BX.adminSidePanel();
+}
 </script>
 <?
 if (!defined('ADMIN_SECTION_LOAD_AUTH') || !ADMIN_SECTION_LOAD_AUTH):
@@ -98,6 +111,7 @@ if(($adminHeader = getLocalPath("php_interface/admin_header.php", BX_PERSONAL_RO
 
 ?>
 	<table class="adm-main-wrap">
+		<?if (!$isSidePanel):?>
 		<tr>
 			<td class="adm-header-wrap" colspan="2">
 <?
@@ -108,6 +122,7 @@ require($_SERVER["DOCUMENT_ROOT"].BX_ROOT."/modules/main/interface/favorite_menu
 ?>
 			</td>
 		</tr>
+		<?endif;?>
 		<tr>
 <?
 
@@ -128,6 +143,7 @@ require($_SERVER["DOCUMENT_ROOT"].BX_ROOT."/modules/main/interface/favorite_menu
 		CUserOptions::SetOption('favorite', 'favorite_menu', array('stick' => $stick));
 	}
 ?>
+			<?if (!$isSidePanel):?>
 			<td class="adm-left-side-wrap" id="menu_mirrors_cont">
 
 <script type="text/javascript">
@@ -248,6 +264,7 @@ BX.adminMenu.setOpenedSections('<?=CUtil::JSEscape($adminMenu->GetOpenedSections
 					</div>
 				</div></div>
 			</td>
+			<?endif;?>
 			<td class="adm-workarea-wrap <?=defined('BX_ADMIN_SECTION_404') && BX_ADMIN_SECTION_404 == 'Y' ? 'adm-404-error' : 'adm-workarea-wrap-top'?>">
 				<div class="adm-workarea adm-workarea-page" id="adm-workarea">
 <?
@@ -265,13 +282,21 @@ if ($curPage != "/bitrix/admin/index.php")
 
 	if (!defined('BX_ADMIN_SECTION_404') || BX_ADMIN_SECTION_404 != 'Y')
 	{
-		$arLastItem = null;
-		//Navigation chain
-		$adminChain->Init();
-		$arLastItem = $adminChain->Show();
+		if ($isSidePanel)
+		{
+			$requestUri = CHTTP::urlDeleteParams($_SERVER["REQUEST_URI"], array("IFRAME", "IFRAME_TYPE"));
+			$currentFavId = CFavorites::getIDByUrl($requestUri);
+		}
+		else
+		{
+			$arLastItem = null;
+			//Navigation chain
+			$adminChain->Init();
+			$arLastItem = $adminChain->Show();
 
-		$currentFavId = CFavorites::GetIDByUrl($_SERVER["REQUEST_URI"]);
-		$currentItemsId = '';
+			$currentFavId = CFavorites::GetIDByUrl($_SERVER["REQUEST_URI"]);
+			$currentItemsId = '';
+		}
 	}
 }
 
@@ -287,8 +312,22 @@ foreach (GetModuleEvents("main", "OnPrologAdminTitle", true) as $arEvent)
 
 if ($curPage != "/bitrix/admin/index.php")
 {
+	$isFavLink = !defined('BX_ADMIN_SECTION_404') || BX_ADMIN_SECTION_404 != 'Y';
+	if ($adminSidePanelHelper->isPublicSidePanel())
+	{
+		$isFavLink = false;
+	}
 	?>
-		<h1 class="adm-title" id="adm-title"><?$adminPage->ShowTitle()?><?if(!defined('BX_ADMIN_SECTION_404') || BX_ADMIN_SECTION_404 != 'Y'):?><a href="javascript:void(0)" class="adm-fav-link<?=$currentFavId>0?' adm-fav-link-active':''?>" onclick="BX.adminFav.titleLinkClick(this, <?=intval($currentFavId)?>, '<?=$currentItemsId?>')" title="<?= $currentFavId ? GetMessage("MAIN_PR_ADMIN_FAV_DEL") : GetMessage("MAIN_PR_ADMIN_FAV_ADD")?>"></a><?endif;?><a id="navchain-link" href="<?echo htmlspecialcharsbx($_SERVER["REQUEST_URI"])?>" title="<?echo GetMessage("MAIN_PR_ADMIN_CUR_LINK")?>"></a></h1>
+		<h1 class="adm-title" id="adm-title">
+			<?$adminPage->ShowTitle()?>
+			<?if($isFavLink):?>
+			<a href="javascript:void(0)" class="adm-fav-link<?=$currentFavId>0?' adm-fav-link-active':''?>" onclick="
+				BX.adminFav.titleLinkClick(this, <?=intval($currentFavId)?>, '<?=$currentItemsId?>')" title="
+				<?= $currentFavId ? GetMessage("MAIN_PR_ADMIN_FAV_DEL") : GetMessage("MAIN_PR_ADMIN_FAV_ADD")?>"></a>
+			<?endif;?>
+			<a id="navchain-link" href="<?echo htmlspecialcharsbx($_SERVER["REQUEST_URI"])?>" title="
+			<?echo GetMessage("MAIN_PR_ADMIN_CUR_LINK")?>"></a>
+		</h1>
 	<?
 }
 

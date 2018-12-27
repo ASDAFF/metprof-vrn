@@ -30,4 +30,5 @@ $MESS["SPO_USER_INFO_LOGIN"] = "Логін";
 $MESS["SPO_USER_INFO_EMAIL"] = "E-mail адреса";
 $MESS["SPO_USER_INFO_PERSON_TYPE_NAME"] = "Тип платника";
 $MESS["SPO_ORDER_HIDE_USER_INFO"] = "Не показувати в інформації про користувача";
+$MESS["SPO_REFRESH_PRICE_AFTER_PAYSYSTEM_CHANGE"] = "Перераховувати замовлення після зміни платіжної системи";
 ?>

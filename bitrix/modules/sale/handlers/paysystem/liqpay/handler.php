@@ -29,7 +29,7 @@ class LiqPayHandler extends PaySystem\ServiceHandler
 			<order_id>PAYMENT_".$busValues['PAYMENT_ID']."</order_id>
 			<amount>".$busValues["PAYMENT_SHOULD_PAY"]."</amount>
 			<currency>".$busValues['PAYMENT_CURRENCY']."</currency>
-			<description>Payment for payment ".$busValues['PAYMENT_ID']."</description>
+			<description>".Loc::getMessage('SALE_HPS_LIQPAY_PARAM_DESCR', array('#PAYMENT_ID#' => $busValues['PAYMENT_ID']))."</description>
 			<default_phone>".$busValues['BUYER_PERSON_PHONE']."</default_phone>
 			<pay_way>".$busValues['LIQPAY_PAY_METHOD']."</pay_way>
 			</request>";
@@ -88,7 +88,7 @@ class LiqPayHandler extends PaySystem\ServiceHandler
 		$sum = $this->getValueByTag($this->getOperationXml($request), 'amount');
 		$paymentSum = $this->getBusinessValue($payment, 'PAYMENT_SHOULD_PAY');
 
-		return PriceMaths::roundByFormatCurrency($paymentSum, $payment->getField('CURRENCY')) == PriceMaths::roundByFormatCurrency($sum, $payment->getField('CURRENCY'));
+		return PriceMaths::roundPrecision($paymentSum) === PriceMaths::roundPrecision($sum);
 	}
 
 	/**
@@ -108,7 +108,7 @@ class LiqPayHandler extends PaySystem\ServiceHandler
 	{
 		return array(
 			'pay' => array(
-				self::ACTIVE_URL => 'https://liqpay.ua/?do=clickNbuy'
+				self::ACTIVE_URL => 'https://www.liqpay.ua/?do=clickNbuy'
 			)
 		);
 	}

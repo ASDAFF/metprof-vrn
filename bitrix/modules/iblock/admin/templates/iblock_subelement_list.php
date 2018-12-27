@@ -75,8 +75,8 @@ $boolCatalogSet = false;
 $productTypeList = array();
 if ($boolSubCatalog)
 {
-	$strUseStoreControl = COption::GetOptionString('catalog', 'default_use_store_control');
-	$strSaveWithoutPrice = COption::GetOptionString('catalog','save_product_without_price');
+	$strUseStoreControl = (string)Main\Config\Option::get('catalog', 'default_use_store_control');
+	$strSaveWithoutPrice = (string)Main\Config\Option::get('catalog','save_product_without_price');
 	$boolCatalogRead = $USER->CanDoOperation('catalog_read');
 	$boolCatalogPrice = $USER->CanDoOperation('catalog_price');
 	$boolCatalogPurchasInfo = $USER->CanDoOperation('catalog_purchas_info');
@@ -183,6 +183,11 @@ if (defined('B_ADMIN_SUBELEMENTS_LIST') && true === B_ADMIN_SUBELEMENTS_LIST)
 			CAllFile::ConvertFilesToPost($_FILES['FIELDS'], $_POST['FIELDS']);
 		if (is_array($FIELDS_del))
 			CAllFile::ConvertFilesToPost($FIELDS_del, $_POST['FIELDS'], "del");
+
+		if ($boolSubCatalog)
+		{
+			Catalog\Product\Sku::enableDeferredCalculation();
+		}
 
 		foreach ($_POST['FIELDS'] as $subID => $arFields)
 		{
@@ -397,22 +402,20 @@ if (defined('B_ADMIN_SUBELEMENTS_LIST') && true === B_ADMIN_SUBELEMENTS_LIST)
 							$arCatalogProduct['QUANTITY'] = $arFields['CATALOG_QUANTITY'];
 					}
 
-					$product = Catalog\ProductTable::getList(array(
-						'select' => array('ID', 'SUBSCRIBE_ORIG'),
+					$product = Catalog\Model\Product::getList(array(
+						'select' => array('ID'),
 						'filter' => array('=ID' => $subID)
 					))->fetch();
 					if (empty($product))
 					{
 						$arCatalogProduct['ID'] = $subID;
-						CCatalogProduct::Add($arCatalogProduct, false);
+						$result = Catalog\Model\Product::add(array('fields' => $arCatalogProduct));
 					}
 					else
 					{
 						if (!empty($arCatalogProduct))
 						{
-							if ($strUseStoreControl != 'Y')
-								$arCatalogProduct['SUBSCRIBE'] = $product['SUBSCRIBE_ORIG'];
-							CCatalogProduct::Update($subID, $arCatalogProduct);
+							$result = Catalog\Model\Product::update($subID, array('fields' => $arCatalogProduct));
 						}
 					}
 					unset($product);
@@ -597,6 +600,12 @@ if (defined('B_ADMIN_SUBELEMENTS_LIST') && true === B_ADMIN_SUBELEMENTS_LIST)
 				unset($productIblock);
 			}
 		}
+
+		if ($boolSubCatalog)
+		{
+			Catalog\Product\Sku::disableDeferredCalculation();
+			Catalog\Product\Sku::calculate();
+		}
 	}
 
 	if (($arID = $lAdmin->GroupAction()))
@@ -606,6 +615,11 @@ if (defined('B_ADMIN_SUBELEMENTS_LIST') && true === B_ADMIN_SUBELEMENTS_LIST)
 			$rsData = CIBlockElement::GetList($arOrder, $arFilter, false, false, array('ID'));
 			while($arRes = $rsData->Fetch())
 				$arID[] = $arRes['ID'];
+		}
+
+		if ($boolSubCatalog)
+		{
+			Catalog\Product\Sku::enableDeferredCalculation();
 		}
 
 		foreach ($arID as $subID)
@@ -785,6 +799,12 @@ if (defined('B_ADMIN_SUBELEMENTS_LIST') && true === B_ADMIN_SUBELEMENTS_LIST)
 				}
 				break;
 			}
+		}
+
+		if ($boolSubCatalog)
+		{
+			Catalog\Product\Sku::disableDeferredCalculation();
+			Catalog\Product\Sku::calculate();
 		}
 	}
 }
@@ -1770,7 +1790,7 @@ if (!(false == B_ADMIN_SUBELEMENTS_LIST && $bCopy))
 
 	$boolIBlockElementAdd = CIBlockSectionRights::UserHasRightTo($intSubIBlockID, $find_section_section, "section_element_bind");
 
-$availQuantityTrace = COption::GetOptionString('catalog', 'default_quantity_trace');
+$availQuantityTrace = (string)Main\Config\Option::get('catalog', 'default_quantity_trace');
 $arQuantityTrace = array(
 	"D" => GetMessage("IBEL_DEFAULT_VALUE")." (".($availQuantityTrace == 'Y' ? GetMessage("IBEL_YES_VALUE") : GetMessage("IBEL_NO_VALUE")).")",
 	"Y" => GetMessage("IBEL_YES_VALUE"),
@@ -1782,15 +1802,12 @@ if (!empty($arRows))
 	$arRowKeys = array_keys($arRows);
 	if ($strUseStoreControl == "Y" && in_array("CATALOG_BAR_CODE", $arSelectedFields))
 	{
-		$rsProducts = CCatalogProduct::GetList(
-			array(),
-			array("ID" => $arRowKeys),
-			false,
-			false,
-			array('ID', 'BARCODE_MULTI')
-		);
 		$productsWithBarCode = array();
-		while ($product = $rsProducts->Fetch())
+		$rsProducts = Catalog\ProductTable::getList(array(
+			'select' => array('ID', 'BARCODE_MULTI'),
+			'filter' => array('@ID' => $arRowKeys)
+		));
+		while ($product = $rsProducts->fetch())
 		{
 			if (isset($arRows[$product["ID"]]))
 			{
@@ -1850,7 +1867,7 @@ if (!empty($arRows))
 			defined('BX_PUBLIC_MODE') && BX_PUBLIC_MODE == 1
 		);
 
-		if (array_key_exists("PREVIEW_PICTURE", $arSelectedFieldsMap))
+		if (isset($arSelectedFieldsMap["PREVIEW_PICTURE"]))
 		{
 			$row->AddFileField("PREVIEW_PICTURE", array(
 				"IMAGE" => "Y",
@@ -1870,7 +1887,7 @@ if (!empty($arRows))
 				)
 			);
 		}
-		if (array_key_exists("DETAIL_PICTURE", $arSelectedFieldsMap))
+		if (isset($arSelectedFieldsMap["DETAIL_PICTURE"]))
 		{
 			$row->AddFileField("DETAIL_PICTURE", array(
 				"IMAGE" => "Y",
@@ -1890,9 +1907,9 @@ if (!empty($arRows))
 				)
 			);
 		}
-		if (array_key_exists("PREVIEW_TEXT", $arSelectedFieldsMap))
+		if (isset($arSelectedFieldsMap["PREVIEW_TEXT"]))
 			$row->AddViewField("PREVIEW_TEXT", ($row->arRes["PREVIEW_TEXT_TYPE"]=="text" ? htmlspecialcharsEx($row->arRes["PREVIEW_TEXT"]) : HTMLToTxt($row->arRes["PREVIEW_TEXT"])));
-		if (array_key_exists("DETAIL_TEXT", $arSelectedFieldsMap))
+		if (isset($arSelectedFieldsMap["DETAIL_TEXT"]))
 			$row->AddViewField("DETAIL_TEXT", ($row->arRes["DETAIL_TEXT_TYPE"]=="text" ? htmlspecialcharsEx($row->arRes["DETAIL_TEXT"]) : HTMLToTxt($row->arRes["DETAIL_TEXT"])));
 
 		if (isset($arElementOps[$f_ID]) && isset($arElementOps[$f_ID]["element_edit"]))

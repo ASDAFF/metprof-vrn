@@ -91,7 +91,6 @@ class DiscountCouponsManager
 	 */
 	public static function initUseMode($mode = self::MODE_CLIENT, $params = array())
 	{
-		$adminSection = (defined('ADMIN_SECTION') && ADMIN_SECTION === true);
 		$mode = (int)$mode;
 		if (!is_array($params))
 			$params = array();
@@ -101,72 +100,59 @@ class DiscountCouponsManager
 		self::$allowedSave = false;
 		self::$useOrderCoupons = true;
 
-		if ($adminSection)
+		self::$useMode = self::MODE_SYSTEM;
+		switch ($mode)
 		{
-			self::$useMode = self::MODE_SYSTEM;
-			switch ($mode)
-			{
-				case self::MODE_MANAGER:
-					if (!isset($params['userId']) || (int)$params['userId'] < 0)
-						self::$errors[] = Loc::getMessage('BX_SALE_DCM_ERR_BAD_USER_ID');
-					if (isset($params['orderId']))
-						self::$errors[] = Loc::getMessage('BX_SALE_DCM_ERR_ORDER_ID_EXIST');
-					if (empty(self::$errors))
-					{
-						self::$userId = (int)$params['userId'];
-						self::$orderId = null;
-						self::$allowedSave = true;
-						self::$useMode = self::MODE_MANAGER;
-						if (isset($params['oldUserId']))
-							self::migrateStorage($params['oldUserId']);
-					}
-					break;
-				case self::MODE_ORDER:
-					if (!isset($params['userId']) || (int)$params['userId'] < 0)
-						self::$errors[] = Loc::getMessage('BX_SALE_DCM_ERR_BAD_USER_ID');
-					if (!isset($params['orderId']) || (int)$params['orderId'] <= 0)
-						self::$errors[] = Loc::getMessage('BX_SALE_DCM_ERR_ORDER_ID_ABSENT');
-					if (empty(self::$errors))
-					{
-						self::$userId = (int)$params['userId'];
-						self::$orderId = (int)$params['orderId'];
-						self::$allowedSave = true;
-						self::$useMode = self::MODE_ORDER;
-						if (isset($params['oldUserId']))
-							self::migrateStorage($params['oldUserId']);
+			case self::MODE_MANAGER:
+				if (!isset($params['userId']) || (int)$params['userId'] < 0)
+					self::$errors[] = Loc::getMessage('BX_SALE_DCM_ERR_BAD_USER_ID');
+				if (isset($params['orderId']))
+					self::$errors[] = Loc::getMessage('BX_SALE_DCM_ERR_ORDER_ID_EXIST');
+				if (empty(self::$errors))
+				{
+					self::$userId = (int)$params['userId'];
+					self::$orderId = null;
+					self::$allowedSave = true;
+					self::$useMode = self::MODE_MANAGER;
+					if (isset($params['oldUserId']))
+						self::migrateStorage($params['oldUserId']);
+				}
+				break;
+			case self::MODE_ORDER:
+				if (!isset($params['userId']) || (int)$params['userId'] < 0)
+					self::$errors[] = Loc::getMessage('BX_SALE_DCM_ERR_BAD_USER_ID');
+				if (!isset($params['orderId']) || (int)$params['orderId'] <= 0)
+					self::$errors[] = Loc::getMessage('BX_SALE_DCM_ERR_ORDER_ID_ABSENT');
+				if (empty(self::$errors))
+				{
+					self::$userId = (int)$params['userId'];
+					self::$orderId = (int)$params['orderId'];
+					self::$allowedSave = true;
+					self::$useMode = self::MODE_ORDER;
+					if (isset($params['oldUserId']))
+						self::migrateStorage($params['oldUserId']);
 
-					}
-					break;
-				case self::MODE_SYSTEM:
-					break;
-				default:
-					self::$errors[] = Loc::getMessage('BX_SALE_DCM_ERR_BAD_MODE');
-					break;
-			}
-		}
-		else
-		{
-			switch ($mode)
-			{
-				case self::MODE_CLIENT:
-					self::$useMode = self::MODE_CLIENT;
-					self::initUserId();
-					if (self::isSuccess())
-						self::$allowedSave = true;
-					break;
-				case self::MODE_EXTERNAL:
-					self::$useMode = self::MODE_EXTERNAL;
-					self::$userId = (
-						isset($params['userId']) && (int)$params['userId'] >= 0
-						? (int)$params['userId']
-						: \CSaleUser::GetAnonymousUserID()
-					);
-					break;
-				default:
-					self::$errors[] = Loc::getMessage('BX_SALE_DCM_ERR_BAD_MODE');
-					self::$useMode = self::MODE_SYSTEM;
-					break;
-			}
+				}
+				break;
+			case self::MODE_CLIENT:
+				self::$useMode = self::MODE_CLIENT;
+				self::initUserId();
+				if (self::isSuccess())
+					self::$allowedSave = true;
+				break;
+			case self::MODE_EXTERNAL:
+				self::$useMode = self::MODE_EXTERNAL;
+				self::$userId = (
+				isset($params['userId']) && (int)$params['userId'] >= 0
+					? (int)$params['userId']
+					: \CSaleUser::GetAnonymousUserID()
+				);
+				break;
+			case self::MODE_SYSTEM:
+				break;
+			default:
+				self::$errors[] = Loc::getMessage('BX_SALE_DCM_ERR_BAD_MODE');
+				break;
 		}
 	}
 
@@ -425,11 +411,12 @@ class DiscountCouponsManager
 	{
 		if (self::$init)
 			return;
+		self::$onlySaleDiscount = null;
 		self::$couponTypes = Internals\DiscountCouponTable::getCouponTypes(true);
 		self::$couponIndex = 0;
 		self::clearErrors();
-		self::initUseDiscount();
 		self::initUseMode($mode, $params);
+		self::initUseDiscount();
 		if (!self::isSuccess())
 			return;
 		if (self::$useMode != self::MODE_SYSTEM)
@@ -1181,8 +1168,7 @@ class DiscountCouponsManager
 	{
 		$currentTime = new Main\Type\DateTime();
 		$currentTimestamp = $currentTime->getTimestamp();
-		if (self::$onlySaleDiscount === null)
-			self::initUseDiscount();
+		self::initUseDiscount();
 		$coupon = trim((string)$coupon);
 		if ($coupon === '')
 			return false;
@@ -1271,8 +1257,7 @@ class DiscountCouponsManager
 		if ($coupon === '')
 			return false;
 
-		if (self::$onlySaleDiscount === null)
-			self::initUseDiscount();
+		self::initUseDiscount();
 		$couponIterator = Internals\DiscountCouponTable::getList(array(
 			'select' => array('ID', 'COUPON'),
 			'filter' => array('=COUPON' => $coupon)
@@ -1360,7 +1345,10 @@ class DiscountCouponsManager
 				foreach (self::$timeFields as $fieldName)
 				{
 					if (isset($result[$fieldName]) && $result[$fieldName] instanceof Main\Type\DateTime)
+					{
+						/** @noinspection PhpUndefinedMethodInspection */
 						$result[$fieldName] = $result[$fieldName]->getTimestamp();
+					}
 				}
 				unset($fieldName);
 
@@ -1369,7 +1357,10 @@ class DiscountCouponsManager
 					foreach (self::$timeFields as $fieldName)
 					{
 						if (isset($result['USER_INFO'][$fieldName]) && $result['USER_INFO'][$fieldName] instanceof Main\Type\DateTime)
+						{
+							/** @noinspection PhpUndefinedMethodInspection */
 							$result['USER_INFO'][$fieldName] = $result['USER_INFO'][$fieldName]->getTimestamp();
+						}
 					}
 					unset($fieldName);
 				}
@@ -1402,6 +1393,23 @@ class DiscountCouponsManager
 	public static function filterOrderCoupons($coupon)
 	{
 		return (isset($coupon['SAVED']) && $coupon['SAVED'] == 'Y');
+	}
+
+	/**
+	 * Reload discount coupons providers.
+	 * @internal
+	 *
+	 * @param bool $mode		true, if use only sale discounts.
+	 * @return void
+	 */
+	public static function setUseOnlySaleDiscounts($mode)
+	{
+		if (!is_bool($mode))
+			return;
+		if (self::getUseMode() != self::MODE_ORDER)
+			return;
+		self::$onlySaleDiscount = $mode;
+		self::loadCouponProviders();
 	}
 
 	/**
@@ -1694,57 +1702,67 @@ class DiscountCouponsManager
 	}
 
 	/**
+	 * Load coupon providers from modules.
+	 *
+	 * @return void
+	 */
+	protected static function loadCouponProviders()
+	{
+		self::$couponProviders = array();
+		if (!self::$onlySaleDiscount)
+		{
+			$eventData = array(
+				'COUPON_UNKNOWN' => Internals\DiscountCouponTable::TYPE_UNKNOWN,
+				'COUPON_TYPES' => Internals\DiscountCouponTable::getCouponTypes(false)
+			);
+			$event = new Main\Event('sale', self::EVENT_ON_BUILD_COUPON_PROVIDES, $eventData);
+			$event->send();
+			$resultList = $event->getResults();
+			if (empty($resultList) || !is_array($resultList))
+				return;
+			/** @var Main\EventResult $eventResult */
+			foreach ($resultList as $eventResult)
+			{
+				if ($eventResult->getType() != Main\EventResult::SUCCESS)
+					continue;
+				$module = (string)$eventResult->getModuleId();
+				$provider = $eventResult->getParameters();
+				if (empty($provider) || !is_array($provider))
+					continue;
+				if (empty($provider['getData']) || empty($provider['isExist']) || empty($provider['saveApplied']))
+					continue;
+				self::$couponProviders[] = array(
+					'module' => $module,
+					'getData' => $provider['getData'],
+					'isExist' => $provider['isExist'],
+					'saveApplied' => $provider['saveApplied'],
+					'mode' => (
+						isset($provider['mode']) && $provider['mode'] == self::COUPON_MODE_FULL
+						? self::COUPON_MODE_FULL
+						: self::COUPON_MODE_SIMPLE
+					)
+				);
+			}
+			unset($provider, $module, $eventResult, $resultList, $event, $eventData);
+		}
+	}
+
+	/**
 	 * Initialization coupons providers.
 	 *
 	 * @return void
 	 */
 	protected static function initUseDiscount()
 	{
-		/** @var Main\EventResult $eventResult */
-		if (self::$onlySaleDiscount === null)
-		{
-			self::$onlySaleDiscount = (string)Option::get('sale', 'use_sale_discount_only') == 'Y';
-			self::$couponProviders = array();
-			if (!self::$onlySaleDiscount)
-			{
-				$eventData = array(
-					'COUPON_UNKNOWN' => Internals\DiscountCouponTable::TYPE_UNKNOWN,
-					'COUPON_TYPES' => Internals\DiscountCouponTable::getCouponTypes(false)
-				);
-				$event = new Main\Event('sale', self::EVENT_ON_BUILD_COUPON_PROVIDES, $eventData);
-				$event->send();
-				$resultList = $event->getResults();
-				if (empty($resultList) || !is_array($resultList))
-					return;
-				foreach ($resultList as $eventResult)
-				{
-					if ($eventResult->getType() != Main\EventResult::SUCCESS)
-						continue;
-					$module = (string)$eventResult->getModuleId();
-					$provider = $eventResult->getParameters();
-					if (empty($provider) || !is_array($provider))
-						continue;
-					if (empty($provider['getData']) || empty($provider['isExist']) || empty($provider['saveApplied']))
-						continue;
-					self::$couponProviders[] = array(
-						'module' => $module,
-						'getData' => $provider['getData'],
-						'isExist' => $provider['isExist'],
-						'saveApplied' => $provider['saveApplied'],
-						'mode' => (
-							isset($provider['mode']) && $provider['mode'] == self::COUPON_MODE_FULL
-							? self::COUPON_MODE_FULL
-							: self::COUPON_MODE_SIMPLE
-						)
-					);
-				}
-				unset($provider, $module, $eventResult, $resultList, $event, $eventData);
-			}
-		}
+		if (self::$onlySaleDiscount !== null)
+			return;
+
+		self::$onlySaleDiscount = (string)Option::get('sale', 'use_sale_discount_only') == 'Y';
+		self::loadCouponProviders();
 	}
 
 	/**
-	 * Clear unknoew coupons.
+	 * Clear unknown coupons.
 	 *
 	 * @param array $coupon		Coupon data.
 	 * @return bool

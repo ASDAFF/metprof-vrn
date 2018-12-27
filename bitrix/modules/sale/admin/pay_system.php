@@ -171,7 +171,7 @@ while ($arCCard = $dbRes->NavNext(true, "f_"))
 	}
 
 	$row->AddField("LOGOTIP", $f_LOGOTIP);
-	$row->AddField("DESCRIPTION", $f_DESCRIPTION);
+	$row->AddField("DESCRIPTION", htmlspecialcharsback($f_DESCRIPTION));
 
 	$pTypes = '';
 	$aFiles = '';

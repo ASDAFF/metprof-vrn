@@ -80,6 +80,7 @@ require($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_admin_aft
 				</li>
 				<li class="adm-cashbox-list-item cashbox-list-item-7"><?=Loc::getMessage('SALE_CASHBOX_CONNECT_INSTRUCTION_STEP_7')?></li>
 				<li class="adm-cashbox-list-item cashbox-list-item-8"><?=Loc::getMessage('SALE_CASHBOX_CONNECT_INSTRUCTION_STEP_8')?></li>
+				<li class="adm-cashbox-list-item cashbox-list-item-9"><?=Loc::getMessage('SALE_CASHBOX_CONNECT_INSTRUCTION_STEP_9')?></li>
 			</ul>
 			<div class="adm-cashbox-border"></div>
 		</div><!--adm-cashbox-container-->

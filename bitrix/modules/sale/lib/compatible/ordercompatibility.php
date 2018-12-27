@@ -109,11 +109,6 @@ class OrderCompatibility
 			$order->setPersonTypeId($fields['PERSON_TYPE_ID']);
 		}
 
-		if (!isset($fields['DATE_STATUS']))
-		{
-			$fields['DATE_STATUS'] = new Main\Type\DateTime();
-		}
-
 		$orderFields = static::replaceFields($fields, static::getOrderReplaceFields());
 
 		$orderFields = $orderCompatibility->parseRawFields(static::ENTITY_ORDER, $orderFields);
@@ -358,6 +353,11 @@ class OrderCompatibility
 
 					unset($shipmentFields['ALLOW_DELIVERY']);
 					unset($shipmentFields['DEDUCTED']);
+
+					if ($fields['CURRENCY'] != $shipmentFields['CURRENCY'])
+					{
+						$shipmentFields['CURRENCY'] = $fields['CURRENCY'];
+					}
 
 					/** @var Sale\Result $r */
 					$r = $shipment->setFields(static::clearFields($shipmentFields, static::getShipmentAvailableFields()));
@@ -1025,7 +1025,7 @@ class OrderCompatibility
 				'PS_STATUS_MESSAGE', 'PS_SUM', 'PS_CURRENCY', 'PS_RESPONSE_DATE',
 				'PAY_VOUCHER_NUM', 'PAY_VOUCHER_DATE', 'DATE_PAY_BEFORE',
 				'DATE_BILL', 'PAY_SYSTEM_NAME', 'PAY_SYSTEM_ID',
-				'DATE_PAYED', 'EMP_PAYED_ID'
+				'DATE_PAYED', 'EMP_PAYED_ID', 'CURRENCY'
 			);
 
 			foreach ($fieldsFromOrder as $fieldName)
@@ -1122,7 +1122,7 @@ class OrderCompatibility
 						if ($payment->isPaid() || $payment->isInner())
 							continue;
 
-						if (Sale\PriceMaths::roundByFormatCurrency($payment->getSum(), $order->getCurrency()) == Sale\PriceMaths::roundByFormatCurrency($deltaSumPaid, $fields['SUM_PAID']))
+						if (Sale\PriceMaths::roundPrecision($payment->getSum()) === Sale\PriceMaths::roundPrecision($deltaSumPaid))
 						{
 							$paidPayment = true;
 							/** @var Sale\Result $r */
@@ -1803,16 +1803,6 @@ class OrderCompatibility
 				return $result;
 			}
 
-			$order->setMathActionOnly(false);
-
-			/** @var Sale\Result $r */
-			$r = $orderCompatibility->fillPaymentCollectionFromRequest($fields);
-			if (!$r->isSuccess())
-			{
-				$result->addErrors($r->getErrors());
-				return $result;
-			}
-
 			if ($isStartField)
 			{
 				$hasMeaningfulFields = $order->hasMeaningfulField();
@@ -1824,6 +1814,16 @@ class OrderCompatibility
 					$result->addErrors($r->getErrors());
 					return $result;
 				}
+			}
+
+			$order->setMathActionOnly(false);
+
+			/** @var Sale\Result $r */
+			$r = $orderCompatibility->fillPaymentCollectionFromRequest($fields);
+			if (!$r->isSuccess())
+			{
+				$result->addErrors($r->getErrors());
+				return $result;
 			}
 
 			/** @var Sale\Result $r */
@@ -2174,7 +2174,13 @@ class OrderCompatibility
 			if (!$pay || ($pay && $paidFormUserBudget === false))
 			{
 				/** @var Sale\Payment $paymentInner */
-				if (!$paymentInner = $paymentCollection->getInnerPayment())
+				$paymentInner = $paymentCollection->getInnerPayment();
+				if (!$paymentInner)
+				{
+					$paymentInner = $paymentCollection->createInnerPayment();
+				}
+
+				if (!$paymentInner)
 				{
 					throw new Main\ObjectNotFoundException('Entity inner "Payment" not found');
 				}
@@ -2346,6 +2352,28 @@ class OrderCompatibility
 		{
 			$result->addError( new Sale\ResultError(Main\Localization\Loc::getMessage('SALE_COMPATIBLE_ORDER_NOT_FOUND'), 'SALE_COMPATIBLE_ORDER_NOT_FOUND') );
 			return $result;
+		}
+
+		$paymentCollection = $order->getPaymentCollection();
+		/** @var Sale\Payment $payment */
+		foreach ($paymentCollection as $payment)
+		{
+			if ($payment->isPaid())
+				$payment->setReturn('Y');
+		}
+
+		$shipmentCollection = $order->getShipmentCollection();
+		/** @var Sale\Shipment $shipment */
+		foreach ($shipmentCollection as $shipment)
+		{
+			if ($shipment->isSystem())
+				continue;
+
+			if ($shipment->isShipped())
+				$shipment->setField('DEDUCTED', 'N');
+
+			if ($shipment->isAllowDelivery())
+				$shipment->disallowDelivery();
 		}
 
 		/** @var Sale\Result $r */
@@ -3462,9 +3490,7 @@ class OrderFetchAdapter implements FetchAdapter
 	 */
 	public function adapt(array $row)
 	{
-		\CTimeZone::Disable();
 		$data = OrderCompatibility::convertDateFieldsToOldFormat($row);
-		\CTimeZone::Enable();
 		return static::convertRowData($data);
 	}
 

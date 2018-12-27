@@ -1,4 +1,5 @@
 <?
+$MESS["BLOG_C_VIEW2"] = "Попередні коментарі";
 $MESS["B_B_MS_LINK"] = "Посилання на коментар";
 $MESS["BPC_MES_EDIT"] = "Редагувати";
 $MESS["BPC_MES_SHOW"] = "Показати";
@@ -22,4 +23,6 @@ $MESS["MPL_ERROR_OCCURRED"] = "Виникла помилка";
 $MESS["MPL_CLOSE"] = "Закрити";
 $MESS["MPL_LINK_COPIED"] = "Посилання скопійовано";
 $MESS["B_B_MS_LINK2"] = "Скопіювати посилання";
+$MESS["MPL_HAVE_WRITTEN_M"] = "написав:";
+$MESS["MPL_HAVE_WRITTEN_F"] = "написала:";
 ?>

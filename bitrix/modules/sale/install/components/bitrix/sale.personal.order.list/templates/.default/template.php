@@ -175,6 +175,7 @@ else
 									"payment" => htmlspecialcharsbx($payment['ACCOUNT_NUMBER']),
 									"allow_inner" => $arParams['ALLOW_INNER'],
 									"refresh_prices" => $arParams['REFRESH_PRICES'],
+									"path_to_payment" => $arParams['PATH_TO_PAYMENT'],
 									"only_inner_full" => $arParams['ONLY_INNER_FULL']
 								);
 							}
@@ -557,6 +558,7 @@ else
 		$javascriptParams = array(
 			"url" => CUtil::JSEscape($this->__component->GetPath().'/ajax.php'),
 			"templateFolder" => CUtil::JSEscape($templateFolder),
+			"templateName" => $this->__component->GetTemplateName(),
 			"paymentList" => $paymentChangeData
 		);
 		$javascriptParams = CUtil::PhpToJSObject($javascriptParams);

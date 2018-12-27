@@ -9,6 +9,7 @@ namespace Bitrix\Sale\Cashbox\AdminPage\Settings
 		die();
 
 	require_once($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/sale/lib/cashbox/inputs/file.php");
+	require_once($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/sale/lib/delivery/inputs.php");
 
 	global $APPLICATION;
 
@@ -34,6 +35,13 @@ namespace Bitrix\Sale\Cashbox\AdminPage\Settings
 				foreach ($settings as $group => $block)
 				{
 					$result .= '<tr class="heading"><td colspan="2">'.$block['LABEL'].'</td></tr>';
+
+					if ($group === 'VAT')
+					{
+						$result .= '<tr><td colspan="2" style="text-align: center">';
+						$result .= BeginNote().Loc::getMessage('SALE_CASHBOX_VAT_ATTENTION').EndNote();
+						$result .= '</td></tr>';
+					}
 
 					$className = 'adm-detail-content-cell-l';
 					if (isset($block['REQUIRED']) && $block['REQUIRED'] === 'Y')

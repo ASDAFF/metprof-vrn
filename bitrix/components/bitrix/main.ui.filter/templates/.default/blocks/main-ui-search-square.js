@@ -12,6 +12,11 @@
 			mix.push('main-ui-filter-search-square-preset');
 		}
 
+		if (data.required)
+		{
+			mix.push('main-ui-search-square-required');
+		}
+
 		return {
 			block: 'main-ui-square',
 			mix: mix,

@@ -1,0 +1,37 @@
+<?
+$MESS["LD_BLOCK_SECTION_TILES_NEW2"] = "Schaltflächen und Links";
+$MESS["LD_BLOCK_SECTION_MENU_NEW"] = "Menü und Header der Website";
+$MESS["LD_BLOCK_SECTION_IMAGE_NEW"] = "Bilder und Galerie";
+$MESS["LD_BLOCK_SECTION_TEXT_NEW"] = "Text";
+$MESS["LD_BLOCK_SECTION_TEXT_IMAGE"] = "Text und Bilder";
+$MESS["LD_BLOCK_SECTION_STORE_NEW"] = "Onlineshop";
+$MESS["LD_BLOCK_SECTION_OTHER"] = "Sonstiges";
+$MESS["LD_BLOCK_SECTION_FOOTER"] = "Website-Footer";
+$MESS["LD_BLOCK_SECTION_POPULAR"] = "Beliebt";
+$MESS["LD_BLOCK_SECTION_COVER"] = "Titelseite";
+$MESS["LD_BLOCK_SECTION_ABOUT"] = "Über das Projekt";
+$MESS["LD_BLOCK_SECTION_COLUMNS"] = "Spalten";
+$MESS["LD_BLOCK_SECTION_TITLE"] = "Überschrift";
+$MESS["LD_BLOCK_SECTION_STEPS"] = "Schritte";
+$MESS["LD_BLOCK_SECTION_BENEFITS"] = "Vorteile";
+$MESS["LD_BLOCK_SECTION_GALLERY"] = "Galerie";
+$MESS["LD_BLOCK_SECTION_IMAGE"] = "Bild";
+$MESS["LD_BLOCK_SECTION_TARIFFS"] = "Preise";
+$MESS["LD_BLOCK_SECTION_TEXT"] = "Textblock";
+$MESS["LD_BLOCK_SECTION_CONTACTS"] = "Kontakt";
+$MESS["LD_BLOCK_SECTION_SOCIAL"] = "Soziale Netzwerke";
+$MESS["LD_BLOCK_SECTION_PARTNERS"] = "Partner";
+$MESS["LD_BLOCK_SECTION_FEEDBACK"] = "Feedback";
+$MESS["LD_BLOCK_SECTION_PAGES"] = "Seiten";
+$MESS["LD_BLOCK_SECTION_TILES"] = "Kacheln und Link";
+$MESS["LD_BLOCK_SECTION_PHRASE"] = "Zitat";
+$MESS["LD_BLOCK_SECTION_SEPARATOR"] = "Trennzeichen";
+$MESS["LD_BLOCK_SECTION_TEAM"] = "Team";
+$MESS["LD_BLOCK_SECTION_SCHEDULE"] = "Zeitplan";
+$MESS["LD_BLOCK_SECTION_FORMS"] = "CRM-Formular";
+$MESS["LD_BLOCK_SECTION_LAST"] = "Neulich genutzte Elemente";
+$MESS["LD_BLOCK_SECTION_VIDEO"] = "Video";
+$MESS["LD_BLOCK_SECTION_HOLIDAYS"] = "Feiertage";
+$MESS["LD_BLOCK_SECTION_NEW_YEAR"] = "Winterfeiertage";
+$MESS["LD_BLOCK_SECTION_STORE"] = "Onlineshop";
+?>

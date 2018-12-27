@@ -209,4 +209,6 @@ $MESS["CP_BC_TPL_SEARCH_RESTART"] = "Шукати без урахування м
 $MESS["CP_BC_TPL_SEARCH_NO_WORD_LOGIC"] = "Вимкнути обробку слів як логічних операторів";
 $MESS["CP_BC_TPL_SEARCH_USE_LANGUAGE_GUESS"] = "Ввімкнути автовизначення розкладки клавіатури";
 $MESS["CP_BC_TPL_SEARCH_CHECK_DATES"] = "Шукати тільки в активних за датою документах";
+$MESS["CP_BC_TPL_DETAIL_IMAGE_RESOLUTION_16_BY_9"] = "16:9";
+$MESS["CP_BC_TPL_DETAIL_IMAGE_RESOLUTION_1_BY_1"] = "1:1";
 ?>

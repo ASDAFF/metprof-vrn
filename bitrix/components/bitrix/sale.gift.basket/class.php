@@ -79,7 +79,8 @@ class CSaleGiftBasketComponent extends CCatalogViewedProductsComponent
 	{
 		if($this->basket === null)
 		{
-			$this->basket = \Bitrix\Sale\Basket::loadItemsForFUser(\Bitrix\Sale\Fuser::getId(), SITE_ID);
+			$basketStorage = \Bitrix\Sale\Basket\Storage::getInstance(\Bitrix\Sale\Fuser::getId(), SITE_ID);
+			$this->basket = $basketStorage->getBasket();
 		}
 
 		return $this->basket;

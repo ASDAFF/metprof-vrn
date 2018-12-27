@@ -62,10 +62,22 @@ class Result extends Entity\Result
 		return null;
 	}
 
+	public function set($offset, $value)
+	{
+		if ($offset === null)
+		{
+			$this->data[] = $value;
+		}
+		else
+		{
+			$this->data[$offset] = $value;
+		}
+	}
+
 	/**
 	 * @param Error[] $errors
 	 *
-	 * @return null
+	 * @return void
 	 */
 	public function addWarnings(array $errors)
 	{
@@ -86,11 +98,12 @@ class Result extends Entity\Result
 		$this->warnings[] = $error;
 	}
 
-
 	/**
 	 * Adds the error.
 	 *
 	 * @param Error $error
+	 *
+	 * @return void
 	 */
 	public function addError(Error $error)
 	{
@@ -102,20 +115,6 @@ class Result extends Entity\Result
 		{
 			$this->isSuccess = false;
 			$this->errors[] = $error;
-		}
-	}
-
-	/**
-	 * @param Error[] $errors
-	 *
-	 * @return null
-	 */
-	public function addNotices(array $errors)
-	{
-		/** @var Error $error */
-		foreach ($errors as $error)
-		{
-			$this->addError(ResultNotice::create($error));
 		}
 	}
 
@@ -144,6 +143,7 @@ class Result extends Entity\Result
 		return $messages;
 	}
 
+
 	/**
 	 * @return bool
 	 */
@@ -151,6 +151,7 @@ class Result extends Entity\Result
 	{
 		return (count($this->warnings));
 	}
+
 
 }
 

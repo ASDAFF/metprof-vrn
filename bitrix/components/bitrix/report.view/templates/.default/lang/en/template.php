@@ -66,4 +66,9 @@ $MESS["REPORT_CHART_ERR_17"] = "The number of the data ranges does not match tha
 $MESS["REPORT_CHART_ERR_47"] = "No data to build the chart.";
 $MESS["REPORT_CHART_ERR_48"] = "No data left after deleting empty values.";
 $MESS["REPORT_COPY"] = "Copy report";
+$MESS["CRM_REPORT_LRP_DLG_BTN_START"] = "Run";
+$MESS["CRM_REPORT_LRP_DLG_BTN_STOP"] = "Stop";
+$MESS["CRM_REPORT_LRP_DLG_BTN_CLOSE"] = "Close";
+$MESS["CRM_REPORT_LRP_DLG_WAIT"] = "Please wait...";
+$MESS["CRM_REPORT_LRP_DLG_REQUEST_ERR"] = "Error processing the request.";
 ?>
