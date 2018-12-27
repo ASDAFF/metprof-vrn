@@ -299,6 +299,7 @@ foreach($arResult['OFFERS'] as $offer){
 
 
     <?if($arResult['IS_M2']):
+        var_dump($arResult['OFFERS']);
         $first_offer = current($arResult['OFFERS']);
         ?>
 
