@@ -92,10 +92,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MHVHXLC"
 height="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
-<<<<<<< HEAD
-=======
-
->>>>>>> 485158d0606d67aea03867a84b26a616f643091e
    		<?$APPLICATION->ShowPanel()?>
 		<!-- [if lt IE 10]>
 			<p class="browsehappy"> Ваш браузер <strong>устарел</strong>.
