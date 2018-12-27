@@ -299,9 +299,7 @@ foreach($arResult['OFFERS'] as $offer){
 
 
     <?if($arResult['IS_M2']):
-        $first_offer = current($arResult['OFFERS']);
-        var_dump($first_offer);
-        ?>
+        $first_offer = array_shift($arResult['OFFERS']); ?>
 
      <div class="p-view__param-col p-view__param-col_restyled">
 
