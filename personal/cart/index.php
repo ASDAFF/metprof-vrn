@@ -82,7 +82,20 @@ $APPLICATION->SetTitle("Корзина");
 		"GIFTS_PAGE_ELEMENT_COUNT" => "4",
 		"GIFTS_CONVERT_CURRENCY" => "N",
 		"GIFTS_HIDE_NOT_AVAILABLE" => "N",
-		"CORRECT_RATIO" => "N"
+		"CORRECT_RATIO" => "N",
+		"COLUMNS_LIST_EXT" => array(
+			0 => "PREVIEW_PICTURE",
+			1 => "DISCOUNT",
+			2 => "DELETE",
+			3 => "DELAY",
+			4 => "TYPE",
+			5 => "SUM",
+			6 => "PROPERTY_DLINA",
+		),
+		"COMPATIBLE_MODE" => "Y",
+		"ADDITIONAL_PICT_PROP_24" => "-",
+		"ADDITIONAL_PICT_PROP_29" => "-",
+		"BASKET_IMAGES_SCALING" => "adaptive"
 	),
 	false
 );?>

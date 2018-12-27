@@ -15,9 +15,7 @@ CModule::IncludeModule( 'catalog' );
 CModule::IncludeModule( 'sale' );
 
 if($_POST['props']){
-    foreach($_POST['props'] as $props){
-        Add2BasketByProductID( $id, $props[1]['VALUE'], array(),$props);
-    }
+    Add2BasketByProductID( $id, $_POST['props'][1]['VALUE'], array(),$_POST['props']);
     print 'Товар успешно добавлен в корзину';
 }else{
 

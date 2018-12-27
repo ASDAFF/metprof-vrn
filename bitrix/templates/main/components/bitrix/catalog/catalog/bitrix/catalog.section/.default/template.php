@@ -87,12 +87,12 @@ if (!empty($arResult['ITEMS']))
 					<?
 					$arOffers = array();
 					foreach($arItem['OFFERS'] as $offer){
-						if($offer['MIN_PRICE']['DISCOUNT_VALUE']){
+						if($offer['MIN_PRICE']['DISCOUNT_VALUE'] && $offer['CATALOG_QUANTITY'] > 0){
 							$arOffers['ID'] = $offer['ID'];
 							$arOffers['DISCOUNT_VALUE'] = $offer['MIN_PRICE']['DISCOUNT_VALUE'];
 							$arOffers['DISCOUNT_DIFF'] = $offer['MIN_PRICE']['DISCOUNT_DIFF'];
+							$arOffers['QUANTITY'] = $offer['CATALOG_QUANTITY'];
 						}
-						$arOffers['QUANTITY'] = $offer['CATALOG_QUANTITY'];
 					}
 					?>
 
@@ -122,7 +122,7 @@ if (!empty($arResult['ITEMS']))
 
 								<? if($arOffers['DISCOUNT_VALUE']): ?>
 
-									<?if(!$arItem['PROPERTIES']['DLINA_TEST']['VALUE']):?>
+									<?if(!$arItem['IS_M2']):?>
 									<div class="quantity" id="count_<?=$arItem['ID']?>">
 										<a class="minus na" href="#"></a>
 										<input type="text" value="1"/>
@@ -169,14 +169,14 @@ if (!empty($arResult['ITEMS']))
 									<?endif;?>
 
 									<div class="cost_total"><span><?=$arOffers['DISCOUNT_VALUE']?></span> &#8381;</div>
-									<?if($arItem['PROPERTIES']['DLINA_TEST']['VALUE']):?>
+									<?if($arItem['IS_M2']):?>
 										<a href="<?=$arItem['DETAIL_PAGE_URL']?>" class="add2cart">
 											<span class="txt1"><?=buttonName($arItem['IBLOCK_ID'],$arItem['IBLOCK_SECTION_ID']);?></span>
 											<span class="txt2"><?=buttonName($arItem['IBLOCK_ID'],$arItem['IBLOCK_SECTION_ID']);?></span>
 										</a>
 									<?else:?>
 
-										<?if($arOffers['QUANTITY'] > 0 and !$arItem['PROPERTIES']['DLINA_TEST']['VALUE']):?>
+										<?if($arOffers['QUANTITY'] > 0 and !$arItem['IS_M2']):?>
 											<a href="javascript:void(0)" class="add2cart">
 												<span class="txt1" onclick="if(document.body.clientWidth < 659){addToBasket2(<?=$arOffers['ID']?>, $('#count_<?=$arItem['ID']?> input').val(),this,<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>)};">В корзину</span>
 												<span class="txt2" onclick="addToBasket2(<?=$arOffers['ID']?>, $('#count_<?=$arItem['ID']?> input').val(),this,<?=$arItem['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);">Добавить в корзину</span>

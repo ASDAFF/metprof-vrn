@@ -12,8 +12,10 @@ function replaseBasketTop() {
 
 
 
+
 function addToBasket2(idel, quantity,el,type) {
 
+        var countFull = parseFloat($('#order-table').attr('count-full'));
 
         $.ajax({
             url: '/ajax/maxQuantity.php?id='+idel,
@@ -25,16 +27,14 @@ function addToBasket2(idel, quantity,el,type) {
                 quantity *= parseFloat(quaMin);
             }
 
-            if(quantity < 20 && type == 6){
+            if(countFull < 20 && type == 6){
                 alertify.error("Минимальный заказ 20м2");
                 return false;
             }
 
-            if(quantity >= 20 && type == 6){
-                var table = $(el).parent().find('#order-table .order-cnt');
-                var props = [];
-                table.each(function(li,el){
-                    props[li] = [
+            if(countFull >= 20 && type == 6){
+
+                    var props = [
                         {
                             NAME:"длина листа",
                             CODE:"WIDTH_LIST",
@@ -46,7 +46,8 @@ function addToBasket2(idel, quantity,el,type) {
                             VALUE:$(el).attr('data-count')
                         }
                     ];
-                });
+                $(el).remove();
+                el = $('#button-cart-offers');
             }
 
             quantity = parseFloat(quantity);
@@ -277,6 +278,7 @@ function updatePrice(El, val) {
                 var sq = width_part * length_part * val / 1000000;
                 width_list = sq
                 sq_full = sq_full + sq;
+                $('#order-table').attr('count-full',sq_full);
             });
 
             $('#count_product').val(sq_full);
@@ -290,12 +292,10 @@ function updatePrice(El, val) {
                 var sq = width_part * length_part * val / 1000000;
 
                 if (width_part) {
-                    var price = parseFloat(sq * parseFloat($("input[name=price]").val()));
+                    var price = parseFloat(sq * parseFloat($(_el).attr('data-price')));
                 } else {
-                    var price = parseFloat(((length_part * val) / 1000) * parseFloat($("input[name=price]").val()));
+                    var price = parseFloat(((length_part * val) / 1000) * parseFloat($(_el).attr('data-price')));
                 }
-
-
 
                 $(_el).attr('data-count',sq);
                 $(_el).find('.sq').empty().append(sq + ' м²');
@@ -336,11 +336,14 @@ $(function(){
     });
     //Выбор длины в карточке товара.
     $("#available-length td").bind('click', function () {
-        $('#button-cart').attr('onclick','addToBasket2('+$('#product_offer_id').val()+', $("#count_product").val(),this,6)').text('Добавить в корзину');
         if (!$(this).hasClass('disable')) {
             var data_item = $("#av-length-table").attr('data-td');
             $("td[data-item='" + data_item + "'] div.drop-value").empty().append($(this).html() + ' мм');
             $("td[data-item='" + data_item + "']").parent().attr('data-list',$(this).html());
+
+            $("td[data-item='" + data_item + "']").parent().attr('data-id',$(this).attr('data-id'));
+            $("td[data-item='" + data_item + "']").parent().attr('data-idblock',$(this).attr('data-idblock'));
+            $("td[data-item='" + data_item + "']").parent().attr('data-price',$(this).attr('data-price'));
             $("#available-length").modal('hide');
 
             updatePrice($("td[data-item='" + data_item + "'] div.drop-value").parent().parent().parent().find('input[name=_quantity]'), $("td[data-item='" + data_item + "'] div.drop-value").parent().parent().parent().find('input[name=_quantity]').val());
@@ -394,6 +397,25 @@ $(function(){
                 '</tr>');
         }
     });
+
+
+
+    $("#button-cart-offers").bind('click',function(){
+        var el = $(this).closest('.data-square').find('.order-cnt');
+
+        el.each(function (i, el) {
+            var id = $(el).attr('data-id');
+            var count = $(el).attr('data-count');
+            var list = $(el).attr('data-list');
+            if(count <= 0 || count == undefined){
+                alertify.error("Не указано количество, товар " + list + " мм. не добавлен" );
+            }else{
+                addToBasket2(id,count,el,6);
+            }
+        });
+
+    });
+
 
 
 

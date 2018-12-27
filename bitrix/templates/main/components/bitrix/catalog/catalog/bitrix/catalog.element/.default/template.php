@@ -35,6 +35,8 @@ $this->setFrameMode(true);
 </script>
 
 <?
+//var_dump($arResult['OFFERS']);
+
 $arOffers = array();
 foreach($arResult['OFFERS'] as $offer){
     if($offer['MIN_PRICE']['DISCOUNT_VALUE']){
@@ -97,7 +99,7 @@ foreach($arResult['OFFERS'] as $offer){
                           <span>при заказе<br>с сайта</span>
                       </div>
 
-                      <?if(!$arResult['PROPERTIES']['DLINA_TEST']['VALUE']):?>
+                      <?if(!$arResult['IS_M2']):?>
                           <div class="quantity">
                               <a class="minus na" href="#"></a>
                               <input type="text" value="1" max="<?=$arOffers['QUANTITY']?>" id="count_product"/>
@@ -126,7 +128,7 @@ foreach($arResult['OFFERS'] as $offer){
               <div class="buy-box-product">Продаётся упаковкой по 250 шт.</div>
               <? endif; ?>
 
-              <?if(!$arResult['PROPERTIES']['DLINA_TEST']['VALUE']):?>
+              <?if(!$arResult['IS_M2']):?>
 
                   <? if($arOffers['DISCOUNT_VALUE'] and $arOffers['QUANTITY'] > 0): ?>
                       <a href="javascript:void(0)" class="add2cart" onclick="addToBasket2(<?=$arOffers['ID']?>, $('#count_product').val(),this,<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);">Добавить в корзину</a>
@@ -296,7 +298,9 @@ foreach($arResult['OFFERS'] as $offer){
 
 
 
-    <?if($arResult['PROPERTIES']['DLINA_TEST']['VALUE']):?>
+    <?if($arResult['IS_M2']):
+        $first_offer = current($arResult['OFFERS']);
+        ?>
 
      <div class="p-view__param-col p-view__param-col_restyled">
 
@@ -313,11 +317,11 @@ foreach($arResult['OFFERS'] as $offer){
                         <th>кол-во м²</th>
                         <th>стоимость</th>
                     </tr>
-                    <tr class="order-cnt" data-list="500" data-count="0">
+                    <tr class="order-cnt" data-list="<?=$first_offer['PROPERTIES']['DLINA']['VALUE']?>" data-count="0" data-id="<?=$first_offer['ID']?>" data-idblock="<?=$first_offer['IBLOCK_ID']?>" data-price="<?=$first_offer['MIN_PRICE']['DISCOUNT_VALUE']?>">
 
                         <td data-toggle="modal" data-target="#available-length" data-item="">
                             <div class="dropdown dropdown_double-icon dropdown-modal">
-                                <div class="drop-value">500 мм</div>
+                                <div class="drop-value"><?=$first_offer['PROPERTIES']['DLINA']['VALUE']?> мм</div>
                             </div>
                         </td>
 
@@ -347,10 +351,9 @@ foreach($arResult['OFFERS'] as $offer){
             <input type="hidden" name="width" value="<?=$arResult['PROPERTIES']['SHIRINA_LISTA']['VALUE']?>" >
             <input type="hidden" name="product_id" size="2" value="<?=$arResult['ID']?>" />
             <input type="hidden" name="product_offer_id" id="product_offer_id" value="<?=$arOffers['ID']?>" />
-            <input type="hidden" name="price" value="<?=$arOffers['DISCOUNT_VALUE']?>">
 
             <? if($arOffers['DISCOUNT_VALUE']): ?>
-                <a class="button button-primary button-block text-center toShopBox" id="button-cart" onclick="addToBasket2(<?=$arOffers['ID']?>, $('#count_product').val(),this,<?=$arResult['PROPERTIES']['CML2_BASE_UNIT']['DESCRIPTION']?>);" data-toggle="tooltip" data-placement="top" title="необходимо ввести количество">Добавить в корзину</a>
+                <a class="button button-primary button-block text-center toShopBox" id="button-cart-offers" data-toggle="tooltip" data-placement="top" title="необходимо ввести количество">Добавить в корзину</a>
             <?else:?>
                 <a href="javascript:void(0)" class="add2cart show-popup" data-id="order-product">Товар под заказ</a>
             <?endif;?>
@@ -598,7 +601,7 @@ foreach($arResult['OFFERS'] as $offer){
 
 </div><!--end::prod_card-->
 
-<?if($arResult['PROPERTIES']['DLINA_TEST']['VALUE']):?>
+<?if($arResult['IS_M2']):?>
 <!-- Modal -->
 <div class="modal fade  bs-example-modal-lg" id="available-length" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
     <div class="modal-dialog modal-lg" role="document">
@@ -616,12 +619,12 @@ foreach($arResult['OFFERS'] as $offer){
                 <div class="table-responsive">
                     <table class="table table-bordered" id="av-length-table">
                         <?
-                        $leng_count = count($arResult['TYPE_LENGTH']);
+                        $leng_count = count($arResult['OFFERS_TABLE']);
                         for($i = 0; $i <= $leng_count; $i++):
                         ?>
                             <tr>
-                            <?foreach($arResult['TYPE_LENGTH'][$i] as $length => $status):?>
-                                <td class="<?if($status['STATUS'] == "N"):?>disable<?endif;?>" <?if($status['DEF'] == "Y" AND $status['STATUS'] == "Y"):?>style="color: green; background: #C1EFB1"<?endif;?>><?=$length;?></td>
+                            <?foreach($arResult['OFFERS_TABLE'][$i] as $id => $width):?>
+                                    <td class="" data-id="<?=$width['ID']?>" data-idblock="<?=$width['IBLOCK_ID']?>" data-price="<?=$width['MIN_PRICE']['DISCOUNT_VALUE']?>"><?=$width['PROPERTIES']['DLINA']['VALUE'];?></td>
                             <? endforeach; ?>
                             </tr>
                         <? endfor; ?>

@@ -620,15 +620,23 @@ if($arResult['PROPERTIES']['MORE_PHOTO']['VALUE']){
 $arResult['NAME'] = preg_replace('#(~(.*?)~)#is', '', $arResult['NAME']);
 
 
-if($arResult['PROPERTIES']['DLINA_TEST']['VALUE']){
-	$property_enums = CIBlockPropertyEnum::GetList(Array("ID" => "ASC"), Array("IBLOCK_ID" => 28, "CODE" => $arResult['PROPERTIES']['DLINA_TEST']['VALUE']));
-	while($enum_fields = $property_enums->GetNext())
-	{
-		$arResult['TYPE_LENGTH'][$enum_fields["XML_ID"]]["STATUS"] = $enum_fields["VALUE"];
-		$arResult['TYPE_LENGTH'][$enum_fields["XML_ID"]]["DEF"] = $enum_fields["DEF"];
+foreach($arResult['OFFERS'] as $id => &$offer){
+	if(!$offer["CATALOG_QUANTITY"]){
+		unset($arResult['OFFERS'][$id]);
+		continue;
 	}
+	$db_props = CIBlockElement::GetProperty($offer["IBLOCK_ID"], $offer["ID"], array("sort" => "asc"), Array("CODE" => "DLINA"));
+	if($ar_props = $db_props->Fetch()){
+		$offer["PROPERTIES"]["DLINA"] = $ar_props;
+		if(!$ar_props['VALUE'] && $offer['CATALOG_MEASURE'] == 6){
+			unset($arResult['OFFERS'][$id]);
+			continue;
+		}
+	}
+	$arResult['IS_M2'] = ($offer['CATALOG_MEASURE'] == 6) ? true : false;
 }
-$arResult['TYPE_LENGTH'] = array_chunk($arResult['TYPE_LENGTH'],15,true);
+$arResult['OFFERS_TABLE'] = array_chunk($arResult['OFFERS'],15,true);
+
 ?>
 
 

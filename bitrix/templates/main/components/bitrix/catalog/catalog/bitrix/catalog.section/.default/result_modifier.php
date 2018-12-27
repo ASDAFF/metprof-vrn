@@ -504,6 +504,7 @@ if (!empty($arResult['ITEMS']))
 	}
 }
 $arResult['NAME'] = preg_replace('#(~(.*?)~)#is', '', $arResult['NAME']);
-foreach ($arResult['ITEMS'] as $key => $arItem){
+foreach ($arResult['ITEMS'] as $key => &$arItem){
 	$arResult['ITEMS'][$key]['NAME'] = preg_replace('#(~(.*?)~)#is', '', $arItem['NAME']);
+	$arItem['IS_M2'] = ($arItem['OFFERS'][0]['CATALOG_MEASURE'] == 6) ? true : false;
 }
