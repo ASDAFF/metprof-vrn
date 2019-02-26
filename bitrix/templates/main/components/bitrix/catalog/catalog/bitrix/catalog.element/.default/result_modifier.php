@@ -621,10 +621,7 @@ $arResult['NAME'] = preg_replace('#(~(.*?)~)#is', '', $arResult['NAME']);
 
 
 foreach($arResult['OFFERS'] as $id => &$offer){
-	if(!$offer["CATALOG_QUANTITY"]){
-		unset($arResult['OFFERS'][$id]);
-		continue;
-	}
+
 	$db_props = CIBlockElement::GetProperty($offer["IBLOCK_ID"], $offer["ID"], array("sort" => "asc"), Array("CODE" => "DLINA"));
 	if($ar_props = $db_props->Fetch()){
 		$offer["PROPERTIES"]["DLINA"] = $ar_props;
