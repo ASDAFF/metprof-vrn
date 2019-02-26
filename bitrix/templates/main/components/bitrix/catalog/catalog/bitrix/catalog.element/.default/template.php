@@ -613,7 +613,7 @@ foreach($arResult['OFFERS'] as $offer){
             <div class="modal-body">
                 <span style="margin-bottom: 20px;display: block">
                     <img src="<?=$this->GetFolder()?>/images/popularlength.png" style="position: relative;">
-                     - Стандартные длины листов на складе. Наличие уточняйте у менеджеров.
+                     - Размеры в наличии.
                 </span>
                 <div class="table-responsive">
                     <table class="table table-bordered" id="av-length-table">
