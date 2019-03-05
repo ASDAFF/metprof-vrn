@@ -629,6 +629,7 @@ foreach($arResult['OFFERS'] as $offer){
                                         data-idblock="<?=$width['IBLOCK_ID']?>"
                                         data-price="<?=$width['MIN_PRICE']['DISCOUNT_VALUE']?>"
                                         <?if($width['CATALOG_QUANTITY']):?> style="color: green; background: #C1EFB1" <?endif;?>
+                                        <?if($width['IBLOCK_DLINA']):?> style="color: black; background: #fdeeee" <?endif;?>
                                         >
                                         <?=$width['PROPERTIES']['DLINA']['VALUE'];?>
                                     </td>

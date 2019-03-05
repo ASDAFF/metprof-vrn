@@ -7,11 +7,7 @@ hello test!
 
 <?
 
-$res = CIBlockElement::GetByID(33325);
-if($ar_res = $res->GetNext()){
-    $nav = CIBlockSection::GetNavChain(false, $ar_res['IBLOCK_SECTION_ID']);
-    $code_section = $nav->arResult[0]['CODE'];
-}
+var_dump(Add2BasketByProductID( 42073, 20, array(),array("NAME" => 1,"CODE" => "WIDTH_LIST","VALUE" => "3300")));
 
 ?>
 

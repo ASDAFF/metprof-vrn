@@ -620,18 +620,38 @@ if($arResult['PROPERTIES']['MORE_PHOTO']['VALUE']){
 $arResult['NAME'] = preg_replace('#(~(.*?)~)#is', '', $arResult['NAME']);
 
 
-foreach($arResult['OFFERS'] as $id => &$offer){
+foreach($arResult['OFFERS'] as $key => $offer){
+	unset($arResult['OFFERS'][$key]);
 
 	$db_props = CIBlockElement::GetProperty($offer["IBLOCK_ID"], $offer["ID"], array("sort" => "asc"), Array("CODE" => "DLINA"));
 	if($ar_props = $db_props->Fetch()){
-		$offer["PROPERTIES"]["DLINA"] = $ar_props;
+		$arResult['OFFERS'][$ar_props[VALUE]] = $offer;
+		$arResult['OFFERS'][$ar_props[VALUE]]["PROPERTIES"]["DLINA"] = $ar_props;
+
 		if(!$ar_props['VALUE'] && $offer['CATALOG_MEASURE'] == 6){
-			unset($arResult['OFFERS'][$id]);
+			unset($arResult['OFFERS'][$ar_props[VALUE]]);
 			continue;
 		}
 	}
 	$arResult['IS_M2'] = ($offer['CATALOG_MEASURE'] == 6) ? true : false;
 }
+
+if($arResult['PROPERTIES']['DLINA_TEST']['VALUE']){
+	$property_enums = CIBlockPropertyEnum::GetList(Array("ID" => "ASC"), Array("IBLOCK_ID" => 28, "CODE" => $arResult['PROPERTIES']['DLINA_TEST']['VALUE']));
+	while($enum_fields = $property_enums->GetNext())
+	{
+		if (!array_key_exists($enum_fields['XML_ID'], $arResult['OFFERS'])) {
+			$arResult['OFFERS'][$enum_fields['XML_ID']]["ID"] = $arResult["ID"];
+			$arResult['OFFERS'][$enum_fields['XML_ID']]["IBLOCK_DLINA"] = true;
+			$arResult['OFFERS'][$enum_fields['XML_ID']]["IBLOCK_ID"] = $arResult["IBLOCK_ID"];
+			$arResult['OFFERS'][$enum_fields['XML_ID']]['MIN_PRICE']['DISCOUNT_VALUE'] = $arResult['MIN_PRICE']['DISCOUNT_VALUE'];
+			$arResult['OFFERS'][$enum_fields['XML_ID']]['CATALOG_QUANTITY'] = 0;
+			$arResult['OFFERS'][$enum_fields['XML_ID']]["PROPERTIES"]["DLINA"]["VALUE"] = $enum_fields['XML_ID'];
+		}
+	}
+}
+ksort($arResult['OFFERS']);
+
 $arResult['OFFERS_TABLE'] = array_chunk($arResult['OFFERS'],15,true);
 
 ?>
