@@ -27,7 +27,9 @@ if ($normalCount > 0)
 					<div class="l-cell sale"><div class="txt sl">Скидка</div><span><?=$arItem['DISCOUNT_PRICE_PERCENT']?></span>%</div>
 					<div class="l-cell width-list">
 						<div class="txt qn">Длина листа</div>
-						<? if($arItem['PROPERTY_DLINA_VALUE']): ?>
+						<? if(isset($arItem['PROPS_ALL']['WIDTH_LIST'])): ?>
+							<span><?=trim($arItem['PROPS_ALL']['WIDTH_LIST']['VALUE'])?> мм</span>
+						<? else: ?>
 							<span><?=$arItem['PROPERTY_DLINA_VALUE']?> мм</span>
 						<? endif; ?>
 					</div>

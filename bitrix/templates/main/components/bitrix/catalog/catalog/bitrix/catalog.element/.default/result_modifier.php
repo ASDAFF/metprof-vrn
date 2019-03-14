@@ -634,17 +634,19 @@ foreach($arResult['OFFERS'] as $key => $offer){
 		}
 	}
 	$arResult['IS_M2'] = ($offer['CATALOG_MEASURE'] == 6) ? true : false;
+	$arResult['LAST_OFFER'] = $offer;
 }
+
 
 if($arResult['PROPERTIES']['DLINA_TEST']['VALUE']){
 	$property_enums = CIBlockPropertyEnum::GetList(Array("ID" => "ASC"), Array("IBLOCK_ID" => 28, "CODE" => $arResult['PROPERTIES']['DLINA_TEST']['VALUE']));
 	while($enum_fields = $property_enums->GetNext())
 	{
 		if (!array_key_exists($enum_fields['XML_ID'], $arResult['OFFERS'])) {
-			$arResult['OFFERS'][$enum_fields['XML_ID']]["ID"] = $arResult["ID"];
+			$arResult['OFFERS'][$enum_fields['XML_ID']]["ID"] = $arResult['LAST_OFFER']['ID'];
 			$arResult['OFFERS'][$enum_fields['XML_ID']]["IBLOCK_DLINA"] = true;
-			$arResult['OFFERS'][$enum_fields['XML_ID']]["IBLOCK_ID"] = $arResult["IBLOCK_ID"];
-			$arResult['OFFERS'][$enum_fields['XML_ID']]['MIN_PRICE']['DISCOUNT_VALUE'] = $arResult['MIN_PRICE']['DISCOUNT_VALUE'];
+			$arResult['OFFERS'][$enum_fields['XML_ID']]["IBLOCK_ID"] = $arResult["LAST_OFFER"]["IBLOCK_ID"];
+			$arResult['OFFERS'][$enum_fields['XML_ID']]['MIN_PRICE']['DISCOUNT_VALUE'] = $arResult['LAST_OFFER']['MIN_PRICE']['DISCOUNT_VALUE'];
 			$arResult['OFFERS'][$enum_fields['XML_ID']]['CATALOG_QUANTITY'] = 0;
 			$arResult['OFFERS'][$enum_fields['XML_ID']]["PROPERTIES"]["DLINA"]["VALUE"] = $enum_fields['XML_ID'];
 		}
