@@ -104,6 +104,63 @@
     height: 50px;
     overflow: scroll;
 }
+
+.modal-footer-form{
+    padding: 15px;
+    border-top: 1px solid #e5e5e5;
+}
+.modal-footer-form .modal-form-group{
+    width: 100%;
+    height: 50px;
+    margin-top: 10px;
+}
+.modal-footer-form .modal-form-group.text{
+    height: 70px;
+}
+
+.modal-footer-form .modal-form-group .col-md-4{
+    text-align: center;
+    height: 100%;
+    padding: 10px;
+}
+
+.modal-footer-form .modal-form-group span{
+    font: 500 16px/20px 'Fira Sans',sans-serif;
+    text-align: left;
+    color: #333;
+}
+.modal-footer-form .modal-form-group.checked span{
+    font-weight: normal;
+}
+.modal-footer-form .modal-form-group input[type=text],
+.modal-footer-form .modal-form-group textarea
+{
+    width: 100%;
+    height: 100%;
+    border: 1px solid #cdd2d6;
+    border-radius: 5px;
+    padding: 10px;
+    font: 400 15px/18px 'Fira Sans',sans-serif;
+    text-align: left;
+    color: #333;
+    transition: border-color .2s;
+}
+
+.modal-footer-form .button{
+    text-align: center;
+    margin-top: 10px;
+}
+.modal-footer-form .button input{
+    width: auto;
+    height: 50px;
+    background: #0060bf;
+    color: #fff;
+    padding: 0 30px;
+    border: 0;
+    border-radius: 4px;
+    font-size: 20px;
+}
+
 @media (min-width: 768px) {
     .modal-dialog {
         width: 600px;
@@ -135,4 +192,9 @@
 
 .modal-body table td {
     cursor: pointer;
+}
+
+.popover-button{
+    padding: 9px 14px;
+    text-align: right;
 }

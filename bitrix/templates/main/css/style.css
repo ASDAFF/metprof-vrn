@@ -11214,6 +11214,7 @@ footer .footer__bottom .footer__studio a {
   color: #4c4c4c;
   font-size: 0.857em;
 }
+
 @media screen and (max-width: 1319px) {
   footer .footer__top .footer__col .footer__logotext {
     padding-right: 30px;

@@ -340,9 +340,9 @@ foreach($arResult['OFFERS'] as $offer){
                     </tr>
                 </table>
 
-                <button class="no-style button-block p-view__order-table-add">
-                    + добавить лист другой длины
-                </button>
+                <span id="popover-button-cart-table-add">
+                    <button class="no-style button-block p-view__order-table-add">+ добавить лист другой длины</button>
+                </span>
             </div>
 
 
@@ -352,10 +352,12 @@ foreach($arResult['OFFERS'] as $offer){
             <input type="hidden" name="product_offer_id" id="product_offer_id" value="<?=$arOffers['ID']?>" />
 
             <? if($arOffers['DISCOUNT_VALUE']): ?>
-                <a class="button button-primary button-block text-center toShopBox" id="button-cart-offers" data-toggle="tooltip" data-placement="top" title="необходимо ввести количество">Добавить в корзину</a>
+                <span id="popover-button-cart">
+                    <a class="button button-primary button-block text-center toShopBox" id="button-cart-offers" data-toggle="tooltip" data-placement="top" title="необходимо ввести количество">Добавить в корзину</a>
+                </span>
             <?else:?>
                 <a href="javascript:void(0)" class="add2cart show-popup" data-id="order-product">Товар под заказ</a>
-            <?endif;?>
+            <? endif;?>
 
 
             <div class="block-fast-buy">
@@ -629,7 +631,6 @@ foreach($arResult['OFFERS'] as $offer){
                                         data-idblock="<?=$width['IBLOCK_ID']?>"
                                         data-price="<?=$width['MIN_PRICE']['DISCOUNT_VALUE']?>"
                                         <?if($width['CATALOG_QUANTITY']):?> style="color: green; background: #C1EFB1" <?endif;?>
-                                        <?if($width['IBLOCK_DLINA']):?> style="color: black; background: #d5d5d53d" <?endif;?>
                                         >
                                         <?=$width['PROPERTIES']['DLINA']['VALUE'];?>
                                     </td>
@@ -642,6 +643,66 @@ foreach($arResult['OFFERS'] as $offer){
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Закрыть</button>
                 <button type="button" class="btn btn-primary">OK</button>
+            </div>
+            <div class="modal-footer-form">
+                <form action="" method="post" id="modal-form-size">
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h4>Хотите заказать размеры которых нет в наличии?</h4>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 col-sm-12 col-xs-12">
+
+                            <div class="modal-form-group text">
+                                <div class="col-md-4 col-sm-12 col-xs-12">
+                                    <span>Длина и количество</span>
+                                </div>
+                                <div class="col-md-8 col-sm-12 col-xs-12">
+                                    <textarea name="text" required></textarea>
+                                </div>
+                            </div>
+
+                            <div class="modal-form-group">
+                                <div class="col-md-4 col-sm-12 col-xs-12">
+                                    <span>ФИО</span>
+                                </div>
+                                <div class="col-md-8 col-sm-12 col-xs-12">
+                                    <input type="text" name="name" value="" placeholder="ФИО" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-sm-12 col-xs-12">
+                            <div class="modal-form-group">
+                                <div class="col-md-4 col-sm-12 col-xs-12">
+                                    <span>Телефон</span>
+                                </div>
+                                <div class="col-md-8 col-sm-12 col-xs-12">
+                                    <input type="text" class="phone" name="phone" value="" placeholder="+7 (473) 234-03-01" required>
+                                </div>
+                            </div>
+
+                            <div class="modal-form-group checked">
+                                <div class="col-md-12 col-sm-12 col-xs-12">
+                                    <input type="checkbox" name="rule" value="Y" checked="checked" required>
+                                    <span>
+                                        Нажимая на эту кнопку, я даю свое согласие на <a href="/upload/compliance.pdf" target="_blank">обработку персональных данных</a> и соглашаюсь с условиями <a href="/upload/politics.pdf" target="_blank">политики конфиденциальности</a>.
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="button">
+                            <input type="submit" class="send" name="submit" value="Отправить">
+                        </div>
+                    </div>
+
+                </form>
+
             </div>
         </div>
     </div>

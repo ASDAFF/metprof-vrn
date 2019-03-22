@@ -418,7 +418,63 @@ $(function(){
 
 
 
+    $('#modal-form-size').ajaxForm({
+        url:"/ajax/modal_size_form.php",
+        type:"post",
+        dataType:"json",
+        success:function(responseText, statusText, xhr, $form){
+            if(responseText.response){
+                alertify.success("Сообщение отправлено!");
+                $form.html("<div class='alert alert-success' role='alert'><strong>Сообщение отправлено!</strong> Номер обращения: " + responseText.data + ". </div>");
+            }else{
+                alertify.error(responseText.data);
+            }
+        }
+    });
 
+    $.get('/ajax/popover.php', function(data) {
+        if(data.response){
+            var popoverTemp = '<div class="popover" role="tooltip">'
+                + '<div class="arrow"></div>'
+                + '<h3 class="popover-title"></h3>'
+                + '<div class="popover-content"></div>'
+                + '<div class="popover-button">'
+                + '<button type="button" class="btn btn-default" onclick="destroyPopover()">Ok</button>'
+                + '</div>'
+                + '</div>';
+
+            $('#order-table').popover({
+                "delay" : {"show" : 1000},
+                "title" : "Длинна листа и количество.",
+                "content" : "Выберете необходимую длину и количество листов.",
+                "placement" : "left",
+                "template" : popoverTemp
+            }).trigger('click');
+
+            $('#popover-button-cart').popover({
+                "delay" : {"show" : 1000},
+                "title" : "Добавление в корзину.",
+                "content" : "После выбора всех листов положите все в корзину.",
+                "placement" : "bottom",
+                "template" : popoverTemp
+            }).trigger('click');
+
+            $('#popover-button-cart-table-add').popover({
+                "delay" : {"show" : 1000},
+                "container" : "body",
+                "title" : "Лист другого размера.",
+                "content" : "Если требуется доп.товар с другой длиной нажмите здесь.",
+                "placement" : "right",
+                "template" : popoverTemp
+            }).trigger('click');
+        }else{
+            console.log("Вы уже ученый!");
+        }
+    }, "json");
 
 });
+
+function destroyPopover(){
+    $('#order-table, #popover-button-cart, #popover-button-cart-table-add').popover('destroy');
+}
 
