@@ -312,7 +312,7 @@ foreach($arResult['OFFERS'] as $offer){
                 <table class="p-view__order-table" id="order-table">
                     <tr class="prod_card_table_fr">
                         <th>длина листа</th>
-                        <th>кол-во</th>
+                        <th>кол-во шт.</th>
                         <th>кол-во м²</th>
                         <th>стоимость</th>
                     </tr>
@@ -642,7 +642,6 @@ foreach($arResult['OFFERS'] as $offer){
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Закрыть</button>
-                <button type="button" class="btn btn-primary">OK</button>
             </div>
             <div class="modal-footer-form">
                 <form action="" method="post" id="modal-form-size">
