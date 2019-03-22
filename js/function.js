@@ -476,5 +476,6 @@ $(function(){
 
 function destroyPopover(){
     $('#order-table, #popover-button-cart, #popover-button-cart-table-add').popover('destroy');
+    $.get('/ajax/popover.php', { button : true });
 }
 
