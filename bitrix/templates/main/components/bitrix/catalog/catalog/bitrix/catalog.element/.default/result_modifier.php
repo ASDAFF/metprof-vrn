@@ -628,7 +628,7 @@ foreach($arResult['OFFERS'] as $key => $offer){
 		$arResult['OFFERS'][$ar_props[VALUE]] = $offer;
 		$arResult['OFFERS'][$ar_props[VALUE]]["PROPERTIES"]["DLINA"] = $ar_props;
 
-		if(!$ar_props['VALUE'] && $offer['CATALOG_MEASURE'] == 6){
+		if((!$ar_props['VALUE'] && $offer['CATALOG_MEASURE'] == 6) || empty($offer['CATALOG_QUANTITY'])){
 			unset($arResult['OFFERS'][$ar_props[VALUE]]);
 			continue;
 		}

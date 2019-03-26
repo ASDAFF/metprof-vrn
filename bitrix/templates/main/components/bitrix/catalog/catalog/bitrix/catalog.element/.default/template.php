@@ -648,7 +648,7 @@ foreach($arResult['OFFERS'] as $offer){
 
                     <div class="row">
                         <div class="col-md-12">
-                            <h4>Хотите заказать размеры которых нет в наличии?</h4>
+                            <h4>Хотите заказать размеры, которых нет в наличии?</h4>
                         </div>
                     </div>
 
